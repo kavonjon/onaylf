@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% load bootstrap5 %}
+{% bootstrap_css %}
+{% bootstrap_javascript %}
+{% load bootstrap_icons %}
+{% load static %}
+{% csrf_token %}
+
+{% block title %}Edit fair{% endblock %}
+
+
+{% block page_content %}
+
+<h2> Edit fair </h2>
+
+<h3> Fair details </h3>
+Name: {{ fair.name }}<br />
+Notes: {{ fair.notes }}
+
+<h3> Categories available </h3>
+<table class="table table-striped">
+  <tbody>
+{% for category in fair.fair_categories.all %}
+    <tr class="row small category" data-id="{{ category.id }}" data-name="{{ category.name }}">
+        <td class="col-md-1 overflow-hidden">
+          <div class="name category-name">
+            {{ category.name }}
+          </div>
+        </td>
+        <td class="col-md-1 overflow-hidden">
+            action <span class="edit edit-category">{% bs_icon 'pencil' %}</span>
+        </td>
+    </tr>
+{% endfor %}
+  </tbody>
+</table>
+
+<h3> Accessories available </h3>
+<table class="table table-striped">
+  <tbody>
+{% for accessory in fair.fair_accessories.all %}
+    <tr class="row small" data-id="{{ accessory.id }}">
+        <td class="col-md-1 overflow-hidden">
+            {{ accessory.name }}
+        </td>
+        <td class="col-md-1 overflow-hidden">
+            action <span class="edit edit-accesory">{% bs_icon 'pencil' %}<span>
+        </td>
+    </tr>
+{% endfor %}
+
+  </tbody>
+</table>
+
+<script>
+
+
+  class App {
+    activeValue
+    activeEditButton
+
+    constructor() {
+      document.addEventListener('click', this._clickawayEdit.bind(this));
+
+      const categoryValues = document.querySelectorAll('.category-name')
+      categoryValues.forEach((categoryValue) => {
+        categoryValue.addEventListener('click', this._editCategory.bind(this))
+      });
+
+      const categoryEditButtons = document.querySelectorAll('.edit-category')
+      categoryEditButtons.forEach((categoryEditButton) => {
+        categoryEditButton.addEventListener('click', this._editCategory.bind(this))
+      });
+
+    }
+
+    _getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    _editCategory(e) {
+
+      const row = e.target.closest('.row');
+      const column = row.querySelector('.name');
+      const text = row.dataset.name;
+      const id = row.dataset.id;
+
+      console.log(this.activeValue)
+      if (!this.activeValue) {
+        column.innerHTML = `<input type="text" class="category-name-active active-value" />`;
+        this.activeValue = column.querySelector('.category-name-active');
+        this.activeValue.value = text;
+
+        this.activeEditButton = row.querySelector('.edit');
+        this.activeEditButton.classList.add("active-edit-button");
+      }
+
+    }
+
+    _clickawayEdit(e){
+      if (this.activeValue) {
+        if (!e.target?.classList?.contains("active-value") &&
+            !e.target.firstChild?.classList?.contains("active-value") &&
+            !e.target.closest(".edit")?.classList?.contains("active-edit-button" )) {
+          this._closeEdit(e);
+        }
+      }
+    }
+
+    _closeEdit(e){
+      // generalize for edit, and put ifs for different types
+      const active = this.activeValue.closest(".name");
+      const text = this.activeValue.value;
+      const row = active.closest('.row');
+      const editId = row.dataset.id
+
+      const updateData = {
+          name: text  // Set name based on current field value
+      };
+
+      // const xhr = new XMLHttpRequest();
+      // xhr.open('PATCH', '/api/category-update/' + editId + '/');
+      // xhr.setRequestHeader('Content-Type', 'application/json');
+      // xhr.onload = function() {
+      //     if (xhr.status === 200) {
+      //         console.log('Updated:', xhr.responseText);
+      //         // Handle success, update UI, etc.
+      //     } else {
+      //         console.error('Error updating:', xhr.statusText);
+      //         // Handle error, display message, etc.
+      //     }
+      // };
+      // xhr.send(JSON.stringify(updateData));
+
+      this._updateFromEdit(editId, updateData)
+
+      active.innerHTML = text;
+
+      this.activeValue = null;
+      this.activeEditButton.classList.remove("active-edit-button");
+      this.activeEditButton = null;
+
+    }
+
+    _updateFromEdit(editId, updatedData) {
+      const csrftoken = this._getCookie('csrftoken');
+      // const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+      const headers = { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken,};
+      return fetch(`/api/category-update/${editId}/`, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify(updatedData),
+      })
+      .then(res => res.json())
+      .then(data => {
+          console.log('Modified performance:', data);
+          // Handle any further actions after modifying the performance
+      })
+      .catch(error => {
+          console.error('Error modifying performance:', error);
+          // Handle errors, if any
+      });
+    }
+
+  }
+
+  const app = new App();
+</script>
+
+{% endblock %}

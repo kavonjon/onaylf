@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Select the current fair{% endblock %}
+
+
+{% block page_content %}
+
+<h2> The current fair is: {{ currentFair }} </h2>
+
+<h3> Select a fair: </h3>
+
+
+
+<span>
+  <a> Create a new fair </a>
+</span>
+<span>
+  {% if recent_fairs.0 %}
+  <a class="stealth" href="{% url 'set_fair' recent_fairs.0.id %}"> {{ recent_fairs.0.name }} </a>
+  {% endif %}
+</span>
+<span>
+  {% if recent_fairs.1 %}
+  <a class="stealth" href="{% url 'set_fair' recent_fairs.1.id %}"> {{ recent_fairs.1.name }} </a>
+  {% endif %}
+</span>
+<span>
+  {% if recent_fairs.2 %}
+  <a class="stealth" href="{% url 'set_fair' recent_fairs.2.id %}"> {{ recent_fairs.2.name }} </a>
+  {% endif %}
+</span>
+
+
+
+<table class="table table-striped">
+  <tbody>
+{% for fair in fairs %}
+    <tr class="row small">
+        <td class="col-md-1 overflow-wrap">
+            {{ fair.name }}
+        </td>
+        <td class="col-md-1 overflow-hidden">
+            select
+        </td>
+        <td class="col-md-1 overflow-hidden">
+            action
+        </td>
+    </tr>
+{% endfor %}
+  </tbody>
+</table>
+
+
+{% endblock %}

@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% load bootstrap5 %}
+{% bootstrap_css %}
+{% bootstrap_javascript %}
+{% load bootstrap_icons %}
+{% load static %}
+
+{% block title %}Home{% endblock %}
+
+{% block featured %}
+Welcome {{ currentUser }}<br />
+
+This is your Homepage. On this page you can choose to enter a Performance (for all categories expect Posters) or a Poster. We separated those for your convenience.<br />
+
+You will also return to this page after submitting a Performance or Poster. You will be able to see all of your entries, their status, and go back into them to edit from here.
+
+{% endblock %}
+
+
+{% block page_content %}
+
+<table class="table table-striped performance-table">
+  <tbody>
+{% for performance in performances %}
+    <tr class="row small">
+        <td class="col-md-1 overflow-hidden">
+            {{ performance.user }}
+        </td>
+        <td class="col-md-1 overflow-wrap">
+            {{ performance.title }}
+        </td>
+        <td class="col-md-1 overflow-hidden">
+            {{ performance.category }}
+        </td>
+        <td class="col-md-1 overflow-hidden">
+            grade
+        </td>
+        <td class="col-md-1 overflow-hidden">
+            {{ performance.performance_type }}
+        </td>
+        <td class="col-md-1 overflow-hidden">
+            {{ performance.group }}
+        </td>
+        <td class="col-md-1 overflow-hidden">
+            section
+        </td>
+        <td class="col-md-1 overflow-hidden">
+            status
+        </td>
+        <td class="col-md-1 overflow-hidden">
+            action <span class="edit edit-performance">{% bs_icon 'pencil' %}<span>
+        </td>
+    </tr>
+{% endfor %}
+  </tbody>
+</table>
+
+<script>
+  const table = document.querySelector('.performance-table');
+
+  class App {
+    tableObjects
+    tableHeader = `
+  <thead>
+    <tr>
+      <th>User</th>
+      <th>Title</th>
+      <th>Category</th>
+      <th>Grade</th>
+      <th>Performance type</th>
+      <th>Group</th>
+      <th>Section</th>
+      <th>Status</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+  </tbody>
+`
+    tableBody
+    activeValue
+    activeEditButton
+
+
+    constructor() {
+
+      document.addEventListener('DOMContentLoaded', this._loadTable.bind(this));
+      console.log(this.tableObjects)
+    }
+
+    _getPerformances(){
+
+
+        const headers = { 'Content-Type': 'application/json' };
+        return fetch('/api/performance/', { headers, })
+            .then(res => res.json())
+            .then(data => {
+                console.log(data);
+                this.tableObjects = data
+            });
+
+    }
+
+
+    async _loadTable(sort=null) {
+      await this._getPerformances()
+      console.log(this.tableObjects)
+      table.innerHTML = this.tableHeader
+      this.tableBody = document.querySelector('.performance-table tbody');
+      this.tableObjects.forEach((tableObject) => {
+
+        const html = `
+        <tr class="row small">
+            <td class="col-md-1 overflow-hidden">
+                ${tableObject.user}
+            </td>
+            <td class="col-md-1 overflow-wrap">
+                ${tableObject.title}
+            </td>
+            <td class="col-md-1 overflow-hidden">
+                ${tableObject.category}
+            </td>
+            <td class="col-md-1 overflow-hidden">
+                grade
+            </td>
+            <td class="col-md-1 overflow-hidden">
+                ${tableObject.performance_type}
+            </td>
+            <td class="col-md-1 overflow-hidden">
+                ${tableObject.group}
+            </td>
+            <td class="col-md-1 overflow-hidden">
+                section
+            </td>
+            <td class="col-md-1 overflow-hidden">
+                status
+            </td>
+            <td class="col-md-1 overflow-hidden">
+                action <span class="edit edit-performance">{% bs_icon 'pencil' %}<span>
+            </td>
+        </tr>
+  `;
+        const row = this.tableBody.insertRow();
+        row.innerHTML = html
+      });
+
+    }
+  }
+  const app = new App();
+</script>
+
+{% endblock %}

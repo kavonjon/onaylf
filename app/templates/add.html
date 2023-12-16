@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block page_content %}
+<h1>Create a {{ add_type }}</h1>
+
+{% if error_message %}
+    <p><strong>{{ error_message }}</strong></p>
+{% endif %}
+<form method="post" action="" enctype='multipart/form-data'>
+    {% csrf_token %}
+    <div>
+      Title:*<br/>
+      {{form.title}}
+    </div>
+    <div>
+      Title:<br/>
+      {{form.group}}
+    </div>
+    <div>
+      Language:*<br/>
+      {{form.languoid}}
+    </div>
+    <div>
+      Category:*<br/>
+      {{form.category}}
+    </div>
+    <input type="submit" value="Submit Form"/>
+</form>
+
+
+
+{% endblock %}
