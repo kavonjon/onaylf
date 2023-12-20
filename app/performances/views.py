@@ -5,9 +5,9 @@ from rest_framework import generics
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny #!!!!!!!!!!!!!!!!!
-from .models import Fair, CurrentFair, Performance, Category
-from .serializers import CategorySerializer, PerformanceListSerializer
-from .forms import PerformanceForm
+from .models import Fair, CurrentFair, Performance, Category, Instructor
+from .serializers import CategorySerializer, PerformanceSerializer, InstructorSerializer
+from .forms import PerformanceForm, InstructorForm
 
 
 def is_member_of_moderators(user):
@@ -16,13 +16,25 @@ def is_member_of_moderators(user):
 @api_view(['GET'])
 def performance_list(request):
     performances = Performance.objects.all()
-    serializer = PerformanceListSerializer(performances, many=True)
+    serializer = PerformanceSerializer(performances, many=True)
     return Response(serializer.data)
 
 class CategoryUpdateView(generics.UpdateAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [AllowAny]  # Example: Allow any user to update tasks !!!!!!!!!!!!!!!
+
+@api_view(['GET'])
+def instructor_list(request):
+    instructors = Instructor.objects.all()
+    if not is_member_of_moderators(request.user):
+        instructors = instructors.filter(user=request.user)
+    serializer = InstructorSerializer(instructors, many=True)
+    return Response(serializer.data)
+
+class PerformanceUpdateView(LoginRequiredMixin, generics.UpdateAPIView):
+    queryset = Performance.objects.all()
+    serializer_class = PerformanceSerializer
 
 def select_fair(request, pk=None):
 
@@ -120,24 +132,37 @@ class performance_add(FormView):
             print(self.object.languoid)
             print(self.object.category)
             return redirect("../%s/" % self.object.pk)
-        else:
-            print(form.errors)  # Check for any form errors in the console
-            return super().form_invalid(form)
     def form_invalid(self, form):
         print(form.errors)
         return super().form_invalid(form)
 
-
-def create(request):
+def performance_instructors(request, pk):
 
     currentFair = CurrentFair.objects.first()
 
     performance = Performance.objects.get(pk=pk)
 
-    template = 'performance_detail.html'
+    template = 'performance_instructors.html'
     context = {
-        'currentUser': currentUser,
         'currentFair': currentFair.name,
         'performance': performance
     }
     return render(request, template, context)
+
+class instructor_add(FormView):
+    def handle_no_permission(self):
+        return redirect('/no-permission')
+    form_class = InstructorForm
+    template_name = "instructor_add.html"
+    def form_valid(self, form):
+        if form.is_valid():
+            currentFair = CurrentFair.objects.first()
+            self.object = form.save(commit=False)
+            self.object.fair = currentFair.fair
+            self.object.user = self.request.user
+            self.object.modified_by = self.request.user.get_username()
+            self.object.save()
+            return redirect("../")
+    def form_invalid(self, form):
+        print(form.errors)
+        return super().form_invalid(form)

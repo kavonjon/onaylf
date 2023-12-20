@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block page_content %}
+    <h1>Add Instructor</h1>
+    <form method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="Create">Add</button>
+        <a href="../" class="cancel-button">Cancel</a>
+    </form>
+{% endblock %}

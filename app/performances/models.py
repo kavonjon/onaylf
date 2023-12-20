@@ -1,6 +1,15 @@
 from django.db import models
-# from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 
+def get_superuser():
+    User = get_user_model()
+    superuser = User.objects.filter(is_superuser=True).first()
+    if superuser:
+        return superuser
+    else:
+        # Handle the case where there is no superuser
+        # Just return the first user, probably an admin
+        return User.objects.first()
 
 
 LANGUOID_LEVEL_CHOICES = (('family', 'Family'),
@@ -58,6 +67,9 @@ class Languoid(models.Model):
         return self.name
 
 class Instructor(models.Model):
+    # on delete set to superuser
+    fair = models.ForeignKey('Fair', related_name='fair_instructors', on_delete=models.CASCADE)
+    user = models.ForeignKey('users.User', related_name='instructor_user', null=False, on_delete=models.SET(get_superuser)) # on delete set to superuser
     lastname = models.CharField(max_length=255)
     firstname = models.CharField(max_length=255)
     added = models.DateTimeField(auto_now_add=True)
@@ -66,9 +78,11 @@ class Instructor(models.Model):
     class Meta:
         ordering = ['lastname', 'firstname']
     def __str__(self):
-        return self.lastname + self.firstname
+        return self.lastname + ', ' + self.firstname
 
 class Student(models.Model):
+    fair = models.ForeignKey('Fair', related_name='fair_students', on_delete=models.CASCADE)
+    user = models.ForeignKey('users.User', related_name='student_user', null=False, on_delete=models.SET(get_superuser)) # on delete set to superuser
     lastname = models.CharField(max_length=255)
     firstname = models.CharField(max_length=255)
     added = models.DateTimeField(auto_now_add=True)
@@ -103,16 +117,16 @@ class Accessory(models.Model):
 
 class Performance(models.Model):
     fair = models.ForeignKey('Fair', related_name='fair_performances', on_delete=models.CASCADE)
-    user = models.ForeignKey('users.User', related_name='performance_user', null=True, on_delete=models.SET_NULL)
+    user = models.ForeignKey('users.User', related_name='performance_user', null=False, on_delete=models.SET(get_superuser)) # on delete set to superuser
     title = models.CharField(max_length=500)
     group = models.CharField(max_length=255) #pull automatically from user
     languoid = models.ForeignKey(Languoid, verbose_name="list of languoids", related_name='performance_languoid', null=True, on_delete=models.SET_NULL)
     category = models.ForeignKey(Category, verbose_name="categories on performance", related_name='performance_category', null=True, on_delete=models.SET_NULL)
     grade_range = models.CharField(max_length=4, choices=GRADE_RANGES, blank=True)
     performance_type = models.CharField(max_length=10, choices=PERFORMANCE_TYPE, blank=True)
-    # instructors
-    # students
-    accessory = models.ManyToManyField(Accessory, verbose_name="accessories on performance", related_name='performance_accessory', blank=True)
+    instructors = models.ManyToManyField(Instructor, verbose_name="instructors on performance", related_name='performance_instructor', blank=True)
+    students = models.ManyToManyField(Student, verbose_name="students on performance", related_name='performance_student', blank=True)
+    accessories = models.ManyToManyField(Accessory, verbose_name="accessories on performance", related_name='performance_accessory', blank=True)
     # comments
     submitted = models.BooleanField(default=False)
     status = models.CharField(max_length=12, choices=PERFORMANCE_STATUS, default="in_progress")
