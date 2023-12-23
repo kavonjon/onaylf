@@ -23,15 +23,3 @@ class InstructorSerializer(serializers.ModelSerializer):
         model = Instructor
         fields = ['id', 'user', 'lastname', 'firstname']
 
-class InstructorViewSet(viewsets.ModelViewSet):
-    serializer_class = InstructorSerializer
-
-    def get_queryset(self):
-        queryset = Instructor.objects.all()
-        user_id = self.request.query_params.get('user_id', None)
-        performance_id = self.request.query_params.get('performance_id', None)
-        if user_id is not None:
-            queryset = queryset.filter(user__id=user_id)
-        if performance_id is not None:
-            queryset = queryset.filter(performance__id=performance_id)
-        return queryset
