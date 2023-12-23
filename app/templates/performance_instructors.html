@@ -20,6 +20,9 @@ Choose one or more instructors by clicking Select to the right of the instructor
 
     <h1>Choose instructors</h1>
 
+    <div class="mb-3">
+        <a href="add/" class="btn btn-primary">New Instructor</a>
+    </div>
     <table class="table table-striped instructor-table">
         <tbody>
             <tr>
@@ -31,7 +34,10 @@ Choose one or more instructors by clicking Select to the right of the instructor
       </table>
 
     <div class="mb-3">
-        <a href="add/" class="btn btn-primary">Add Instructor</a>
+        <a href="add/" class="btn btn-primary">Continue</a>
+        <span>
+            <a href="/" class="btn btn-secondary">Close and save</a>
+        </span>
     </div>
 
 
@@ -61,7 +67,7 @@ Choose one or more instructors by clicking Select to the right of the instructor
 
             this._clickInstructorPerformance = this._clickInstructorPerformance.bind(this);
             document.addEventListener('DOMContentLoaded', () => {
-                document.body.addEventListener('click', (e) => { // Changed to an arrow function
+                document.body.addEventListener('click', (e) => {
                     console.log(e.target)
                     if(e.target.closest('.include-performance-instructor')) {
                         console.log('clickpenis')
@@ -95,6 +101,7 @@ Choose one or more instructors by clicking Select to the right of the instructor
             return fetch(`/api/instructors/?user_id=${user_id}`, { headers, })
                 .then(res => res.json())
                 .then(data => {
+                    console.log("User's instructors", data);
                     this.tableObjects = data
                 });
     
@@ -109,32 +116,31 @@ Choose one or more instructors by clicking Select to the right of the instructor
                 .then(res => res.json())
                 .then(data => {
                     this.instructors = data.map(instructor => instructor.id);
+                    console.log('instructors on performance', this.instructors)
                 });
 
         }
     
         async _loadTable(sort=null) {
+            const performance_id = "{{ performance.id }}";
             await this._getInstructorsOnPerformanceList();
-
             await this._getInstructors()
             table.innerHTML = this.tableHeader
             this.tableBody = document.querySelector('.instructor-table tbody');
             this.tableObjects.forEach((tableObject) => {
                 const selectedSpan = this.instructors.includes(tableObject.id) ? 'include-performance-instructor-selected bg-success p-2' : "";
-                let selectedBsicon;
-                if (this.instructors.includes(tableObject.id)) {
-                    selectedBsicon = `{% bs_icon 'check' color='green' %}`;
-                } else {
-                    selectedBsicon = `{% bs_icon 'check' %}`;
-                }
                 const html = `
                 <tr class="row small" data-id="${tableObject.id}">
-                    <td class="col-md-3 overflow-hidden">
+                    <td class="col-md-6 overflow-hidden">
                         ${tableObject.firstname} ${tableObject.lastname}    
                     </td>
-                    <td class="col-md-3 overflow-hidden">
+                    <td class="col-md-6 overflow-hidden">
                         <span class="rounded edit include-performance-instructor ${ selectedSpan }>{% bs_icon 'check' color='black' %}</span>
-                        <span class="edit edit-performance">{% bs_icon 'pencil' %}</span>
+                        <span class="edit edit-performance-instructor">
+                            <a class="stealth" href="/performance/${performance_id}/instructors/${tableObject.id}/edit/">
+                                {% bs_icon 'pencil' %}
+                            </a>
+                        </span>
                     </td>
                 </tr>
         `;

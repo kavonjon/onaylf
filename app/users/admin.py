@@ -1,20 +1,43 @@
+from django import forms
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from users.models import User
 
-# # Define an inline admin descriptor for Employee model
-# # which acts a bit like a singleton
-# class FairUserInline(admin.StackedInline):
-#     model = FairUser
-#     can_delete = False
-#     verbose_name_plural = "fairUser"
+
+class UserCreationForm(forms.ModelForm):
+    password1 = forms.CharField(label='Password', widget=forms.PasswordInput)
+    password2 = forms.CharField(label='Password confirmation', widget=forms.PasswordInput)
+
+    class Meta:
+        model = User
+        fields = ('email', 'password1', 'password2')
+
+    def clean_password2(self):
+        password1 = self.cleaned_data.get("password1")
+        password2 = self.cleaned_data.get("password2")
+        if password1 and password2 and password1 != password2:
+            raise forms.ValidationError("Passwords don't match")
+        return password2
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.set_password(self.cleaned_data["password1"])
+        if commit:
+            user.save()
+        return user
+
+class UserChangeForm(UserCreationForm):
+    pass
 
 
 # Define a new User admin
 class UserAdmin(BaseUserAdmin):
-    list_display = ('email', 'first_name', 'last_name', 'organization', 'is_staff')
+    add_form = UserCreationForm
+    form = UserChangeForm
+    list_display = ('email',)
     ordering = ('email',)
-    # inlines = [FairUserInline]
+    search_fields = ('email',)
+    ordering = ('email',)
 
 # Re-register UserAdmin
 # admin.site.unregister(User)

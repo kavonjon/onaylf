@@ -108,11 +108,11 @@ You will also return to this page after submitting a Performance or Poster. You 
       table.innerHTML = this.tableHeader
       this.tableBody = document.querySelector('.performance-table tbody');
       this.tableObjects.forEach((tableObject) => {
-
+        console.log(tableObject)
         const html = `
         <tr class="row small">
             <td class="col-md-1 overflow-hidden">
-                ${tableObject.user}
+                ${tableObject.user.email}
             </td>
             <td class="col-md-1 overflow-wrap">
                 ${tableObject.title}

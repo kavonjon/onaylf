@@ -19,14 +19,19 @@ from django.contrib.auth import views as auth_views
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from rest_framework.routers import DefaultRouter
 from performances import views
+
+router = DefaultRouter()
+router.register(r'instructors', views.InstructorViewSet, basename='instructors')
 
 urlpatterns = [
     path('api-auth/', include('rest_framework.urls')),
+    path('api/', include(router.urls)),  # include the router.urls under an 'api/' path
     path('api/performance/', views.performance_list, name='performances-get-list'),
     path('api/category-update/<int:pk>/', views.CategoryUpdateView.as_view(), name='category-update'),
     path('api/performance-update/<int:pk>/', views.PerformanceUpdateView.as_view(), name='performance-update'),
-    path('api/instructors/', views.instructor_list, name='instructors-get-list'),
+    # path('api/instructors/', views.instructor_list, name='instructors-get-list'),
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),
     path("", views.home, name="home"),
@@ -37,9 +42,11 @@ urlpatterns = [
     path("select-fair/", views.select_fair, name="select_fair"),
     path("select-fair/<int:pk>/", views.select_fair, name="set_fair"),
     path("edit-fair/<int:pk>/", views.edit_fair, name="edit_fair"),
-
+    path("performance/<int:perf_pk>/instructors/<int:instr_pk>/edit/", views.instructor_edit, name="instructor_edit"),
 
 ]
+
+urlpatterns += router.urls
 
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
