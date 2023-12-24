@@ -91,7 +91,7 @@ class Student(models.Model):
     class Meta:
         ordering = ['lastname', 'firstname']
     def __str__(self):
-        return self.lastname + self.firstname
+        return self.lastname + ', ' + self.firstname
 
 class Category(models.Model):
     fair = models.ForeignKey('Fair', related_name='fair_categories', on_delete=models.CASCADE)

@@ -22,7 +22,7 @@ Notes: {{ fair.notes }}
   <tbody>
 {% for category in fair.fair_categories.all %}
     <tr class="row small category" data-id="{{ category.id }}" data-name="{{ category.name }}">
-        <td class="col-md-1 overflow-hidden">
+        <td class="col-md-3 overflow-hidden">
           <div class="name category-name">
             {{ category.name }}
           </div>
@@ -40,7 +40,7 @@ Notes: {{ fair.notes }}
   <tbody>
 {% for accessory in fair.fair_accessories.all %}
     <tr class="row small" data-id="{{ accessory.id }}">
-        <td class="col-md-1 overflow-hidden">
+        <td class="col-md-3 overflow-hidden">
             {{ accessory.name }}
         </td>
         <td class="col-md-1 overflow-hidden">

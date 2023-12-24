@@ -1,4 +1,4 @@
-<!-- the table displays instructors related to the current user, and does so through a call for instructor data via DRF (the view for this will be created later), and also the table has a column of buttons where one button takes you to a page to edit the instructor, and one button marks the instructor as associated with the current performance (that is loaded in the context). if a user is already associated with the performance, the button allows them to be deassociated/unselected -->
+<!-- the table displays students related to the current user, and does so through a call for student data via DRF (the view for this will be created later), and also the table has a column of buttons where one button takes you to a page to edit the student, and one button marks the student as associated with the current performance (that is loaded in the context). if a user is already associated with the performance, the button allows them to be deassociated/unselected -->
 
 {% extends "base.html" %}
 {% load bootstrap5 %}
@@ -7,33 +7,35 @@
 {% load bootstrap_icons %}
 {% load static %}
 
-{% block title %}Choose instructors{% endblock %}
+{% block title %}Choose students{% endblock %}
 
 {% block featured %}
-Choose Instuctors<br />
+Choose Students<br />
 
-Choose one or more instructors by clicking Select to the right of the instructors name. Don't see the instructor's name? You can create a new instructor. Once you have created an instructor they will be available to you in future performances.
+Choose students for this performance by clicking the select link to the right of their names. Don't see your student? You can create a new student. Once you have created a student they will be available to you for any future performance.
 {% endblock %}
 
 
 {% block page_content %}
 
-    <h1>Choose instructors</h1>
+    <h1>Choose students</h1>
 
     <div class="mb-3">
-        <a href="add/" class="btn btn-primary">New Instructor</a>
+        <a href="add/" class="btn btn-primary">New Student</a>
     </div>
-    <table class="table table-striped instructor-table">
+    <table class="table table-striped student-table">
         <tbody>
             <tr>
                 <th>Name</th>
+                <th>Grade</th>
+                <th>Hometown</th>
                 <th>Actions</th>
             </tr>
         </tbody>
       </table>
 
     <div class="mb-3">
-        <a href="../students/" class="btn btn-primary">Continue</a>
+        <a href="add/" class="btn btn-primary">Continue</a>
         <span>
             <a href="/" class="btn btn-secondary">Close and save</a>
         </span>
@@ -41,15 +43,17 @@ Choose one or more instructors by clicking Select to the right of the instructor
 
 
 <script>
-    let table = document.querySelector('.instructor-table');
+    let table = document.querySelector('.student-table');
     
     class App {
         tableObjects
         tableHeader = `
     <thead>
         <tr class="row small">
-            <th class="col-md-4 overflow-hidden">Name</th>
-            <th class="col-md-4 overflow-hidden">Actions</th>
+            <th class="col-md-3 overflow-hidden">Name</th>
+            <th class="col-md-3 overflow-hidden">Grade</th>
+            <th class="col-md-3 overflow-hidden">Hometown</th>
+            <th class="col-md-3 overflow-hidden">Actions</th>
         </tr>
     </thead>
     <tbody>
@@ -58,19 +62,19 @@ Choose one or more instructors by clicking Select to the right of the instructor
         tableBody
         activeValue
         activeEditButton
-        instructors
+        students
     
         constructor() {
         
             document.addEventListener('DOMContentLoaded', this._loadTable.bind(this));
 
-            this._clickInstructorPerformance = this._clickInstructorPerformance.bind(this);
+            this._clickStudentPerformance = this._clickStudentPerformance.bind(this);
             document.addEventListener('DOMContentLoaded', () => {
                 document.body.addEventListener('click', (e) => {
                     console.log(e.target)
-                    if(e.target.closest('.include-performance-instructor')) {
+                    if(e.target.closest('.include-performance-student')) {
                         console.log('clickpenis')
-                        this._clickInstructorPerformance(e);
+                        this._clickStudentPerformance(e);
                     }
                 });
             });
@@ -93,54 +97,60 @@ Choose one or more instructors by clicking Select to the right of the instructor
         return cookieValue;
     }
     
-        _getInstructors(){
+        _getStudents(){
     
             const user_id = "{{ performance.user.id }}";
             const headers = { 'Content-Type': 'application/json' };
-            return fetch(`/api/instructors/?user_id=${user_id}`, { headers, })
+            return fetch(`/api/students/?user_id=${user_id}`, { headers, })
                 .then(res => res.json())
                 .then(data => {
-                    console.log("User's instructors", data);
+                    console.log("User's students", data);
                     this.tableObjects = data
                 });
     
         }
     
-        _getInstructorsOnPerformanceList(){
+        _getStudentsOnPerformanceList(){
             
             // const user_id = "{{ performance.user.id }}";
             const performance_id = "{{ performance.id }}";
             const headers = { 'Content-Type': 'application/json' };
-            return fetch(`/api/instructors/?performance_id=${performance_id}`, { headers, })
+            return fetch(`/api/students/?performance_id=${performance_id}`, { headers, })
                 .then(res => res.json())
                 .then(data => {
-                    this.instructors = data.map(instructor => instructor.id);
-                    console.log('instructors on performance', this.instructors)
+                    this.students = data.map(student => student.id);
+                    console.log('students on performance', this.students)
                 });
 
         }
     
         async _loadTable(sort=null) {
             const performance_id = "{{ performance.id }}";
-            await this._getInstructorsOnPerformanceList();
-            await this._getInstructors()
+            await this._getStudentsOnPerformanceList();
+            await this._getStudents()
             table.innerHTML = this.tableHeader
-            this.tableBody = document.querySelector('.instructor-table tbody');
+            this.tableBody = document.querySelector('.student-table tbody');
             this.tableObjects.forEach((tableObject) => {
-                const selectedSpan = this.instructors.includes(tableObject.id) ? 'include-performance-instructor-selected bg-success p-2' : "";
+                const selectedSpan = this.students.includes(tableObject.id) ? 'include-performance-student-selected bg-success p-2' : "";
                 const html = `
                 <tr class="row small" data-id="${tableObject.id}">
-                    <td class="col-md-4 overflow-hidden">
+                    <td class="col-md-3 overflow-hidden">
                         ${tableObject.firstname} ${tableObject.lastname}    
                     </td>
-                    <td class="col-md-4 overflow-hidden">
+                    <td class="col-md-3 overflow-hidden">
+                        s
+                    </td>
+                    <td class="col-md-3 overflow-hidden">
+                        s
+                    </td>
+                    <td class="col-md-3 overflow-hidden">
                         <span>
-                            <a class="rounded edit include-performance-instructor ${ selectedSpan }" href="javascript:void(0)">
+                            <a class="rounded edit include-performance-student ${ selectedSpan }" href="javascript:void(0)">
                                 {% bs_icon 'check' color='black' %}
                             </a>
                         </span>
-                        <span class="edit edit-performance-instructor">
-                            <a class="stealth" href="/performance/${performance_id}/instructors/${tableObject.id}/edit/">
+                        <span class="edit edit-performance-student">
+                            <a class="stealth" href="/performance/${performance_id}/students/${tableObject.id}/edit/">
                                 {% bs_icon 'pencil' %}
                             </a>
                         </span>
@@ -152,37 +162,37 @@ Choose one or more instructors by clicking Select to the right of the instructor
 
         }
 
-        _clickInstructorPerformance(e) {
-            const button = e.target.closest('.include-performance-instructor');
+        _clickStudentPerformance(e) {
+            const button = e.target.closest('.include-performance-student');
             const row = e.target.closest('.row');
             const id = row.dataset.id;
             const performance_id = "{{ performance.id }}";
             let add;
-            if (!button.classList.contains('include-performance-instructor-selected')) {
+            if (!button.classList.contains('include-performance-student-selected')) {
                 add = true;
             } else {
                 add = false;
             }
-            this._updatePerformance(performance_id, Number(id), 'instructors', add);
-            button.classList.toggle('include-performance-instructor-selected');
+            this._updatePerformance(performance_id, Number(id), 'students', add);
+            button.classList.toggle('include-performance-student-selected');
             button.classList.toggle('bg-success');
         }
 
         _updatePerformance(performance_id, object, field, add=true) {
             console.log(add)
             if (add) {
-                if (!this.instructors.includes(object)) {
-                    this.instructors.push(object);
+                if (!this.students.includes(object)) {
+                    this.students.push(object);
                 }
             } else {
-                if (this.instructors.includes(object)) {
-                    const index = this.instructors.indexOf(object);
-                    this.instructors.splice(index, 1);
+                if (this.students.includes(object)) {
+                    const index = this.students.indexOf(object);
+                    this.students.splice(index, 1);
                 }
             }
-            console.log(this.instructors)
+            console.log(this.students)
             const body = JSON.stringify({
-                [field]: this.instructors});
+                [field]: this.students});
             const csrftoken = this._getCookie('csrftoken');
             const headers = { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken,};
             return fetch(`/api/performance-update/${performance_id}/`, {

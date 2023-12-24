@@ -5,9 +5,9 @@ from rest_framework import generics, viewsets
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny #!!!!!!!!!!!!!!!!!
-from .models import Fair, CurrentFair, Performance, Category, Instructor
-from .serializers import CategorySerializer, PerformanceSerializer, InstructorSerializer
-from .forms import PerformanceForm, InstructorForm
+from .models import Fair, CurrentFair, Performance, Category, Instructor, Student
+from .serializers import CategorySerializer, PerformanceSerializer, InstructorSerializer, StudentSerializer
+from .forms import PerformanceForm, InstructorForm, StudentForm
 
 
 def is_member_of_moderators(user):
@@ -24,14 +24,6 @@ class CategoryUpdateView(generics.UpdateAPIView):
     serializer_class = CategorySerializer
     permission_classes = [AllowAny]  # Example: Allow any user to update tasks !!!!!!!!!!!!!!!
 
-@api_view(['GET'])
-def instructor_list(request):
-    instructors = Instructor.objects.all()
-    if not is_member_of_moderators(request.user):
-        instructors = instructors.filter(user=request.user)
-    serializer = InstructorSerializer(instructors, many=True)
-    return Response(serializer.data)
-
 
 class InstructorViewSet(viewsets.ModelViewSet):
     serializer_class = InstructorSerializer
@@ -46,6 +38,18 @@ class InstructorViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(performance_instructor__id=performance_id)
         return queryset
 
+class StudentViewSet(viewsets.ModelViewSet):
+    serializer_class = StudentSerializer
+
+    def get_queryset(self):
+        queryset = Student.objects.all()
+        user_id = self.request.query_params.get('user_id', None)
+        performance_id = self.request.query_params.get('performance_id', None)
+        if user_id is not None:
+            queryset = queryset.filter(user__id=user_id)
+        if performance_id is not None:
+            queryset = queryset.filter(performance_student__id=performance_id)
+        return queryset
 
 class PerformanceUpdateView(LoginRequiredMixin, generics.UpdateAPIView):
     queryset = Performance.objects.all()
@@ -206,3 +210,56 @@ def instructor_edit(request, perf_pk, instr_pk):
     }
     return render(request, template, context)
 
+def performance_students(request, pk):
+
+    currentFair = CurrentFair.objects.first()
+
+    performance = Performance.objects.get(pk=pk)
+
+    template = 'performance_students.html'
+    context = {
+        'currentFair': currentFair.name,
+        'performance': performance
+    }
+    return render(request, template, context)
+
+class student_add(LoginRequiredMixin, FormView):
+    def handle_no_permission(self):
+        return redirect('/no-permission')
+    form_class = StudentForm
+    template_name = "student_add.html"
+    def form_valid(self, form):
+        if form.is_valid():
+            currentFair = CurrentFair.objects.first()
+            self.object = form.save(commit=False)
+            self.object.fair = currentFair.fair
+            self.object.user = self.request.user
+            self.object.modified_by = self.request.user.get_username()
+            self.object.save()
+            return redirect("../")
+    def form_invalid(self, form):
+        print(form.errors)
+        return super().form_invalid(form)
+    
+def student_edit(request, perf_pk, stud_pk):
+
+    currentFair = CurrentFair.objects.first()
+
+    student = get_object_or_404(Student, id=stud_pk)
+
+    if request.method == "POST":
+        form = StudentForm(request.POST, instance=student)
+        if form.is_valid():
+            form.save(commit=False)
+            form.modified_by = request.user.get_username()
+            form.save()
+            return redirect("../../")
+    else:
+        form = StudentForm(instance=student)
+
+    template = 'student_edit.html'
+    context = {
+        'currentFair': currentFair.name,
+        'form': form
+    }
+    return render(request, template, context)

@@ -147,3 +147,19 @@ class Command(BaseCommand):
 
         for cat in cat_list:
             category = Category.objects.create(fair=current_fair.fair, name=cat[0], modified_by="admin@nal.ou.edu")
+
+        # delete all accessories
+        Accessory.objects.all().delete()
+
+        # create accessories
+        current_fair = CurrentFair.objects.first()
+        acc_list = [
+            ("32 Inch Standard Round Tables",),
+            ("32 Inch Tall Round Tables",),
+            ("6 Foot Rectangle Tables",),
+            ("Chairs",),
+            ("Easel",)
+        ]
+
+        for acc in acc_list:
+            accessory = Accessory.objects.create(fair=current_fair.fair, name=acc[0], modified_by="admin@nal.ou.edu")

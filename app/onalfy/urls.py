@@ -24,6 +24,7 @@ from performances import views
 
 router = DefaultRouter()
 router.register(r'instructors', views.InstructorViewSet, basename='instructors')
+router.register(r'students', views.StudentViewSet, basename='students')
 
 urlpatterns = [
     path('api-auth/', include('rest_framework.urls')),
@@ -31,18 +32,20 @@ urlpatterns = [
     path('api/performance/', views.performance_list, name='performances-get-list'),
     path('api/category-update/<int:pk>/', views.CategoryUpdateView.as_view(), name='category-update'),
     path('api/performance-update/<int:pk>/', views.PerformanceUpdateView.as_view(), name='performance-update'),
-    # path('api/instructors/', views.instructor_list, name='instructors-get-list'),
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),
     path("", views.home, name="home"),
+    path("performance/add/", views.performance_add.as_view(), name="performance_add"),
     path("performance/<int:pk>/", views.performance_detail, name="performance_detail"),
     path("performance/<int:pk>/instructors/", views.performance_instructors, name="performance_instructors"),
     path("performance/<int:pk>/instructors/add/", views.instructor_add.as_view(), name="performance_instructors_add"),
-    path("performance/add/", views.performance_add.as_view(), name="performance_add"),
+    path("performance/<int:perf_pk>/instructors/<int:instr_pk>/edit/", views.instructor_edit, name="instructor_edit"),
+    path("performance/<int:pk>/students/", views.performance_students, name="performance_students"),
+    path("performance/<int:pk>/students/add/", views.student_add.as_view(), name="performance_students_add"),
+    path("performance/<int:perf_pk>/students/<int:stud_pk>/edit/", views.student_edit, name="student_edit"),
     path("select-fair/", views.select_fair, name="select_fair"),
     path("select-fair/<int:pk>/", views.select_fair, name="set_fair"),
     path("edit-fair/<int:pk>/", views.edit_fair, name="edit_fair"),
-    path("performance/<int:perf_pk>/instructors/<int:instr_pk>/edit/", views.instructor_edit, name="instructor_edit"),
 
 ]
 
