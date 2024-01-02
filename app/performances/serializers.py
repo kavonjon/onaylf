@@ -1,5 +1,5 @@
 from rest_framework import serializers, viewsets
-from .models import Category, Performance, Instructor, Student
+from .models import Category, Performance, Instructor, Student, PerformanceAccessory
 from users.models import User
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -27,3 +27,8 @@ class StudentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
         fields = ['id', 'user', 'lastname', 'firstname']
+
+class PerformanceAccessorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PerformanceAccessory
+        fields = ['performance', 'accessory', 'count']

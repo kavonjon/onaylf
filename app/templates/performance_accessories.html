@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% load bootstrap5 %}
+{% bootstrap_css %}
+{% bootstrap_javascript %}
+{% load bootstrap_icons %}
+{% load static %}
+
+{% block title %}Choose accessories{% endblock %}
+
+{% block featured %}
+Choose accessories<br />
+
+The museum can provide a few accessories on stage for performances. Select from the list below and add quantity.
+{% endblock %}
+
+
+{% block page_content %}
+
+    <h1>Choose accessories</h1>
+
+    <table class="table table-striped accessory-table">
+        <tbody>
+            <tr class="row small">
+                <th class="col-md-4 overflow-hidden">Accessory</th>
+                <th class="col-md-4 overflow-hidden">Quantity</th>
+            </tr>
+            {% for accessory in accessories %}
+            <tr class="row small" data-id="{{ accessory.id }}" data-name="{{ accessory.name }}" data-count="{% if accessory.count %}{{ accessory.count }}{% else %}0{% endif %}">
+                <td class="col-md-4 overflow-hidden">
+                    {{ accessory.name }}   
+                </td>
+                <td class="col-md-4 overflow-hidden">
+                    <span>
+                        <a class="performance-accessory-decrement" href="javascript:void(0)">
+                            {% bs_icon 'dash-square-fill' color='black' %}
+                        </a>
+                    </span>
+                    <span class="performance-accessory-count">
+                        {% if accessory.count %}{{ accessory.count }}{% else %}0{% endif %}
+                    </span>
+                    <span>
+                        <a class="performance-accessory-increment" href="javascript:void(0)">
+                            {% bs_icon 'plus-square-fill' color='black' %}
+                        </a>
+                    </span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+      </table>
+
+    <div class="mb-3">
+        <a href="../review/" class="btn btn-primary">Continue</a>
+        <span>
+            <a href="/" class="btn btn-secondary">Close and save</a>
+        </span>
+    </div>
+
+
+<script>
+    let table = document.querySelector('.accessory-table');
+    
+    class App {
+        tableObjects
+        tableHeader = `
+    <thead>
+        <tr class="row small">
+            <th class="col-md-4 overflow-hidden">Accessory</th>
+            <th class="col-md-4 overflow-hidden">Quantity</th>
+        </tr>
+    </thead>
+    <tbody>
+    </tbody>
+    `
+        tableBody
+        activeValue
+        activeEditButton
+        accessories
+    
+        constructor() {
+        
+            this._clickAccessoryIncrementPerformance = this._clickAccessoryIncrementPerformance.bind(this);
+            document.addEventListener('DOMContentLoaded', () => {
+                document.body.addEventListener('click', (e) => {
+                    console.log(e.target)
+                    if(e.target.closest('.performance-accessory-increment')) {
+                        this._clickAccessoryIncrementPerformance(e);
+                    }
+                });
+            });
+
+            this._clickAccessoryDecrementPerformance = this._clickAccessoryDecrementPerformance.bind(this);
+            document.addEventListener('DOMContentLoaded', () => {
+                document.body.addEventListener('click', (e) => {
+                    console.log(e.target)
+                    if(e.target.closest('.performance-accessory-decrement')) {
+                        this._clickAccessoryDecrementPerformance(e);
+                    }
+                });
+            });
+        }
+
+        _getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+        _clickAccessoryIncrementPerformance(e) {
+            const button = e.target.closest('.performance-accessory-increment');
+            const row = e.target.closest('.row');
+            const accessory_id = row.dataset.id;
+            const count = row.dataset.count;
+            const countElement = row.querySelector('.performance-accessory-count');
+            const performance_id = "{{ performance.id }}";
+            const newCount = Number(count) + 1;
+            this._updatePerformanceAccessory(performance_id, Number(accessory_id), newCount);
+            row.dataset.count = newCount;
+            countElement.textContent = newCount;
+        }
+
+        _clickAccessoryDecrementPerformance(e) {
+            const button = e.target.closest('.performance-accessory-decrement');
+            const row = e.target.closest('.row');
+            const accessory_id = row.dataset.id;
+            const count = row.dataset.count;
+            const countElement = row.querySelector('.performance-accessory-count');
+            const performance_id = "{{ performance.id }}";
+            if (count == 0) {
+                return;
+            }
+            const newCount = Number(count) - 1;
+            this._updatePerformanceAccessory(performance_id, Number(accessory_id), newCount);
+            row.dataset.count = newCount;
+            countElement.textContent = newCount;
+        }
+
+        _updatePerformanceAccessory(performance_id, accessory_id, count) {
+            console.log(count)
+            const body = JSON.stringify({
+                count: count});
+            const csrftoken = this._getCookie('csrftoken');
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken,
+            };
+            return fetch(`/api/performance-accessory-update/${performance_id}/${accessory_id}/`, {
+                method: 'PATCH',
+                headers,
+                body: body,
+            })
+            .then(res => {
+            if (res.status === 404) {
+                // If the PATCH request returns a 404 status, the PerformanceAccessory does not exist
+                // Call the _createPerformanceAccessory method
+                return this._createPerformanceAccessory(performance_id, accessory_id, count);
+            } else {
+                // If the PATCH request returns any other status, return the response
+                return res.json();
+            }
+        })
+            .then(data => {
+                console.log('Modified performance accessory:', data);
+                // Handle any further actions after modifying the performance
+            })
+            .catch(error => {
+                console.error('Error modifying performance accessory:', error);
+                this._createPerformanceAccessory(performance_id, accessory_id, count);
+            });
+        }
+
+        _createPerformanceAccessory(performance_id, accessory_id, count) {
+            const body = JSON.stringify({
+                performance: performance_id,
+                accessory: accessory_id,
+                count: count});
+            const csrftoken = this._getCookie('csrftoken');
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken,
+            };
+            return fetch(`/api/performance-accessory/add/`, {
+                method: 'POST',
+                headers,
+                body: body,
+            })
+            .then(res => {
+                console.log('Response status second:', res.status);
+
+                res.json()
+            })
+            .then(data => {
+                console.log('Created performance accessory:', data);
+                // Handle any further actions after modifying the performance
+            })
+            .catch(error => {
+                console.error('Error creating performance accessory:', error);
+            });
+        }
+
+
+
+    }
+    const app = new App();
+    </script>
+
+{% endblock %}

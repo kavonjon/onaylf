@@ -13,7 +13,7 @@ class PerformanceForm(forms.ModelForm):
         prefix = 'performance'
         fields = ['title',
                   'group',
-                  'languoid',
+                  'languoids',
                   'category',
                   'grade_range',
                   'performance_type']

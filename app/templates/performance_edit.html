@@ -1,8 +1,14 @@
 {% extends "base.html" %}
+{% load bootstrap5 %}
+{% bootstrap_css %}
+{% bootstrap_javascript %}
+{% load bootstrap_icons %}
 {% load static %}
 
+{% block title %}Edit performance{% endblock %}
+
 {% block page_content %}
-<h1>Create a {{ add_type }}</h1>
+<h1>Edit a performance</h1>
 
 {% if error_message %}
     <p><strong>{{ error_message }}</strong></p>
@@ -34,7 +40,12 @@
       {{form.performance_type}}
     </div>
     <hr />
-    <input type="submit" value="Submit Form"/>
+    <div class="mb-3">
+      <input type="submit" value="Save and continue"/>
+      <span>
+          <a href="." class="btn btn-secondary">Cancel</a>
+      </span>
+    </div>
 </form>
 
 
