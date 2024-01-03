@@ -37,7 +37,7 @@ class Command(BaseCommand):
 
         # create moderator group, assing to admin and moderator user
         
-        mod_group, created = Group.objects.get_or_create(name='moderators')
+        mod_group, created = Group.objects.get_or_create(name='moderator')
         mod_group.user_set.add(nancy)
         admin_user = User.objects.get(email='admin@nal.ou.edu')
         mod_group.user_set.add(admin_user)
