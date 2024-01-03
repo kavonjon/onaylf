@@ -1,27 +1,22 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Performance details{% endblock %}
+{% block title %}Poster details{% endblock %}
 
 
 {% block page_content %}
 
-<h2> Performance details </h2>
+<h2> Poster details </h2>
 
 <hr />
 
-<h3> Performance </h3>
-<b>Title:</b> {{ performance.title }}<br />
-<b>Performance Group Name:</b> {{ performance.group }}<br />
+<h3> Poster </h3>
 <b>Language:</b> {{ performance.languoids.all|join:", " }}<br />
-<b>User:</b> {{ performance.user }}<br />
-<b>Category:</b> {{ performance.category }}<br />
 <b>Grade Range:</b> {{ performance.grade_range }}<br />
-<b>Organizational:</b> {{ organization }}
-
+<b>User:</b> {{ performance.user }}<br />
 <hr />
 
-<h3> Instructors </h3>
+<h3> Instructor </h3>
 <table>
   <tbody>
 {% for instructor in performance.instructors.all %}
@@ -36,7 +31,7 @@
 
 <hr />
 
-<h3> Students </h3>
+<h3> Student </h3>
 <table class="table table-striped">
     <thead>
         <tr class="row small">
@@ -69,34 +64,6 @@
         {% endfor %}
     </tbody>
 </table>
-
-<h3> Accessories </h3>
-<table class="table table-striped">
-    <thead>
-        <tr class="row small">
-            <th class="col-md-3 overflow-hidden">Accessory</th>
-            <th class="col-md-1 overflow-hidden">Count</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for accessory in accessories %}
-        {% if accessory.count > 0 %}
-            <tr class="row small" data-id="{{ accessory.id }}">
-                <td class="col-md-3 overflow-hidden">
-                    {{ accessory.name }}
-                </td>
-                <td class="col-md-1 overflow-hidden">
-                    {{ accessory.count }}
-                </td>
-            </tr>
-            {% endif %}
-        {% endfor %}
-    </tbody>
-</table>
-
-<h3> Comments </h3>
-
-{{ performance.comments }}
 
 <p>
     &nbsp;

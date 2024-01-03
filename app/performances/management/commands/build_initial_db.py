@@ -1,6 +1,9 @@
 from performances.models import Fair, CurrentFair, Languoid, Instructor, Student, Category, Accessory, Performance, Prize
+from users.models import User
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
+
 
 class Command(BaseCommand):
     def handle(self, **options):
@@ -17,14 +20,28 @@ class Command(BaseCommand):
         CurrentFair.objects.all().delete()
         current_fair = CurrentFair.objects.create(name=fair.name, fair=fair, modified_by="admin@nal.ou.edu")
         
+
+        # create moderator user
+
+        nancy = User.objects.create_user(
+            email='nancy@nal.ou.edu',
+            password='bottombehindduckview',
+        )
+
         # create basic user
         
-        User = get_user_model()
-
-        user = User.objects.create_user(
+        kavon = User.objects.create_user(
             email='kavon@nal.ou.edu',
             password='kavonspassword',
         )
+
+        # create moderator group, assing to admin and moderator user
+        
+        mod_group, created = Group.objects.get_or_create(name='moderators')
+        mod_group.user_set.add(nancy)
+        admin_user = User.objects.get(email='admin@nal.ou.edu')
+        mod_group.user_set.add(admin_user)
+
 
         # create instructors
         

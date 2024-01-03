@@ -14,6 +14,8 @@ class UserSerializer(serializers.ModelSerializer):
 
 class PerformanceSerializer(serializers.ModelSerializer):
     user = UserSerializer()
+    category = CategorySerializer()
+
     class Meta:
         model = Performance
         fields = ['id', 'user', 'title', 'group', 'category', 'performance_type', 'instructors', 'students', 'accessories']
@@ -26,7 +28,15 @@ class InstructorSerializer(serializers.ModelSerializer):
 class StudentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
-        fields = ['id', 'user', 'lastname', 'firstname']
+        fields = ['id', 'user', 'lastname', 'firstname', 'grade', 'hometown', 'state']
+
+class PosterSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
+    students = StudentSerializer(many=True)
+
+    class Meta:
+        model = Performance
+        fields = ['id', 'user', 'students']
 
 class PerformanceAccessorySerializer(serializers.ModelSerializer):
     class Meta:

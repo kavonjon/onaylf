@@ -16,11 +16,27 @@ class PerformanceForm(forms.ModelForm):
                   'languoids',
                   'category',
                   'grade_range',
-                  'performance_type']
+                  'performance_type',
+                  'comments',]
         # widgets = {
         # #     'languoid': forms.SelectMultiple(),
         #     'category': CategoryNameWidget()
         # }
+
+class PerformanceCommentsForm(forms.ModelForm):
+    class Meta:
+        model = Performance
+        prefix = 'performance'
+        fields = ['comments',]
+
+class PosterForm(forms.ModelForm):
+    class Meta:
+        model = Performance
+        prefix = 'performance'
+        fields = ['languoids',
+                  'grade_range',
+                  'instructors',
+                  'students',]
 
 class InstructorForm(forms.ModelForm):
     class Meta:

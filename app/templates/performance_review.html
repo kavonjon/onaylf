@@ -95,18 +95,23 @@
 </table>
 
 <h3> Comments </h3>
+If you have anything you would like to communicate to us about this performance, please put it in the comments field below.
 
-{{ performance.comments }}
-
-<p>
-    &nbsp;
-</p>
-<hr />
-<div class="mb-3">
-    <a href="edit/" class="btn btn-primary">Continue</a>
-    <span>
-        <a href="/" class="btn btn-secondary">Close and save</a>
-    </span>
-</div>
+<form method="post" action="" enctype='multipart/form-data'>
+    {% csrf_token %}
+    <div>
+      {{form.comments}}
+    </div>
+    <div>
+        Please review the information above. Select "Submit Performance" if you are ready to submit this performance for approval by the fair staff. If you see an error message below, please complete the section indicated in the message and then return to Review. Once all sections are complete, the "Submit Performance" button will appear.
+    </div>
+    <hr />
+    <div class="mb-3">
+      <input type="submit" value="Submit performance"/>
+      <span>
+          <a href="/" class="btn btn-secondary">Cancel</a>
+      </span>
+    </div>
+</form>
 
 {% endblock %}

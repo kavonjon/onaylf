@@ -208,6 +208,7 @@ class PerformanceAccessory(models.Model):
 class Performance(models.Model):
     fair = models.ForeignKey('Fair', related_name='fair_performances', on_delete=models.CASCADE)
     user = models.ForeignKey('users.User', related_name='performance_user', null=False, on_delete=models.SET(get_superuser)) # on delete set to superuser
+    poster = models.BooleanField(default=False)
     title = models.CharField(max_length=500)
     group = models.CharField(max_length=255) #pull automatically from user
     languoids = models.ManyToManyField(Languoid, verbose_name="list of languoids", related_name='performance_languoids', blank=True)

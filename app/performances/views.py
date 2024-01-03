@@ -6,18 +6,28 @@ from rest_framework import generics, viewsets, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny #!!!!!!!!!!!!!!!!!
+from users.models import User
 from .models import Fair, CurrentFair, Performance, Category, Instructor, Student, Accessory, PerformanceAccessory
-from .serializers import CategorySerializer, PerformanceSerializer, InstructorSerializer, StudentSerializer, PerformanceAccessorySerializer
-from .forms import PerformanceForm, InstructorForm, StudentForm
+from .serializers import CategorySerializer, PerformanceSerializer, PosterSerializer, InstructorSerializer, StudentSerializer, PerformanceAccessorySerializer
+from .forms import PerformanceForm, PerformanceCommentsForm, InstructorForm, StudentForm, PosterForm
 
 
 def is_member_of_moderators(user):
     return user.groups.filter(name="Moderator").exists()
 
+def custom_500_view(request):
+    return render(request, "500.html", status=500)
+
 @api_view(['GET'])
 def performance_list(request):
-    performances = Performance.objects.all()
+    performances = Performance.objects.filter(poster=False)
     serializer = PerformanceSerializer(performances, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+def poster_list(request):
+    performances = Performance.objects.filter(poster=True)
+    serializer = PosterSerializer(performances, many=True)
     return Response(serializer.data)
 
 class CategoryUpdateView(generics.UpdateAPIView):
@@ -121,8 +131,6 @@ class PerformanceAccessoryViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(accessory__id=accessory_id)
         return queryset
 
-
-
 def edit_fair(request, pk):
 
     currentFair = CurrentFair.objects.first()
@@ -136,8 +144,6 @@ def edit_fair(request, pk):
         'fair': fair,
     }
     return render(request, template, context)
-
-
 
 
 def home(request):
@@ -157,6 +163,26 @@ def home(request):
     }
     return render(request, template, context)
 
+def user_detail(request, pk):
+
+    currentUser = User.objects.get(pk=pk)
+
+    currentFair = CurrentFair.objects.first()
+
+    allPerformances = Performance.objects.prefetch_related("user", "students").filter(fair=currentFair.fair).filter(user=currentUser.pk)
+
+    performances = allPerformances.filter(poster=False)
+
+    posters = allPerformances.filter(poster=True)
+
+    template = 'user_detail.html'
+    context = {
+        'currentUser': currentUser,
+        'currentFair': currentFair.name,
+        'performances': performances,
+        'posters': posters
+    }
+    return render(request, template, context)
 
 def performance_detail(request, pk):
 
@@ -200,20 +226,32 @@ class performance_add(FormView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['add_type'] = 'Performance'
+        if 'pk' in self.kwargs:
+            user_pk = self.kwargs['pk']  # Access the pk value
+            user = User.objects.get(pk=user_pk)  # Get the user object
+            context['owning_user'] = user
         return context
     def form_valid(self, form):
         if form.is_valid():
             currentFair = CurrentFair.objects.first()
             self.object = form.save(commit=False)
             self.object.fair = currentFair.fair
-            self.object.user = self.request.user
+            if 'pk' in self.kwargs:
+                user_pk = self.kwargs['pk']  # Access the pk value
+                user = User.objects.get(pk=user_pk)  # Get the user object
+                self.object.user = user
             self.object.modified_by = self.request.user.get_username()
             self.object.save()
             form.save_m2m()
-            return redirect("../%s/" % self.object.pk)
+            return redirect("/performance/%s/instructors" % self.object.pk)
     def form_invalid(self, form):
         print(form.errors)
         return super().form_invalid(form)
+
+class performance_add_admin(UserPassesTestMixin, performance_add):
+    def test_func(self):
+        return self.request.user.groups.filter(name='moderator').exists()
+    
 
 def performance_instructors(request, pk):
 
@@ -360,7 +398,136 @@ def performance_edit(request, pk):
             form.save(commit=False)
             form.modified_by = request.user.get_username()
             form.save()
-            return redirect("./instructors/")
+            return redirect("/performance/%s/instructors/" % performance.pk)
     else:
         form = PerformanceForm(instance=performance)
     return render(request, 'performance_edit.html', {'form': form})
+
+@login_required
+def performance_review(request, pk):
+
+    currentFair = CurrentFair.objects.first()
+
+    performance = Performance.objects.prefetch_related("instructors", "students", "accessories").get(pk=pk)
+
+    performance_user_organization = performance.user.organization
+
+    # Fetch the PerformanceAccessory instances related to the current performance
+    performance_accessories = PerformanceAccessory.objects.filter(performance=performance)
+
+    # Create a dictionary mapping accessory IDs to counts
+    accessory_counts = {pa.accessory.id: pa.count for pa in performance_accessories}
+
+    # Fetch the accessories
+    accessories = Accessory.objects.filter(fair=currentFair.fair)
+
+    # Update the count attribute of each accessory with the count from the performance_accessories
+    for accessory in accessories:
+        if accessory.id in accessory_counts:
+            accessory.count = accessory_counts[accessory.id]
+
+    if request.method == "POST":
+        form = PerformanceCommentsForm(request.POST, instance=performance)
+        if form.is_valid():
+            form.save(commit=False)
+            form.modified_by = request.user.get_username()
+            form.save()
+            return redirect("/")
+    else:
+        form = PerformanceCommentsForm(instance=performance)
+
+    template = 'performance_review.html'
+    context = {
+        'currentFair': currentFair.name,
+        'performance': performance,
+        'organization': performance_user_organization,
+        'accessories': accessories,
+        'form': form
+    }
+    return render(request, template, context)
+
+class poster_add(LoginRequiredMixin, FormView):
+    def handle_no_permission(self):
+        return redirect('/no-permission')
+    form_class = PosterForm
+    template_name = "poster_add.html"
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if 'pk' in self.kwargs:
+            user_pk = self.kwargs['pk']  # Access the pk value
+            user = User.objects.get(pk=user_pk)  # Get the user object
+        else:
+            user = self.request.user
+        context['owning_user'] = user
+        return context
+    def form_valid(self, form):
+        if form.is_valid():
+            if 'pk' in self.kwargs:
+                user_pk = self.kwargs['pk']  # Access the pk value
+                user = User.objects.get(pk=user_pk)  # Get the user object
+            else:
+                user = self.request.user
+            currentFair = CurrentFair.objects.first()
+            self.object = form.save(commit=False)
+            self.object.fair = currentFair.fair
+            self.object.poster = True
+            self.object.user = user
+            self.object.modified_by = self.request.user.get_username()
+            self.object.save()
+            self.object.title = "Poster " + str(self.object.pk)  # Set the name here
+            self.object.save()  # Save the object again to store the new name
+            form.save_m2m()
+            return redirect("../../")
+    def form_invalid(self, form):
+        print(form.errors)
+        return super().form_invalid(form)
+
+
+class poster_add_admin(UserPassesTestMixin, poster_add):
+    def test_func(self):
+        return self.request.user.groups.filter(name='moderator').exists()
+    
+def poster_detail(request, pk):
+
+    currentFair = CurrentFair.objects.first()
+
+    performance = Performance.objects.prefetch_related("instructors", "students").get(pk=pk)
+
+    performance_user_organization = performance.user.organization
+
+    template = 'poster_detail.html'
+    context = {
+        'currentFair': currentFair.name,
+        'performance': performance,
+        'organization': performance_user_organization
+
+    }
+    return render(request, template, context)
+
+
+@login_required
+def poster_edit(request, pk):
+    currentFair = CurrentFair.objects.first()
+
+    performance = Performance.objects.prefetch_related("instructors", "students", "accessories").get(pk=pk)
+
+    performance_user_organization = performance.user.organization
+
+    if request.method == "POST":
+        form = PosterForm(request.POST, instance=performance)
+        if form.is_valid():
+            form.save(commit=False)
+            form.modified_by = request.user.get_username()
+            form.save()
+            return redirect("../")
+    else:
+        form = PerformanceForm(instance=performance)
+
+    template = 'poster_edit.html'
+    context = {
+        'currentFair': currentFair.name,
+        'performance': performance,
+        'organization': performance_user_organization,
+        'form': form
+    }
+    return render(request, template, context)

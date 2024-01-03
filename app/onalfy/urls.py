@@ -22,6 +22,8 @@ from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
 from performances import views
 
+handler500 = 'performances.views.custom_500_view'
+
 router = DefaultRouter()
 router.register(r'instructors', views.InstructorViewSet, basename='instructors')
 router.register(r'students', views.StudentViewSet, basename='students')
@@ -30,6 +32,7 @@ urlpatterns = [
     path('api-auth/', include('rest_framework.urls')),
     path('api/', include(router.urls)),  # include the router.urls under an 'api/' path
     path('api/performance/', views.performance_list, name='performances-get-list'),
+    path('api/poster/', views.poster_list, name='posters-get-list'),
     path('api/category-update/<int:pk>/', views.CategoryUpdateView.as_view(), name='category-update'),
     path('api/performance-update/<int:pk>/', views.PerformanceUpdateView.as_view(), name='performance-update'),
     path('api/performance-accessory/add/', views.PerformanceAccessoryCreateView.as_view(), name='performance-accessory-add'),
@@ -37,9 +40,12 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),
     path("", views.home, name="home"),
+    path("user/<int:pk>/", views.user_detail, name="user_detail"),
+    path("user/<int:pk>/performance/add/", views.performance_add_admin.as_view(), name="performance_add_admin"),
+    path("user/<int:pk>/poster/add/", views.poster_add_admin.as_view(), name="poster_add_admin"),
     path("performance/add/", views.performance_add.as_view(), name="performance_add"),
     path("performance/<int:pk>/", views.performance_detail, name="performance_detail"),
-    path("performance/<int:pk>/edit", views.performance_edit, name="performance_edit"),
+    path("performance/<int:pk>/edit/", views.performance_edit, name="performance_edit"),
     path("performance/<int:pk>/instructors/", views.performance_instructors, name="performance_instructors"),
     path("performance/<int:pk>/instructors/add/", views.instructor_add.as_view(), name="performance_instructors_add"),
     path("performance/<int:perf_pk>/instructors/<int:instr_pk>/edit/", views.instructor_edit, name="instructor_edit"),
@@ -47,6 +53,11 @@ urlpatterns = [
     path("performance/<int:pk>/students/add/", views.student_add.as_view(), name="performance_students_add"),
     path("performance/<int:perf_pk>/students/<int:stud_pk>/edit/", views.student_edit, name="student_edit"),
     path("performance/<int:pk>/accessories/", views.performance_accessories, name="performance_accessories"),
+    path("performance/<int:pk>/review/", views.performance_review, name="performance_review"),
+    path("poster/add/", views.poster_add.as_view(), name="poster_add"),
+    path("poster/<int:pk>/", views.poster_detail, name="poster_detail"),
+    path("poster/<int:pk>/edit/", views.poster_edit, name="poster_edit"),
+    path("poster/add/instructors/<int:instr_pk>/edit/", views.instructor_edit, name="instructor_edit"),
     path("select-fair/", views.select_fair, name="select_fair"),
     path("select-fair/<int:pk>/", views.select_fair, name="set_fair"),
     path("edit-fair/<int:pk>/", views.edit_fair, name="edit_fair"),

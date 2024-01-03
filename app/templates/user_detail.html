@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+{% load bootstrap5 %}
+{% bootstrap_css %}
+{% bootstrap_javascript %}
+{% load bootstrap_icons %}
+{% load static %}
+
+{% block title %}User's submissions{% endblock %}
+
+{% block featured %}
+Now viewing {{ currentUser.first_name }} {{ currentUser.last_name }}'s submissions<br />
+
+You can edit their submissions below (just as on the homepage).
+
+You can add a performance or poster for this user by clicking the buttons below.
+{% endblock %}
+
+
+{% block page_content %}
+<div>
+    &nbsp;
+</div>
+
+<h3> User profile </h3>
+<b>Name:</b> {{ currentUser.first_name }} {{ currentUser.last_name }}<br />
+<b>Organization:</b> {{ currentUser.organization }}<br />
+<b>Email:</b> {{ currentUser.email }}<br />
+<b>Alternate email:</b> {{ currentUser.alt_email }}<br />
+<b>Phone:</b> {{ currentUser.phone }}<br />
+<b>Alternate phone:</b> {{ currentUser.alt_phone }}<br />
+<b>Fax:</b> {{ currentUser.fax }}<br />
+<b>Address:</b> {{ currentUser.address }}<br />
+<b>City:</b> {{ currentUser.city }}<br />
+<b>State:</b> {{ currentUser.state }}<br />
+<b>Zip:</b> {{ currentUser.zip }}<br />
+<hr />
+
+<div class="mb-3">
+    <a href="performance/add/" class="btn btn-primary">New Performance</a>
+    <a href="poster/add/" class="btn btn-primary">New Poster</a>
+</div>
+<h3> Performances </h3>
+<table class="table table-striped performance-table">
+  <tbody>
+{% for performance in performances %}
+    <tr class="row small">
+        <td class="col-md-2 overflow-wrap">
+            {{ performance.title }}
+        </td>
+        <td class="col-md-2 overflow-hidden">
+            {{ performance.category }}
+        </td>
+        <td class="col-md-1 overflow-hidden">
+            grade
+        </td>
+        <td class="col-md-1 overflow-hidden">
+            {{ performance.performance_type }}
+        </td>
+        <td class="col-md-1 overflow-hidden">
+            {{ performance.group }}
+        </td>
+        <td class="col-md-1 overflow-hidden">
+            status
+        </td>
+        <td class="col-md-1 overflow-hidden">
+            action <span class="edit edit-performance">{% bs_icon 'pencil' %}<span>
+        </td>
+    </tr>
+{% endfor %}
+  </tbody>
+</table>
+
+<h3> Posters </h3>
+<table class="table table-striped poster-table">
+    <thead>
+        <tr class="row small">
+            <th class="col-md-1 overflow-hidden">Grade</th>
+            <th class="col-md-3 overflow-hidden">Student</th>
+            <th class="col-md-1 overflow-hidden">Status</th>
+            <th class="col-md-1 overflow-hidden">Action</th>
+        </tr>
+    </thead>
+    <tbody>
+  {% for poster in posters %}
+      <tr class="row small">
+          <td class="col-md-1 overflow-hidden">
+              grade
+          </td>
+          <td class="col-md-3 overflow-hidden">
+              {{ poster.students.first.firstname }} {{ poster.students.first.lastname }}
+          </td>
+          <td class="col-md-1 overflow-hidden">
+              status
+          </td>
+          <td class="col-md-1 overflow-hidden">
+              action <span class="edit edit-performance">{% bs_icon 'pencil' %}<span>
+          </td>
+      </tr>
+  {% endfor %}
+    </tbody>
+  </table>
+
+<script>
+  const performanceTable = document.querySelector('.performance-table');
+  const posterTable = document.querySelector('.poster-table');
+
+  class App {
+    performanceTableObjects
+    performanceTableHeader = `
+  <thead>
+    <tr class="row small">
+      <th class="col-md-2 overflow-hidden">Title</th>
+      <th class="col-md-2 overflow-hidden">Category</th>
+      <th class="col-md-1 overflow-hidden">Grade</th>
+      <th class="col-md-1 overflow-hidden">Performance type</th>
+      <th class="col-md-1 overflow-hidden">Group</th>
+      <th class="col-md-1 overflow-hidden">Status</th>
+      <th class="col-md-1 overflow-hidden">Action</th>
+    </tr>
+  </thead>
+  <tbody>
+  </tbody>
+`
+    performanceTableBody
+    posterTableObjects
+    posterTableHeader = `
+  <thead>
+    <tr class="row small">
+        <th class="col-md-1 overflow-hidden">Grade</th>
+        <th class="col-md-3 overflow-hidden">Student</th>
+        <th class="col-md-1 overflow-hidden">Status</th>
+        <th class="col-md-1 overflow-hidden">Action</th>
+    </tr>
+  </thead>
+  <tbody>
+  </tbody>
+`
+    posterTableBody
+
+    constructor() {
+
+      document.addEventListener('DOMContentLoaded', this._performanceLoadTable.bind(this));
+      document.addEventListener('DOMContentLoaded', this._posterLoadTable.bind(this));
+
+    //   console.log(this.performanceTableObjects)
+    }
+
+    _getPerformances(){
+
+        const user_id = "{{ currentUser.id }}";
+        const headers = { 'Content-Type': 'application/json' };
+        return fetch(`/api/performance/?user_id=${user_id}`, { headers, })
+            .then(res => res.json())
+            .then(data => {
+                // console.log(data);
+                this.performanceTableObjects = data
+            });
+
+    }
+
+
+    async _performanceLoadTable(sort=null) {
+      await this._getPerformances()
+    //   console.log(this.performanceTableObjects)
+      performanceTable.innerHTML = this.performanceTableHeader
+      this.performanceTableBody = document.querySelector('.performance-table tbody');
+      this.performanceTableObjects.forEach((tableObject) => {
+        // console.log(tableObject)
+        const html = `
+        <tr class="row small">
+            <td class="col-md-2 overflow-wrap">
+                ${tableObject.title}
+            </td>
+            <td class="col-md-2 overflow-hidden">
+                ${tableObject.category.name}
+            </td>
+            <td class="col-md-1 overflow-hidden">
+                grade
+            </td>
+            <td class="col-md-1 overflow-hidden">
+                ${tableObject.performance_type}
+            </td>
+            <td class="col-md-1 overflow-hidden">
+                ${tableObject.group}
+            </td>
+            <td class="col-md-1 overflow-hidden">
+                status
+            </td>
+            <td class="col-md-1 overflow-hidden">
+                <span class="edit edit-performance">
+                    <a class="stealth" href="/performance/${tableObject.id}/edit/">
+                        {% bs_icon 'pencil' %}
+                    </a>
+                </span>
+            </td>
+        </tr>
+  `;
+        const row = this.performanceTableBody.insertRow();
+        row.classList.add("row", "small");
+        row.innerHTML = html
+      });
+
+    }
+
+
+    _getPosters(){
+
+    const user_id = "{{ currentUser.id }}";
+    const headers = { 'Content-Type': 'application/json' };
+    return fetch(`/api/poster/?user_id=${user_id}`, { headers, })
+        .then(res => res.json())
+        .then(data => {
+            // console.log(data);
+            this.posterTableObjects = data
+        });
+
+    }
+
+    async _posterLoadTable(sort=null) {
+      await this._getPosters()
+    //   console.log(this.posterTableObjects)
+      posterTable.innerHTML = this.posterTableHeader
+      this.posterTableBody = document.querySelector('.poster-table tbody');
+      this.posterTableObjects.forEach((tableObject) => {
+        // console.log(tableObject)
+        const html = `
+        <tr class="row small">
+            <td class="col-md-1 overflow-hidden">
+                grade
+            </td>
+            <td class="col-md-3 overflow-hidden">
+                ${tableObject.students[0].firstname} ${tableObject.students[0].lastname}
+            </td>
+            <td class="col-md-1 overflow-hidden">
+                status
+            </td>
+            <td class="col-md-1 overflow-hidden">
+                <span class="edit edit-poster">
+                    <a class="stealth" href="/poster/${tableObject.id}/edit/">
+                        {% bs_icon 'pencil' %}
+                    </a>
+                </span>
+            </td>
+        </tr>
+  `;
+        const row = this.posterTableBody.insertRow();
+        row.classList.add("row", "small");
+        row.innerHTML = html
+      });
+
+    }
+
+  }
+  const app = new App();
+</script>
+
+{% endblock %}

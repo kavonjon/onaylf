@@ -1,0 +1,357 @@
+{% extends "base.html" %}
+{% load bootstrap5 %}
+{% bootstrap_css %}
+{% bootstrap_javascript %}
+{% load bootstrap_icons %}
+{% load static %}
+{% csrf_token %}
+
+{% block title %}Edit poster{% endblock %}
+
+
+{% block page_content %}
+<h1>Edit poster</h1>
+<hr />
+
+{% if error_message %}
+    <p><strong>{{ error_message }}</strong></p>
+{% endif %}
+<form method="post" id="poster_add_form" action="" enctype='multipart/form-data'>
+    {% csrf_token %}
+    <h3> Poster details </h3>
+    <div>
+      <b>Language:*</b><br/>
+      {{form.languoids}}
+    </div>
+    <div>
+      <b>Category Rules:</b>
+    </div>
+    <div class="text-danger">
+      Most posters are individual submissions. Groups may submit a poster but it will be with individual artwork. 
+    </div>
+    <div>
+      <b>Grade range:*</b><br/>
+      {{form.grade_range}}
+    </div>
+    <hr />
+
+    <h3> Select instructor </h3>
+    <table class="table table-striped instructor-table">
+      <tbody>
+          <tr>
+              <th>Name</th>
+              <th>Selected</th>
+          </tr>
+      </tbody>
+    </table>
+    <div class="mb-3">
+      <a href="add/" class="btn btn-secondary">New Instructor</a>
+    </div>
+    <hr />
+
+    <h3> Select student </h3>
+
+    <table class="table table-striped student-table">
+      <tbody>
+          <tr>
+              <th>Name</th>
+              <th>Grade</th>
+              <th>Hometown</th>
+              <th>Selected</th>
+          </tr>
+      </tbody>
+    </table>
+    <div class="mb-3">
+      <a href="add/" class="btn btn-secondary">New Student</a>
+    </div>
+
+    <hr />
+    <div class="mb-3">
+      <input type="submit" class="btn btn-primary" value="Submit poster"/>
+      <span>
+          <a href="/" class="btn btn-secondary">Cancel</a>
+      </span>
+    </div>
+</form>
+
+<script>
+  let instructorsTable = document.querySelector('.instructor-table');
+  let studentsTable = document.querySelector('.student-table');
+
+  class App {
+      instructorsTableObjects
+      studentsTableObjects
+      instructorsTableHeader = `
+  <thead>
+      <tr class="row small">
+          <th class="col-md-3 overflow-hidden">Name</th>
+          <th class="col-md-1 overflow-hidden">Selected</th>
+      </tr>
+  </thead>
+  <tbody>
+  </tbody>
+  `
+      studentsTableHeader = `
+  <thead>
+      <tr class="row small">
+          <th class="col-md-3 overflow-hidden">Name</th>
+          <th class="col-md-1 overflow-hidden">Grade</th>
+          <th class="col-md-3 overflow-hidden">Hometown</th>
+          <th class="col-md-1 overflow-hidden">Selected</th>
+      </tr>
+  </thead>
+  <tbody>
+  </tbody>
+  `
+      instructorsTableBody
+      studentsTableBody
+      instructors
+      students
+      form
+  
+      constructor() {
+      
+        document.addEventListener('DOMContentLoaded', this._loadInstructorsTable.bind(this));
+
+        this._clickInstructorPerformance = this._clickInstructorPerformance.bind(this);
+        document.addEventListener('DOMContentLoaded', () => {
+            document.body.addEventListener('click', (e) => {
+                console.log(e.target)
+                if(e.target.closest('.include-performance-instructor')) {
+                    this._clickInstructorPerformance(e);
+                }
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', this._loadStudentsTable.bind(this));
+
+        this._clickStudentPerformance = this._clickStudentPerformance.bind(this);
+        document.addEventListener('DOMContentLoaded', () => {
+            document.body.addEventListener('click', (e) => {
+                console.log(e.target)
+                if(e.target.closest('.include-performance-student')) {
+                    this._clickStudentPerformance(e);
+                }
+            });
+        });
+
+        this.form = document.getElementById('poster_add_form');
+        this.form.addEventListener('submit', (e) => this._modifySubmitButton(e));
+
+      }
+
+      _getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+      }
+  
+      _getInstructors(){
+  
+        const user_id = "{{ performance.user.id }}";
+        const headers = { 'Content-Type': 'application/json' };
+        return fetch(`/api/instructors/?user_id=${user_id}`, { headers, })
+            .then(res => res.json())
+            .then(data => {
+              this.instructorsTableObjects = data
+            });
+  
+      }
+  
+      _getInstructorsOnPerformanceList(){
+          
+        const performance_id = "{{ performance.id }}";
+        const headers = { 'Content-Type': 'application/json' };
+        return fetch(`/api/instructors/?performance_id=${performance_id}`, { headers, })
+            .then(res => res.json())
+            .then(data => {
+                this.instructors = data.map(instructor => instructor.id);
+                console.log('instructors on performance', this.instructors)
+            });
+
+      }
+  
+      _getStudents(){
+    
+        const user_id = "{{ performance.user.id }}";
+        const headers = { 'Content-Type': 'application/json' };
+        return fetch(`/api/students/?user_id=${user_id}`, { headers, })
+            .then(res => res.json())
+            .then(data => {
+              console.log("User's students", data);
+              this.studentsTableObjects = data
+            });
+
+      }
+
+      _getStudentsOnPerformanceList(){
+            
+            const performance_id = "{{ performance.id }}";
+            const headers = { 'Content-Type': 'application/json' };
+            return fetch(`/api/students/?performance_id=${performance_id}`, { headers, })
+                .then(res => res.json())
+                .then(data => {
+                    this.students = data.map(student => student.id);
+                    console.log('students on performance', this.students)
+                });
+
+        }
+
+      async _loadInstructorsTable(sort=null) {
+        await this._getInstructorsOnPerformanceList();
+    //   this.instructors = [];
+        await this._getInstructors()
+        instructorsTable.innerHTML = this.instructorsTableHeader
+        this.instructorsTableBody = document.querySelector('.instructor-table tbody');
+        this.instructorsTableObjects.forEach((tableObject) => {
+            const selectedSpan = this.instructors.includes(tableObject.id) ? 'include-performance-instructor-selected bg-success p-2' : "";
+            const html = `
+              <tr class="row small" data-id="${tableObject.id}">
+                  <td class="col-md-3 overflow-hidden">
+                      ${tableObject.firstname} ${tableObject.lastname}    
+                  </td>
+                  <td class="col-md-1 overflow-hidden">
+                      <span>
+                          <a class="rounded edit include-performance-instructor ${ selectedSpan }" href="javascript:void(0)">
+                              {% bs_icon 'check' color='black' %}
+                          </a>
+                      </span>
+                      <span class="edit edit-performance-instructor">
+                          <a class="stealth" href="instructors/${tableObject.id}/edit/">
+                              {% bs_icon 'pencil' %}
+                          </a>
+                      </span>
+                  </td>
+              </tr>
+      `;
+            this.instructorsTableBody.insertAdjacentHTML('beforeend', html);
+        });
+
+      }
+
+      async _loadStudentsTable(sort=null) {
+        await this._getStudentsOnPerformanceList();
+        // this.students = [];
+        await this._getStudents()
+        studentsTable.innerHTML = this.studentsTableHeader
+        this.studentsTableBody = document.querySelector('.student-table tbody');
+        this.studentsTableObjects.forEach((tableObject) => {
+            const selectedSpan = this.students.includes(tableObject.id) ? 'include-performance-student-selected bg-success p-2' : "";
+            const html = `
+              <tr class="row small" data-id="${tableObject.id}">
+                  <td class="col-md-3 overflow-hidden">
+                      ${tableObject.firstname} ${tableObject.lastname}    
+                  </td>
+                  <td class="col-md-1 overflow-hidden">
+                      ${tableObject.grade} 
+                  </td>
+                  <td class="col-md-3 overflow-hidden">
+                      ${tableObject.hometown}, ${tableObject.state}    
+                  </td>
+                  <td class="col-md-1 overflow-hidden">
+                      <span>
+                          <a class="rounded edit include-performance-student ${ selectedSpan }" href="javascript:void(0)">
+                              {% bs_icon 'check' color='black' %}
+                          </a>
+                      </span>
+                      <span class="edit edit-performance-student">
+                          <a class="stealth" href="students/${tableObject.id}/edit/">
+                              {% bs_icon 'pencil' %}
+                          </a>
+                      </span>
+                  </td>
+              </tr>
+      `;
+            this.studentsTableBody.insertAdjacentHTML('beforeend', html);
+        });
+
+      }
+
+      _clickInstructorPerformance(e) {
+          const buttons = document.querySelectorAll('.include-performance-instructor')
+          const clickledButton = e.target.closest('.include-performance-instructor');
+          const row = e.target.closest('.row');
+          if (!clickledButton.classList.contains('include-performance-instructor-selected')) {
+              buttons.forEach(button => {
+                  button.classList.remove('include-performance-instructor-selected');
+                  button.classList.remove('bg-success');
+              });
+              clickledButton.classList.add('include-performance-instructor-selected');
+              clickledButton.classList.add('bg-success');
+          } else {
+              clickledButton.classList.remove('include-performance-instructor-selected');
+              clickledButton.classList.remove('bg-success');
+          }
+      }
+
+      _clickStudentPerformance(e) {
+          const buttons = document.querySelectorAll('.include-performance-student')
+          const clickledButton = e.target.closest('.include-performance-student');
+          const row = e.target.closest('.row');
+          if (!clickledButton.classList.contains('include-performance-student-selected')) {
+              buttons.forEach(button => {
+                  button.classList.remove('include-performance-student-selected');
+                  button.classList.remove('bg-success');
+              });
+              clickledButton.classList.add('include-performance-student-selected');
+              clickledButton.classList.add('bg-success');
+          } else {
+              clickledButton.classList.remove('include-performance-student-selected');
+              clickledButton.classList.remove('bg-success');
+          }
+      }
+
+
+    _modifySubmitButton(e) {
+      e.preventDefault();
+
+      // Get the selected instructor's ID
+      const selectedInstructorButton = document.querySelector('.include-performance-instructor-selected');
+      const selectedInstructorRow = selectedInstructorButton.closest('.row');
+      const selectedInstructorId = selectedInstructorRow.dataset.id;
+
+      // Create a hidden input field
+      const instructorHiddenInput = document.createElement('input');
+      instructorHiddenInput.type = 'hidden';
+      instructorHiddenInput.name = 'instructors';
+      instructorHiddenInput.value = [selectedInstructorId];
+
+      // Add the hidden input field to the form
+      this.form.appendChild(instructorHiddenInput);
+
+
+      // Get the selected student's ID
+      const selectedStudentButton = document.querySelector('.include-performance-student-selected');
+      const selectedStudentRow = selectedStudentButton.closest('.row');
+      const selectedStudentId = selectedStudentRow.dataset.id;
+
+      // Create a hidden input field
+      const studentHiddenInput = document.createElement('input');
+      studentHiddenInput.type = 'hidden';
+      studentHiddenInput.name = 'students';
+      studentHiddenInput.value = [selectedStudentId];
+
+      // Add the hidden input field to the form
+      this.form.appendChild(studentHiddenInput);
+
+      // Submit the form
+      this.form.submit();
+    }
+
+
+
+  }
+  const app = new App();
+  </script>
+
+{% endblock %}

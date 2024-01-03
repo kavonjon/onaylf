@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 from django.utils import timezone
+from performances.models import STATE_CHOICES
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -33,6 +34,15 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     organization = models.CharField(max_length=500, blank=True, null=True)
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    alt_phone = models.CharField(max_length=20, blank=True, null=True)
+    fax = models.CharField(max_length=20, blank=True, null=True)
+    alt_email = models.EmailField(blank=True, null=True)
+    address = models.CharField(max_length=500, blank=True, null=True)
+    city = models.CharField(max_length=100, blank=True, null=True)
+    state = models.CharField(max_length=2, choices=STATE_CHOICES, blank=True, null=True)
+    zip = models.CharField(max_length=10, blank=True, null=True)
+    
 
 
     objects = UserManager()
