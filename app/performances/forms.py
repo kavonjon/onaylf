@@ -27,7 +27,7 @@ class PerformanceCommentsForm(forms.ModelForm):
     class Meta:
         model = Performance
         prefix = 'performance'
-        fields = ['comments',]
+        fields = ['comments']
 
 class PosterForm(forms.ModelForm):
     class Meta:

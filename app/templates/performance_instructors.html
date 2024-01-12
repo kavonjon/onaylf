@@ -52,6 +52,12 @@ Choose one or more instructors by clicking Select to the right of the instructor
     const studentsStatusIcon = document.getElementById('studentsStatusIcon');
     const studentsStatusNumber = document.getElementById('studentsStatusNumber');
     const studentsStatusDiv = document.getElementById('studentsStatusDiv');
+    const accessoriesStatusIcon = document.getElementById('accessoriesStatusIcon');
+    const accessoriesStatusDiv = document.getElementById('accessoriesStatusDiv');
+    const reviewStatusIcon = document.getElementById('reviewStatusIcon');
+    const reviewStatusDiv = document.getElementById('reviewStatusDiv');
+    const approvalStatusIcon = document.getElementById('approvalStatusIcon');
+    const approvalStatusDiv = document.getElementById('approvalStatusDiv');
 
     let table = document.querySelector('.instructor-table');
     
@@ -93,25 +99,62 @@ Choose one or more instructors by clicking Select to the right of the instructor
             instructorsStatusNumber.textContent = numberOfInstructors
             if ( numberOfInstructors > 0 ) {
                 instructorsStatusIcon.classList.add("text-success")
-                instructorsStatusDiv.textContent = "Complete"
+                instructorsStatusDiv.textContent = "Completed"
+            } else if ( "{{ performance.instructors_status }}" == "in_progress" ) {
+                    instructorsStatusIcon.classList.add("text-warning")
+                    instructorsStatusDiv.textContent = "In progress"
             } else {
-                instructorsStatusIcon.classList.add("text-warning")
-                instructorsStatusDiv.textContent = "In progress"
-                if ( "{{ performance.instructors_status }}" != "in_progress" ) {
-                    this._updatePerformancePartStatus("{{ performance.id }}", 'instructors_status', 'in_progress')
-                }
+                    instructorsStatusIcon.classList.add("text-danger")
+                    instructorsStatusDiv.textContent = "Pending"
             }
+
             const numberOfStudents = "{{ performance.students.count }}";
             studentsStatusNumber.textContent = numberOfStudents
             if ( numberOfStudents > 0 ) {
                 studentsStatusIcon.classList.add("text-success")
-                studentsStatusDiv.textContent = "Complete"
+                studentsStatusDiv.textContent = "Completed"
             } else if ( "{{ performance.students_status }}" == "in_progress" ) {
                     studentsStatusIcon.classList.add("text-warning")
                     studentsStatusDiv.textContent = "In progress"
             } else {
                     studentsStatusIcon.classList.add("text-danger")
                     studentsStatusDiv.textContent = "Pending"
+            }
+
+            if ( "{{ performance.accessories_status }}" == "completed" ) {
+                accessoriesStatusIcon.classList.add("text-success")
+                accessoriesStatusDiv.textContent = "Completed"
+            } else if ( "{{ performance.accessories_status }}" == "in_progress" ) {
+                accessoriesStatusIcon.classList.add("text-warning")
+                accessoriesStatusDiv.textContent = "In progress"
+            } else {
+                accessoriesStatusIcon.classList.add("text-danger")
+                accessoriesStatusDiv.textContent = "Pending"
+            }
+
+            if ( "{{ performance.review_status }}" == "completed" ) {
+                reviewStatusIcon.classList.add("text-success")
+                reviewStatusDiv.textContent = "Completed"
+            } else if ( "{{ performance.review_status }}" == "in_progress" ) {
+                reviewStatusIcon.classList.add("text-warning")
+                reviewStatusDiv.textContent = "In progress"
+            } else {
+                reviewStatusIcon.classList.add("text-danger")
+                reviewStatusDiv.textContent = "Pending"
+            }
+
+            if ( "{{ performance.status }}" == "completed" ) {
+                approvalStatusIcon.classList.add("text-success")
+                approvalStatusDiv.textContent = "Completed"
+            } else if ( "{{ performance.status }}" == "in_progress" ) {
+                approvalStatusIcon.classList.add("text-warning")
+                approvalStatusDiv.textContent = "In progress"
+            } else if ( "{{ performance.status }}" == "disqualified" ) {
+                approvalStatusIcon.classList.add("text-danger")
+                approvalStatusDiv.textContent = "Disqualified"
+            } else {
+                approvalStatusIcon.classList.add("text-danger")
+                approvalStatusDiv.textContent = "Pending"
             }
         }
     
@@ -191,7 +234,7 @@ Choose one or more instructors by clicking Select to the right of the instructor
 
         }
 
-        _clickInstructorPerformance(e) {
+        async _clickInstructorPerformance(e) {
             const button = e.target.closest('.include-performance-instructor');
             const row = e.target.closest('.row');
             const id = row.dataset.id;
@@ -210,11 +253,14 @@ Choose one or more instructors by clicking Select to the right of the instructor
             if ( numberOfInstructors > 0 ) {
                 instructorsStatusIcon.classList.remove("text-warning")
                 instructorsStatusIcon.classList.add("text-success")
-                instructorsStatusDiv.textContent = "Complete"
+                instructorsStatusDiv.textContent = "Completed"
+                await this._updatePerformancePartStatus("{{ performance.id }}", 'instructors_status', 'completed')
+
             } else {
                 instructorsStatusIcon.classList.remove("text-success")
                 instructorsStatusIcon.classList.add("text-warning")
                 instructorsStatusDiv.textContent = "In progress"
+                await this._updatePerformancePartStatus("{{ performance.id }}", 'instructors_status', 'in_progress')
             }
         }
 

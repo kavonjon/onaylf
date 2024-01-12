@@ -30,13 +30,13 @@ def poster_list(request):
     serializer = PosterSerializer(performances, many=True)
     return Response(serializer.data)
 
-class CategoryUpdateView(generics.UpdateAPIView):
+class CategoryUpdateView(LoginRequiredMixin, generics.UpdateAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [AllowAny]  # Example: Allow any user to update tasks !!!!!!!!!!!!!!!
 
 
-class InstructorViewSet(viewsets.ModelViewSet):
+class InstructorViewSet(LoginRequiredMixin, viewsets.ModelViewSet):
     serializer_class = InstructorSerializer
 
     def get_queryset(self):
@@ -49,7 +49,7 @@ class InstructorViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(performance_instructor__id=performance_id)
         return queryset
 
-class StudentViewSet(viewsets.ModelViewSet):
+class StudentViewSet(LoginRequiredMixin, viewsets.ModelViewSet):
     serializer_class = StudentSerializer
 
     def get_queryset(self):
@@ -89,6 +89,7 @@ class PerformanceAccessoryUpdateView(LoginRequiredMixin, generics.UpdateAPIView)
         accessory_id = self.kwargs.get('acc_pk')
         return get_object_or_404(PerformanceAccessory, performance=performance_id, accessory=accessory_id)
 
+@login_required
 def select_fair(request, pk=None):
 
     currentFair = CurrentFair.objects.first()
@@ -116,7 +117,7 @@ def select_fair(request, pk=None):
     return render(request, template, context)
 
 
-class PerformanceAccessoryViewSet(viewsets.ModelViewSet):
+class PerformanceAccessoryViewSet(LoginRequiredMixin, viewsets.ModelViewSet):
     queryset = PerformanceAccessory.objects.all()
     serializer_class = PerformanceAccessorySerializer
 
@@ -131,6 +132,7 @@ class PerformanceAccessoryViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(accessory__id=accessory_id)
         return queryset
 
+@login_required
 def edit_fair(request, pk):
 
     currentFair = CurrentFair.objects.first()
@@ -145,7 +147,7 @@ def edit_fair(request, pk):
     }
     return render(request, template, context)
 
-
+@login_required
 def home(request):
 
     currentUser = request.user.get_username()
@@ -166,6 +168,7 @@ def home(request):
     }
     return render(request, template, context)
 
+@login_required
 def user_detail(request, user_pk):
 
     currentUser = User.objects.get(pk=user_pk)
@@ -187,6 +190,7 @@ def user_detail(request, user_pk):
     }
     return render(request, template, context)
 
+@login_required
 def performance_detail(request, perf_pk):
 
     currentFair = CurrentFair.objects.first()
@@ -257,12 +261,16 @@ class performance_add_admin(UserPassesTestMixin, performance_add):
     def test_func(self):
         return self.request.user.groups.filter(name='moderator').exists()
     
-
+@login_required
 def performance_instructors(request, perf_pk):
 
     currentFair = CurrentFair.objects.first()
 
     performance = Performance.objects.get(pk=perf_pk)
+
+    if performance.instructors_status != "in_progress":
+        performance.instructors_status = "in_progress"
+        performance.save()
 
     template = 'performance_instructors.html'
     context = {
@@ -298,7 +306,8 @@ class instructor_add(LoginRequiredMixin, FormView):
     def form_invalid(self, form):
         print(form.errors)
         return super().form_invalid(form)
-    
+
+@login_required    
 def instructor_edit(request, instr_pk, perf_pk=None):
 
     currentFair = CurrentFair.objects.first()
@@ -325,11 +334,16 @@ def instructor_edit(request, instr_pk, perf_pk=None):
     }
     return render(request, template, context)
 
+@login_required
 def performance_students(request, perf_pk):
 
     currentFair = CurrentFair.objects.first()
 
     performance = Performance.objects.get(pk=perf_pk)
+
+    if performance.students_status != "in_progress":
+        performance.students_status = "in_progress"
+        performance.save()
 
     template = 'performance_students.html'
     context = {
@@ -367,7 +381,8 @@ class student_add(LoginRequiredMixin, FormView):
     def form_invalid(self, form):
         print(form.errors)
         return super().form_invalid(form)
-    
+
+@login_required
 def student_edit(request, stud_pk, perf_pk=None):
 
     currentFair = CurrentFair.objects.first()
@@ -391,11 +406,16 @@ def student_edit(request, stud_pk, perf_pk=None):
     }
     return render(request, template, context)
 
+@login_required
 def performance_accessories(request, perf_pk):
 
     currentFair = CurrentFair.objects.first()
 
     performance = Performance.objects.get(pk=perf_pk)
+
+    if performance.accessories_status != "in_progress":
+        performance.accessories_status = "in_progress"
+        performance.save()
 
     # Fetch the PerformanceAccessory instances related to the current performance
     performance_accessories = PerformanceAccessory.objects.filter(performance=performance)
@@ -440,6 +460,10 @@ def performance_review(request, perf_pk):
 
     performance = Performance.objects.prefetch_related("instructors", "students", "accessories").get(pk=perf_pk)
 
+    if performance.review_status != "in_progress":
+        performance.review_status = "in_progress"
+        performance.save()
+
     performance_user_organization = performance.user.organization
 
     # Fetch the PerformanceAccessory instances related to the current performance
@@ -459,9 +483,16 @@ def performance_review(request, perf_pk):
     if request.method == "POST":
         form = PerformanceCommentsForm(request.POST, instance=performance)
         if form.is_valid():
-            form.save(commit=False)
-            form.modified_by = request.user.get_username()
-            form.save()
+            print("valid penis")
+            performance_form = form.save(commit=False)
+            performance_form.review_status = "completed"
+            if ( performance_form.instructors_status == "completed" and 
+                performance_form.students_status == "completed" and 
+                performance_form.accessories_status == "completed" and
+                performance_form.review_status == "completed" ):
+                performance_form.status = "in_progress"
+            performance_form.modified_by = request.user.get_username()
+            performance_form.save()
             return redirect("/")
     else:
         form = PerformanceCommentsForm(instance=performance)
@@ -516,7 +547,8 @@ class poster_add(LoginRequiredMixin, FormView):
 class poster_add_admin(UserPassesTestMixin, poster_add):
     def test_func(self):
         return self.request.user.groups.filter(name='moderator').exists()
-    
+
+@login_required
 def poster_detail(request, post_pk):
 
     currentFair = CurrentFair.objects.first()

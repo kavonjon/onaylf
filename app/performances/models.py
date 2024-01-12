@@ -224,7 +224,7 @@ class Performance(models.Model):
     accessories = models.ManyToManyField(Accessory, through='PerformanceAccessory', verbose_name="accessories on performance", related_name='performance_accessory', blank=True)
     comments = models.TextField(blank=True)
     submitted = models.BooleanField(default=False)
-    status = models.CharField(max_length=12, choices=PERFORMANCE_STATUS, default="in_progress")
+    status = models.CharField(max_length=12, choices=PERFORMANCE_STATUS, default="pending")
     instructors_status = models.CharField(max_length=12, choices=PERFORMANCE_PART_STATUS, default="pending")
     students_status = models.CharField(max_length=12, choices=PERFORMANCE_PART_STATUS, default="pending")
     accessories_status = models.CharField(max_length=12, choices=PERFORMANCE_PART_STATUS, default="pending")
