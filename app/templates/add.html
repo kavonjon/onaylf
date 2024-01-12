@@ -1,7 +1,15 @@
 {% extends "base.html" %}
+{% load bootstrap5 %}
+{% bootstrap_css %}
+{% bootstrap_javascript %}
+{% load bootstrap_icons %}
 {% load static %}
 
 {% block page_content %}
+<div class="included-content">
+  {% include 'progress.html' %}
+</div>
+
 <h1>Create a {{ add_type }}{% if owning_user%} as the user {{ owning_user.email}}{% endif %}</h1>
 
 {% if error_message %}

@@ -25,6 +25,10 @@ PERFORMANCE_STATUS = (('in_progress', 'In progress'),
                       ('approved', 'Approved'),
                       ('disqualified', 'Disqualified'))
 
+PERFORMANCE_PART_STATUS = (('in_progress', 'In progress'),
+                      ('pending', 'Pending'),
+                      ('completed', 'Completed'))
+
 GRADES = (('pk', 'PreK'),
             ('k', 'Kindergarten'),
             ('1', '1st'),
@@ -221,6 +225,10 @@ class Performance(models.Model):
     comments = models.TextField(blank=True)
     submitted = models.BooleanField(default=False)
     status = models.CharField(max_length=12, choices=PERFORMANCE_STATUS, default="in_progress")
+    instructors_status = models.CharField(max_length=12, choices=PERFORMANCE_PART_STATUS, default="pending")
+    students_status = models.CharField(max_length=12, choices=PERFORMANCE_PART_STATUS, default="pending")
+    accessories_status = models.CharField(max_length=12, choices=PERFORMANCE_PART_STATUS, default="pending")
+    review_status = models.CharField(max_length=12, choices=PERFORMANCE_PART_STATUS, default="pending")
     added = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     modified_by = models.CharField(max_length=255)

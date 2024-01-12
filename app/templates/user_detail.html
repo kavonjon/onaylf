@@ -74,6 +74,7 @@ You can add a performance or poster for this user by clicking the buttons below.
 <table class="table table-striped poster-table">
     <thead>
         <tr class="row small">
+            <th class="col-md-1 overflow-hidden">Title</th>
             <th class="col-md-1 overflow-hidden">Grade</th>
             <th class="col-md-3 overflow-hidden">Student</th>
             <th class="col-md-1 overflow-hidden">Status</th>
@@ -83,18 +84,21 @@ You can add a performance or poster for this user by clicking the buttons below.
     <tbody>
   {% for poster in posters %}
       <tr class="row small">
-          <td class="col-md-1 overflow-hidden">
-              grade
-          </td>
-          <td class="col-md-3 overflow-hidden">
-              {{ poster.students.first.firstname }} {{ poster.students.first.lastname }}
-          </td>
-          <td class="col-md-1 overflow-hidden">
-              status
-          </td>
-          <td class="col-md-1 overflow-hidden">
-              action <span class="edit edit-performance">{% bs_icon 'pencil' %}<span>
-          </td>
+        <td class="col-md-1 overflow-hidden">
+            {{ poster.title }}
+        </td>
+        <td class="col-md-1 overflow-hidden">
+        {{ poster.get_grade_range_display }}
+        </td>
+        <td class="col-md-3 overflow-hidden">
+            {{ poster.students.first.firstname }} {{ poster.students.first.lastname }}
+        </td>
+        <td class="col-md-1 overflow-hidden">
+            status
+        </td>
+        <td class="col-md-1 overflow-hidden">
+            action <span class="edit edit-performance">{% bs_icon 'pencil' %}<span>
+        </td>
       </tr>
   {% endfor %}
     </tbody>
@@ -126,6 +130,7 @@ You can add a performance or poster for this user by clicking the buttons below.
     posterTableHeader = `
   <thead>
     <tr class="row small">
+        <th class="col-md-1 overflow-hidden">Title</th>
         <th class="col-md-1 overflow-hidden">Grade</th>
         <th class="col-md-3 overflow-hidden">Student</th>
         <th class="col-md-1 overflow-hidden">Status</th>
@@ -175,7 +180,7 @@ You can add a performance or poster for this user by clicking the buttons below.
                 ${tableObject.category.name}
             </td>
             <td class="col-md-1 overflow-hidden">
-                grade
+                ${tableObject.grade_range_display}
             </td>
             <td class="col-md-1 overflow-hidden">
                 ${tableObject.performance_type}
@@ -226,7 +231,10 @@ You can add a performance or poster for this user by clicking the buttons below.
         const html = `
         <tr class="row small">
             <td class="col-md-1 overflow-hidden">
-                grade
+                ${tableObject.title}
+            </td>
+            <td class="col-md-1 overflow-hidden">
+                ${tableObject.grade_range_display}
             </td>
             <td class="col-md-3 overflow-hidden">
                 ${tableObject.students[0].firstname} ${tableObject.students[0].lastname}

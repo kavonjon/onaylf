@@ -152,7 +152,10 @@ def home(request):
 
     currentFair = CurrentFair.objects.first()
 
-    performances = Performance.objects.select_related("user").filter(fair=currentFair.fair)
+    performances = Performance.objects.prefetch_related("user", "category").filter(fair=currentFair.fair)
+
+    print(performances)
+    print(performances[0].category)
 
 
     template = 'home.html'
@@ -163,9 +166,9 @@ def home(request):
     }
     return render(request, template, context)
 
-def user_detail(request, pk):
+def user_detail(request, user_pk):
 
-    currentUser = User.objects.get(pk=pk)
+    currentUser = User.objects.get(pk=user_pk)
 
     currentFair = CurrentFair.objects.first()
 
@@ -184,11 +187,11 @@ def user_detail(request, pk):
     }
     return render(request, template, context)
 
-def performance_detail(request, pk):
+def performance_detail(request, perf_pk):
 
     currentFair = CurrentFair.objects.first()
 
-    performance = Performance.objects.prefetch_related("instructors", "students", "accessories").get(pk=pk)
+    performance = Performance.objects.prefetch_related("instructors", "students", "accessories").get(pk=perf_pk)
 
     performance_user_organization = performance.user.organization
 
@@ -226,8 +229,8 @@ class performance_add(FormView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['add_type'] = 'Performance'
-        if 'pk' in self.kwargs:
-            user_pk = self.kwargs['pk']  # Access the pk value
+        if 'user_pk' in self.kwargs:
+            user_pk = self.kwargs['user_pk']  # Access the pk value
             user = User.objects.get(pk=user_pk)  # Get the user object
             context['owning_user'] = user
         return context
@@ -236,10 +239,12 @@ class performance_add(FormView):
             currentFair = CurrentFair.objects.first()
             self.object = form.save(commit=False)
             self.object.fair = currentFair.fair
-            if 'pk' in self.kwargs:
-                user_pk = self.kwargs['pk']  # Access the pk value
+            if 'user_pk' in self.kwargs:
+                user_pk = self.kwargs['user_pk']  # Access the pk value
                 user = User.objects.get(pk=user_pk)  # Get the user object
                 self.object.user = user
+            else:
+                self.object.user = self.request.user
             self.object.modified_by = self.request.user.get_username()
             self.object.save()
             form.save_m2m()
@@ -253,11 +258,11 @@ class performance_add_admin(UserPassesTestMixin, performance_add):
         return self.request.user.groups.filter(name='moderator').exists()
     
 
-def performance_instructors(request, pk):
+def performance_instructors(request, perf_pk):
 
     currentFair = CurrentFair.objects.first()
 
-    performance = Performance.objects.get(pk=pk)
+    performance = Performance.objects.get(pk=perf_pk)
 
     template = 'performance_instructors.html'
     context = {
@@ -276,15 +281,25 @@ class instructor_add(LoginRequiredMixin, FormView):
             currentFair = CurrentFair.objects.first()
             self.object = form.save(commit=False)
             self.object.fair = currentFair.fair
-            self.object.user = self.request.user
+            if 'perf_pk' in self.kwargs:
+                performance_id = self.kwargs['perf_pk']  # Access the pk value
+                performance = Performance.objects.get(id=performance_id)
+                self.object.user = performance.user
+            else:
+                self.object.user = self.request.user
             self.object.modified_by = self.request.user.get_username()
             self.object.save()
-            return redirect("../")
+            # Determine the redirect URL based on the request path
+            if 'performance/' in self.request.path:
+                # return redirect(reverse('performance:performance_instructors_add', kwargs={'perf_pk': self.kwargs['perf_pk']}))
+                return redirect("../")
+            else:
+                return redirect("../../")
     def form_invalid(self, form):
         print(form.errors)
         return super().form_invalid(form)
     
-def instructor_edit(request, perf_pk, instr_pk):
+def instructor_edit(request, instr_pk, perf_pk=None):
 
     currentFair = CurrentFair.objects.first()
 
@@ -296,7 +311,10 @@ def instructor_edit(request, perf_pk, instr_pk):
             form.save(commit=False)
             form.modified_by = request.user.get_username()
             form.save()
-            return redirect("../../")
+            if perf_pk:
+                return redirect("../../")
+            else:
+                return redirect("../../../")
     else:
         form = InstructorForm(instance=instructor)
 
@@ -307,11 +325,11 @@ def instructor_edit(request, perf_pk, instr_pk):
     }
     return render(request, template, context)
 
-def performance_students(request, pk):
+def performance_students(request, perf_pk):
 
     currentFair = CurrentFair.objects.first()
 
-    performance = Performance.objects.get(pk=pk)
+    performance = Performance.objects.get(pk=perf_pk)
 
     template = 'performance_students.html'
     context = {
@@ -330,15 +348,27 @@ class student_add(LoginRequiredMixin, FormView):
             currentFair = CurrentFair.objects.first()
             self.object = form.save(commit=False)
             self.object.fair = currentFair.fair
-            self.object.user = self.request.user
+            if 'perf_pk' in self.kwargs:
+                performance_id = self.kwargs['perf_pk']  # Access the pk value
+                performance = Performance.objects.get(id=performance_id)
+                self.object.user = performance.user
+            else:
+                self.object.user = self.request.user
             self.object.modified_by = self.request.user.get_username()
             self.object.save()
+            # Determine the redirect URL based on the request path
+            if 'performance/' in self.request.path:
+                # return redirect(reverse('performance:performance_students_add', kwargs={'perf_pk': self.kwargs['perf_pk']}))
+                return redirect("../")
+            else:
+                return redirect("../../")
+
             return redirect("../")
     def form_invalid(self, form):
         print(form.errors)
         return super().form_invalid(form)
     
-def student_edit(request, perf_pk, stud_pk):
+def student_edit(request, stud_pk, perf_pk=None):
 
     currentFair = CurrentFair.objects.first()
 
@@ -361,11 +391,11 @@ def student_edit(request, perf_pk, stud_pk):
     }
     return render(request, template, context)
 
-def performance_accessories(request, pk):
+def performance_accessories(request, perf_pk):
 
     currentFair = CurrentFair.objects.first()
 
-    performance = Performance.objects.get(pk=pk)
+    performance = Performance.objects.get(pk=perf_pk)
 
     # Fetch the PerformanceAccessory instances related to the current performance
     performance_accessories = PerformanceAccessory.objects.filter(performance=performance)
@@ -390,8 +420,8 @@ def performance_accessories(request, pk):
     return render(request, template, context)
 
 @login_required
-def performance_edit(request, pk):
-    performance = get_object_or_404(Performance, id=pk)
+def performance_edit(request, perf_pk):
+    performance = get_object_or_404(Performance, id=perf_pk)
     if request.method == "POST":
         form = PerformanceForm(request.POST, instance=performance)
         if form.is_valid():
@@ -404,11 +434,11 @@ def performance_edit(request, pk):
     return render(request, 'performance_edit.html', {'form': form})
 
 @login_required
-def performance_review(request, pk):
+def performance_review(request, perf_pk):
 
     currentFair = CurrentFair.objects.first()
 
-    performance = Performance.objects.prefetch_related("instructors", "students", "accessories").get(pk=pk)
+    performance = Performance.objects.prefetch_related("instructors", "students", "accessories").get(pk=perf_pk)
 
     performance_user_organization = performance.user.organization
 
@@ -453,8 +483,8 @@ class poster_add(LoginRequiredMixin, FormView):
     template_name = "poster_add.html"
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        if 'pk' in self.kwargs:
-            user_pk = self.kwargs['pk']  # Access the pk value
+        if 'user_pk' in self.kwargs:
+            user_pk = self.kwargs['user_pk']  # Access the pk value
             user = User.objects.get(pk=user_pk)  # Get the user object
         else:
             user = self.request.user
@@ -462,8 +492,8 @@ class poster_add(LoginRequiredMixin, FormView):
         return context
     def form_valid(self, form):
         if form.is_valid():
-            if 'pk' in self.kwargs:
-                user_pk = self.kwargs['pk']  # Access the pk value
+            if 'user_pk' in self.kwargs:
+                user_pk = self.kwargs['user_pk']  # Access the pk value
                 user = User.objects.get(pk=user_pk)  # Get the user object
             else:
                 user = self.request.user
@@ -487,11 +517,11 @@ class poster_add_admin(UserPassesTestMixin, poster_add):
     def test_func(self):
         return self.request.user.groups.filter(name='moderator').exists()
     
-def poster_detail(request, pk):
+def poster_detail(request, post_pk):
 
     currentFair = CurrentFair.objects.first()
 
-    performance = Performance.objects.prefetch_related("instructors", "students").get(pk=pk)
+    performance = Performance.objects.prefetch_related("instructors", "students").get(pk=post_pk)
 
     performance_user_organization = performance.user.organization
 
@@ -506,10 +536,10 @@ def poster_detail(request, pk):
 
 
 @login_required
-def poster_edit(request, pk):
+def poster_edit(request, post_pk):
     currentFair = CurrentFair.objects.first()
 
-    performance = Performance.objects.prefetch_related("instructors", "students", "accessories").get(pk=pk)
+    performance = Performance.objects.prefetch_related("instructors", "students", "accessories").get(pk=post_pk)
 
     performance_user_organization = performance.user.organization
 

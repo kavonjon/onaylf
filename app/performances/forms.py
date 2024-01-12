@@ -33,7 +33,8 @@ class PosterForm(forms.ModelForm):
     class Meta:
         model = Performance
         prefix = 'performance'
-        fields = ['languoids',
+        fields = ['title',
+                  'languoids',
                   'grade_range',
                   'instructors',
                   'students',]
@@ -50,4 +51,9 @@ class StudentForm(forms.ModelForm):
         model = Student
         prefix = 'student'
         fields = ['firstname',
-                  'lastname',]
+                  'lastname',
+                  'languoids',
+                  'grade',
+                  'hometown',
+                  'state',
+                  'tshirt_size',]
