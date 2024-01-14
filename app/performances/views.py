@@ -11,10 +11,6 @@ from .models import Fair, CurrentFair, Performance, Category, Instructor, Studen
 from .serializers import CategorySerializer, PerformanceSerializer, PosterSerializer, InstructorSerializer, StudentSerializer, PerformanceAccessorySerializer
 from .forms import PerformanceForm, PerformanceCommentsForm, InstructorForm, StudentForm, PosterForm
 
-
-def is_member_of_moderators(user):
-    return user.groups.filter(name="Moderator").exists()
-
 def custom_500_view(request):
     return render(request, "500.html", status=500)
 
@@ -152,6 +148,11 @@ def home(request):
 
     currentUser = request.user.get_username()
 
+    user = User.objects.get(email=currentUser)
+
+    # Check if the user is a moderator
+    is_moderator = user.groups.filter(name='moderator').exists()
+
     currentFair = CurrentFair.objects.first()
 
     performances = Performance.objects.prefetch_related("user", "category").filter(fair=currentFair.fair)
@@ -163,6 +164,7 @@ def home(request):
     template = 'home.html'
     context = {
         'currentUser': currentUser,
+        'moderator': is_moderator,
         'currentFair': currentFair.name,
         'performances': performances
     }
