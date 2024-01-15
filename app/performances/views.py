@@ -554,7 +554,7 @@ class poster_add(LoginRequiredMixin, FormView):
             self.object.user = user
             self.object.modified_by = self.request.user.get_username()
             self.object.save()
-            self.object.title = "Poster " + str(self.object.pk)  # Set the name here
+            # self.object.title = "Poster " + str(self.object.pk)  # Set the name here
             self.object.save()  # Save the object again to store the new name
             form.save_m2m()
             return redirect("../../")
