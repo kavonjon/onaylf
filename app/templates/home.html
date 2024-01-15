@@ -120,9 +120,19 @@ You will also return to this page after submitting a Performance or Poster. You 
       this.tableBody = document.querySelector('.performance-table tbody');
       this.tableObjects.forEach((tableObject) => {
         console.log(tableObject)
-        const category = tableObject.posters ? 'Poster' : `${tableObject.category.name}`;
-        const performance_type = tableObject.posters ? 'Individual' : `${tableObject.performance_type}`;
-        const group = tableObject.posters ? '' : `${tableObject.group}`;
+        let category;
+        let performance_type;
+        let group;
+        if ( tableObject.poster ) {
+            category = 'Poster';
+            performance_type = 'Individual';
+            group = '';
+        } else {
+            category = tableObject.category.name;
+            performance_type = tableObject.performance_type;
+            group = tableObject.group;
+        }
+        
         const html = `
         <tr class="row small">
             <td class="col-md-1 overflow-hidden">
