@@ -17,6 +17,10 @@ def custom_500_view(request):
 @api_view(['GET'])
 def performance_list(request):
     performances = Performance.objects.filter(poster=False)
+    user_id = request.GET.get('user_id')
+    if user_id is not None:
+        user = get_object_or_404(User, pk=user_id)
+        performances = performances.filter(user=user)
     serializer = PerformanceSerializer(performances, many=True)
     return Response(serializer.data)
 
@@ -24,6 +28,16 @@ def performance_list(request):
 def poster_list(request):
     performances = Performance.objects.filter(poster=True)
     serializer = PosterSerializer(performances, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+def performance_poster_list(request):
+    performances = Performance.objects.all()
+    user_id = request.GET.get('user_id')
+    if user_id is not None:
+        user = User.objects.get(pk=user_id)
+        performances = performances.filter(user=user)
+    serializer = PerformanceSerializer(performances, many=True)
     return Response(serializer.data)
 
 class CategoryUpdateView(LoginRequiredMixin, generics.UpdateAPIView):
@@ -146,20 +160,23 @@ def edit_fair(request, pk):
 @login_required
 def home(request):
 
-    currentUser = request.user.get_username()
+    currentUserEmail = request.user.get_username()
 
-    user = User.objects.get(email=currentUser)
+    currentUser = User.objects.get(email=currentUserEmail)
 
     # Check if the user is a moderator
-    is_moderator = user.groups.filter(name='moderator').exists()
+    is_moderator = currentUser.groups.filter(name='moderator').exists()
+    print(is_moderator)
 
     currentFair = CurrentFair.objects.first()
 
     performances = Performance.objects.prefetch_related("user", "category").filter(fair=currentFair.fair)
 
-    print(performances)
-    print(performances[0].category)
-
+    if not is_moderator:
+        print("this is working")
+        print(performances)
+        performances = performances.filter(user=currentUser)
+        print(performances)
 
     template = 'home.html'
     context = {

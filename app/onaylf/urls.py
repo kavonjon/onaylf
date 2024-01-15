@@ -21,6 +21,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
 from performances import views
+from users.views import SignUpView
 
 handler500 = 'performances.views.custom_500_view'
 
@@ -33,12 +34,14 @@ urlpatterns = [
     path('api/', include(router.urls)),  # include the router.urls under an 'api/' path
     path('api/performance/', views.performance_list, name='performances-get-list'),
     path('api/poster/', views.poster_list, name='posters-get-list'),
+    path('api/performance-poster/', views.performance_poster_list, name='performances-posters-get-list'),
     path('api/category-update/<int:pk>/', views.CategoryUpdateView.as_view(), name='category-update'),
     path('api/performance-update/<int:pk>/', views.PerformanceUpdateView.as_view(), name='performance-update'),
     path('api/performance-accessory/add/', views.PerformanceAccessoryCreateView.as_view(), name='performance-accessory-add'),
     path('api/performance-accessory-update/<int:perf_pk>/<int:acc_pk>/', views.PerformanceAccessoryUpdateView.as_view(), name='performance-accessory-update'),
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),
+    path('accounts/signup/', SignUpView.as_view(), name='signup'),
     path("", views.home, name="home"),
     path("user/<int:user_pk>/", views.user_detail, name="user_detail"),
     path("user/<int:user_pk>/performance/add/", views.performance_add_admin.as_view(), name="performance_add_admin"),

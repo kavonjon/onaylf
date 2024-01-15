@@ -93,10 +93,14 @@ You will also return to this page after submitting a Performance or Poster. You 
 
     _getPerformances(){
 
-
+        const user_id = "{{ currentUser.id }}";
         const headers = { 'Content-Type': 'application/json' };
-        return fetch('/api/performance/', { headers, })
-            .then(res => res.json())
+        return fetch(`/api/performance-poster/?user_id=${user_id}`, { headers, })
+            .then(res => res.text())  // get the response text
+            .then(text => {
+                console.log('Response text:', text);  // print the response text
+                return JSON.parse(text);  // parse the response text as JSON
+            })
             .then(data => {
                 console.log(data);
                 this.tableObjects = data
@@ -136,7 +140,11 @@ You will also return to this page after submitting a Performance or Poster. You 
                 status
             </td>
             <td class="col-md-1 overflow-hidden">
-                action <span class="edit edit-performance">{% bs_icon 'pencil' %}<span>
+                <span class="detail performance-detail">
+                        <a class="stealth" href="/performance/${tableObject.id}/">
+                            {% bs_icon 'info-circle-fill' %}
+                        </a>
+                </span>
             </td>
         </tr>
   `;

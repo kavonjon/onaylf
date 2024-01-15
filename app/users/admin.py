@@ -30,13 +30,25 @@ class UserChangeForm(UserCreationForm):
     pass
 
 
-# Define a new User admin
+
 class UserAdmin(BaseUserAdmin):
-    add_form = UserCreationForm
-    form = UserChangeForm
-    list_display = ('email',)
-    ordering = ('email',)
-    search_fields = ('email',)
+    # Fields to display in the user list
+    list_display = ('email', 'first_name', 'last_name', 'is_staff')
+    # Fields to include in the add/edit forms
+    fieldsets = (
+        (None, {'fields': ('email', 'password')}),
+        ('Personal info', {'fields': ('first_name', 'last_name')}),
+        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Important dates', {'fields': ('last_login', 'date_joined')}),
+    )
+    # Fields to use in the username field when creating a user
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('email', 'password1', 'password2'),
+        }),
+    )
+    # Field to use for ordering the user list
     ordering = ('email',)
 
 # Re-register UserAdmin
