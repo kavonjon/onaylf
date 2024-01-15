@@ -61,6 +61,7 @@ You will also return to this page after submitting a Performance or Poster. You 
 
 <script>
   const table = document.querySelector('.performance-table');
+  const moderator = "{{ moderator }}"
 
   class App {
     tableObjects
@@ -93,16 +94,19 @@ You will also return to this page after submitting a Performance or Poster. You 
 
     _getPerformances(){
 
-        const user_id = "{{ currentUser.id }}";
+        let user_param;
+        if (moderator) {
+            user_param = ""
+        } else {
+            const user_id = "{{ currentUser.id }}";
+            user_param = `?user_id=${user_id}`
+        }
+
         const headers = { 'Content-Type': 'application/json' };
-        return fetch(`/api/performance-poster/?user_id=${user_id}`, { headers, })
-            .then(res => res.text())  // get the response text
-            .then(text => {
-                console.log('Response text:', text);  // print the response text
-                return JSON.parse(text);  // parse the response text as JSON
-            })
+        return fetch(`/api/performance-poster/${user_param}`, { headers, })
+            .then(res => res.json())
             .then(data => {
-                console.log(data);
+                // console.log(data);
                 this.tableObjects = data
             });
 
