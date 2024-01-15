@@ -120,6 +120,9 @@ You will also return to this page after submitting a Performance or Poster. You 
       this.tableBody = document.querySelector('.performance-table tbody');
       this.tableObjects.forEach((tableObject) => {
         console.log(tableObject)
+        const category = tableObject.posters ? 'Poster' : `${tableObject.category.name}`;
+        const performance_type = tableObject.posters ? 'Individual' : `${tableObject.performance_type}`;
+        const group = tableObject.posters ? '' : `${tableObject.group}`;
         const html = `
         <tr class="row small">
             <td class="col-md-1 overflow-hidden">
@@ -129,16 +132,16 @@ You will also return to this page after submitting a Performance or Poster. You 
                 ${tableObject.title}
             </td>
             <td class="col-md-1 overflow-hidden">
-                ${tableObject.category.name}
+                ${category}
             </td>
             <td class="col-md-1 overflow-hidden">
                 ${tableObject.grade_range_display}
             </td>
             <td class="col-md-1 overflow-hidden">
-                ${tableObject.performance_type}
+                ${performance_type}
             </td>
             <td class="col-md-1 overflow-hidden">
-                ${tableObject.group}
+                ${group}
             </td>
             <td class="col-md-1 overflow-hidden">
                 status
