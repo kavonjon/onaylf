@@ -7,7 +7,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny #!!!!!!!!!!!!!!!!!
 from users.models import User
-from .models import Fair, CurrentFair, Performance, Category, Instructor, Student, Accessory, PerformanceAccessory
+from .models import Fair, CurrentFair, Languoid, Performance, Category, Instructor, Student, Accessory, PerformanceAccessory
 from .serializers import CategorySerializer, PerformanceSerializer, PosterSerializer, InstructorSerializer, StudentSerializer, PerformanceAccessorySerializer
 from .forms import PerformanceForm, PerformanceCommentsForm, InstructorForm, StudentForm, PosterForm
 
@@ -498,6 +498,10 @@ def performance_review(request, perf_pk):
     for accessory in accessories:
         if accessory.id in accessory_counts:
             accessory.count = accessory_counts[accessory.id]
+    
+    other_languoid = Languoid.objects.get(name='Other')
+
+    performance_includes_other_languoid = performance.languoids.filter(pk=other_languoid.pk).exists()
 
     if request.method == "POST":
         form = PerformanceCommentsForm(request.POST, instance=performance)
@@ -522,6 +526,7 @@ def performance_review(request, perf_pk):
         'performance': performance,
         'organization': performance_user_organization,
         'accessories': accessories,
+        'includes_other_languoid': performance_includes_other_languoid,
         'form': form
     }
     return render(request, template, context)

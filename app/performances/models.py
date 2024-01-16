@@ -136,6 +136,16 @@ class CurrentFair(models.Model):
     def __str__(self):
         return self.name
 
+class LanguoidManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().annotate(
+            is_other=models.Case(
+                models.When(name='Other', then=models.Value(0)),
+                default=models.Value(1),
+                output_field=models.IntegerField(),
+            )
+        ).order_by('is_other', 'name')
+
 class Languoid(models.Model):
     glottocode = models.CharField(max_length=25)
     isocode = models.CharField(max_length=50)
@@ -145,6 +155,9 @@ class Languoid(models.Model):
     added = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     modified_by = models.CharField(max_length=255)
+
+    objects = LanguoidManager()
+
     class Meta:
         ordering = ['name']
     def __str__(self):
@@ -216,6 +229,7 @@ class Performance(models.Model):
     title = models.CharField(max_length=500)
     group = models.CharField(max_length=255) #pull automatically from user
     languoids = models.ManyToManyField(Languoid, verbose_name="list of languoids", related_name='performance_languoids', blank=True)
+    other_languoid = models.CharField(max_length=255, blank=True)
     category = models.ForeignKey(Category, verbose_name="categories on performance", related_name='performance_category', null=True, on_delete=models.SET_NULL)
     grade_range = models.CharField(max_length=4, choices=GRADE_RANGES, blank=True)
     performance_type = models.CharField(max_length=10, choices=PERFORMANCE_TYPE, blank=True)

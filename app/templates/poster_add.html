@@ -22,10 +22,16 @@
     <div>
         <b>Title:*</b><br/>
         {{form.title}}
-      </div>
-    <div>
-      <b>Language:*</b><br/>
-      {{form.languoids}}
+    </div>
+    <div class="row">
+        <div class="col-auto languoids">
+            <b>Language:*</b><br/>
+            {{form.languoids}}
+        </div>
+        <div class="col-auto other_languoid" style="display: none;">
+            <b>Other language:</b><br/>
+            {{form.other_languoid}}
+        </div>
     </div>
     <div>
       <b>Category Rules:</b>
@@ -81,6 +87,8 @@
 <script>
   let instructorsTable = document.querySelector('.instructor-table');
   let studentsTable = document.querySelector('.student-table');
+  const languoidsSelect = document.querySelector('#id_languoids');
+  const otherLanguoidDiv = document.querySelector('.other_languoid');
 
   class App {
       instructorsTableObjects
@@ -116,6 +124,8 @@
       constructor() {
       
         document.addEventListener('DOMContentLoaded', this._loadInstructorsTable.bind(this));
+
+        languoidsSelect.addEventListener('change', this._toggleOtherLanguoid.bind(this));
 
         this._clickInstructorPerformance = this._clickInstructorPerformance.bind(this);
         document.addEventListener('DOMContentLoaded', () => {
@@ -160,6 +170,21 @@
         return cookieValue;
       }
   
+      _toggleOtherLanguoid(){
+        const selectedOptions = Array.from(languoidsSelect.selectedOptions);
+        const otherIsSelected = selectedOptions.some(function(option) {
+            return option.text === 'Other';
+        });
+
+        if (otherIsSelected) {
+            // Show the other_languoid div when "Other" is selected
+            otherLanguoidDiv.style.display = 'block';
+        } else {
+            // Hide the other_languoid div when "Other" is not selected
+            otherLanguoidDiv.style.display = 'none';
+        }
+      }
+
       _getInstructors(){
   
         const user_id = "{{ owning_user.id }}";

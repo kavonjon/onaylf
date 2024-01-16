@@ -14,6 +14,7 @@ class PerformanceForm(forms.ModelForm):
         fields = ['title',
                   'group',
                   'languoids',
+                  'other_languoid',
                   'category',
                   'grade_range',
                   'performance_type',
@@ -35,6 +36,7 @@ class PosterForm(forms.ModelForm):
         prefix = 'performance'
         fields = ['title',
                   'languoids',
+                  'other_languoid',
                   'grade_range',
                   'instructors',
                   'students',]
