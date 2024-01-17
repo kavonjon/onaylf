@@ -17,6 +17,7 @@
 <b>Title:</b> {{ performance.title }}<br />
 <b>Performance Group Name:</b> {{ performance.group }}<br />
 <b>Language:</b> {{ performance.languoids.all|join:", " }}<br />
+{% if includes_other_languoid %}<b>Other language:</b> {{ performance.other_languoid }}<br />{% endif %}
 <b>User:</b> {{ performance.user }}<br />
 <b>Category:</b> {{ performance.category }}<br />
 <b>Grade Range:</b> {{ performance.grade_range }}<br />
@@ -132,6 +133,9 @@
     class App {
     
         constructor() {
+
+            languoidsSelect = document.querySelector('#id_languoids');
+            otherLanguoidDiv = document.querySelector('.other_languoid');
         
             performanceStatusIcon.classList.add("text-success")
             performanceStatusName.textContent = "{{ performance.title }}"
@@ -197,7 +201,29 @@
                 approvalStatusIcon.classList.add("text-danger")
                 approvalStatusDiv.textContent = "Pending"
             }
+        
+            document.addEventListener('DOMContentLoaded', this._toggleOtherLanguoid.bind(this));
+
+            languoidsSelect.addEventListener('change', this._toggleOtherLanguoid.bind(this));
+
         }
+
+        _toggleOtherLanguoid(){
+            const selectedOptions = Array.from(languoidsSelect.selectedOptions);
+            const otherIsSelected = selectedOptions.some(function(option) {
+                return option.text === 'Other';
+            });
+
+            if (otherIsSelected) {
+                // Show the other_languoid div when "Other" is selected
+                otherLanguoidDiv.style.display = 'block';
+            } else {
+                // Hide the other_languoid div when "Other" is not selected
+                otherLanguoidDiv.style.display = 'none';
+            }
+        }
+
+        
     
     }
     const app = new App();

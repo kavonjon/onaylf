@@ -95,7 +95,9 @@ You will also return to this page after submitting a Performance or Poster. You 
     _getPerformances(){
 
         let user_param;
-        if (moderator) {
+        console.log("moderator: " + moderator)
+        console.log( typeof(moderator) )
+        if (moderator == "True") {
             user_param = ""
         } else {
             const user_id = "{{ currentUser.id }}";
@@ -103,6 +105,7 @@ You will also return to this page after submitting a Performance or Poster. You 
         }
 
         const headers = { 'Content-Type': 'application/json' };
+        console.log(`/api/performance-poster/${user_param}`)
         return fetch(`/api/performance-poster/${user_param}`, { headers, })
             .then(res => res.json())
             .then(data => {

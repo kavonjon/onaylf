@@ -232,13 +232,16 @@ def performance_detail(request, perf_pk):
         if accessory.id in accessory_counts:
             accessory.count = accessory_counts[accessory.id]
 
+    other_languoid = Languoid.objects.get(name='Other')
 
+    performance_includes_other_languoid = performance.languoids.filter(pk=other_languoid.pk).exists()
 
     template = 'performance_detail.html'
     context = {
         'currentFair': currentFair.name,
         'performance': performance,
         'organization': performance_user_organization,
+        'includes_other_languoid': performance_includes_other_languoid,
         'accessories': accessories
 
     }
@@ -460,7 +463,14 @@ def performance_accessories(request, perf_pk):
 
 @login_required
 def performance_edit(request, perf_pk):
+    currentFair = CurrentFair.objects.first()
+
     performance = get_object_or_404(Performance, id=perf_pk)
+
+    other_languoid = Languoid.objects.get(name='Other')
+
+    performance_includes_other_languoid = performance.languoids.filter(pk=other_languoid.pk).exists()
+
     if request.method == "POST":
         form = PerformanceForm(request.POST, instance=performance)
         if form.is_valid():
@@ -470,7 +480,14 @@ def performance_edit(request, perf_pk):
             return redirect("/performance/%s/instructors/" % performance.pk)
     else:
         form = PerformanceForm(instance=performance)
-    return render(request, 'performance_edit.html', {'form': form})
+    template = 'performance_edit.html'
+    context = {
+        'currentFair': currentFair.name,
+        'performance': performance,
+        'includes_other_languoid': performance_includes_other_languoid,
+        'form': form
+    }
+    return render(request, template, context)
 
 @login_required
 def performance_review(request, perf_pk):
@@ -524,8 +541,6 @@ def performance_review(request, perf_pk):
     context = {
         'currentFair': currentFair.name,
         'performance': performance,
-        'organization': performance_user_organization,
-        'accessories': accessories,
         'includes_other_languoid': performance_includes_other_languoid,
         'form': form
     }

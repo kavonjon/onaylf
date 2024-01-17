@@ -136,9 +136,12 @@ If you have anything you would like to communicate to us about this performance,
     const approvalStatusDiv = document.getElementById('approvalStatusDiv');
 
     class App {
-    
-        constructor() {
+            
+            languoidsSelect = document.querySelector('#id_languoids');
+            otherLanguoidDiv = document.querySelector('.other_languoid');
         
+            constructor() {
+
             performanceStatusIcon.classList.add("text-success")
             performanceStatusName.textContent = "{{ performance.title }}"
 
@@ -203,8 +206,35 @@ If you have anything you would like to communicate to us about this performance,
                 approvalStatusIcon.classList.add("text-danger")
                 approvalStatusDiv.textContent = "Pending"
             }
+
+            document.addEventListener('DOMContentLoaded', this._toggleOtherLanguoid.bind(this));
+
+            languoidsSelect.addEventListener('change', this._toggleOtherLanguoid.bind(this));
+
         }
-    
+
+      _toggleOtherLanguoid(){
+        const selectedOptions = Array.from(languoidsSelect.selectedOptions);
+        const otherIsSelected = selectedOptions.some(function(option) {
+            return option.text === 'Other';
+        });
+
+        if (otherIsSelected) {
+            // Show the other_languoid div when "Other" is selected
+            otherLanguoidDiv.style.display = 'block';
+        } else {
+            // Hide the other_languoid div when "Other" is not selected
+            otherLanguoidDiv.style.display = 'none';
+        }
+      }
+
+
+
+  }
+  const app = new App();
+  </script>
+
+
     }
     const app = new App();
 </script>
