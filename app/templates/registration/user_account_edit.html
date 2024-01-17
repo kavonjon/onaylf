@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load bootstrap5 %}
+{% bootstrap_css %}
+{% bootstrap_javascript %}
+{% load bootstrap_icons %}
+{% load static %}
+{% csrf_token %}
+
+{% block title %}Edit user profile{% endblock %}
+
+
+{% block page_content %}
+
+<h2> Edit user profile </h2>
+
+{% if error_message %}
+    <p><strong>{{ error_message }}</strong></p>
+{% endif %}
+<form method="post" action="" enctype='multipart/form-data'>
+    {% csrf_token %}
+    <table>
+        {{form}}
+    </table>
+    <input type="submit" value="Save"/>
+</form>
+
+{% endblock %}

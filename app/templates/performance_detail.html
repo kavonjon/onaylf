@@ -134,12 +134,18 @@
     
         constructor() {
 
-            languoidsSelect = document.querySelector('#id_languoids');
-            otherLanguoidDiv = document.querySelector('.other_languoid');
+            const languoidsSelect = document.querySelector('#id_languoids');
+            const otherLanguoidDiv = document.querySelector('.other_languoid');
         
             performanceStatusIcon.classList.add("text-success")
-            performanceStatusName.textContent = "{{ performance.title }}"
-
+            // Create a new DOMParser
+            var parser = new DOMParser;
+            // Parse the encoded string as HTML
+            var dom = parser.parseFromString('<!doctype html><body>' + "{{ performance.title }}", 'text/html');
+            // Get the decoded string
+            var decodedString = dom.body.textContent;
+            performanceStatusName.textContent = decodedString;
+            
             const numberOfInstructors = "{{ performance.instructors.count }}";
             instructorsStatusNumber.textContent = numberOfInstructors
             if ( numberOfInstructors > 0 ) {

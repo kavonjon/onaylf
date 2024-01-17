@@ -12,7 +12,7 @@
 {% block featured %}
 Choose Instuctors<br />
 
-Choose one or more instructors by clicking Select to the right of the instructors name. Don't see the instructor's name? You can create a new instructor. Once you have created an instructor they will be available to you in future performances.
+Choose one or more instructors by clicking the check mark to the right of the instructors name. Don't see the instructor's name? You can create a new instructor. Once you have created an instructor they will be available to you in future performances.
 {% endblock %}
 
 
@@ -100,7 +100,7 @@ Choose one or more instructors by clicking Select to the right of the instructor
             // Get the decoded string
             var decodedString = dom.body.textContent;
             performanceStatusName.textContent = decodedString;
-            
+
             const numberOfInstructors = "{{ performance.instructors.count }}";
             instructorsStatusNumber.textContent = numberOfInstructors
             if ( numberOfInstructors > 0 ) {
@@ -217,7 +217,7 @@ Choose one or more instructors by clicking Select to the right of the instructor
             this.tableObjects.forEach((tableObject) => {
                 const selectedSpan = this.instructors.includes(tableObject.id) ? 'include-performance-instructor-selected bg-success p-2' : "";
                 const html = `
-                <tr class="row small" data-id="${tableObject.id}">
+                <tr class="row small${this.instructors.includes(tableObject.id) ? ' highlight-yellow' : ''}" data-id="${tableObject.id}">
                     <td class="col-md-4 overflow-hidden">
                         ${tableObject.firstname} ${tableObject.lastname}    
                     </td>
@@ -254,6 +254,7 @@ Choose one or more instructors by clicking Select to the right of the instructor
             this._updatePerformance(performance_id, Number(id), 'instructors', add);
             button.classList.toggle('include-performance-instructor-selected');
             button.classList.toggle('bg-success');
+            row.classList.toggle('highlight-yellow');
             const numberOfInstructors = table.querySelectorAll('.include-performance-instructor-selected').length;
             instructorsStatusNumber.textContent = numberOfInstructors;
             if ( numberOfInstructors > 0 ) {

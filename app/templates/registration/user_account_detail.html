@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}User account{% endblock %}
+
+
+{% block page_content %}
+
+<h2> User account profile </h2>
+
+<hr />
+<b>Email:</b> {{ currentUser.email }}<br />
+<b>First name:</b> {{ currentUser.first_name }}<br />
+<b>Last name:</b> {{ currentUser.last_name }}<br />
+<b>Organization:</b> {{ currentUser.organization }}<br />
+<b>Phone:</b> {{ currentUser.phone }}<br />
+<b>Alternate phone:</b> {{ currentUser.alt_phone }}<br />
+<b>Fax number:</b> {{ currentUser.fax }}<br />
+<b>Alternate email:</b> {{ currentUser.alt_email }}<br />
+<b>Address:</b> {{ currentUser.address }}<br />
+<b>City:</b> {{ currentUser.city }}<br />
+<b>State:</b> {{ currentUser.state }}<br />
+<b>Zip:</b> {{ currentUser.zip }}<br />
+
+<hr />
+<div class="mb-3">
+    <a href="edit/" class="btn btn-primary">Edit</a>
+</div>
+
+{% endblock %}

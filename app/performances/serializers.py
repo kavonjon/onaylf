@@ -27,9 +27,11 @@ class InstructorSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'lastname', 'firstname']
 
 class StudentSerializer(serializers.ModelSerializer):
+    grade_display = serializers.CharField(source='get_grade_display', read_only=True)
+
     class Meta:
         model = Student
-        fields = ['id', 'user', 'lastname', 'firstname', 'grade', 'hometown', 'state']
+        fields = ['id', 'user', 'lastname', 'firstname', 'grade_display', 'hometown', 'state']
 
 class PosterSerializer(serializers.ModelSerializer):
     user = UserSerializer()

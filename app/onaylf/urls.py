@@ -21,7 +21,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
 from performances import views
-from users.views import SignUpView
+from users.views import SignUpView, user_account_detail, user_account_edit
 
 handler500 = 'performances.views.custom_500_view'
 
@@ -42,6 +42,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),
     path('accounts/signup/', SignUpView.as_view(), name='signup'),
+    path('accounts/profile/', user_account_detail, name='user_account_detail'),
+    path('accounts/profile/edit/', user_account_edit, name='user_account_edit'),
     path("", views.home, name="home"),
     path("user/<int:user_pk>/", views.user_detail, name="user_detail"),
     path("user/<int:user_pk>/performance/add/", views.performance_add_admin.as_view(), name="performance_add_admin"),

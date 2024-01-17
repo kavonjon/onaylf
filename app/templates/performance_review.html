@@ -64,7 +64,7 @@
                     {{ student.languoids.all|join:", " }}
                 </td>
                 <td class="col-md-1 overflow-hidden">
-                    {{ student.grade }}
+                    {{ student.get_grade_display }}
                 </td>
                 <td class="col-md-1 overflow-hidden">
                     {{ student.tshirt_size }}
@@ -143,8 +143,14 @@ If you have anything you would like to communicate to us about this performance,
             constructor() {
 
             performanceStatusIcon.classList.add("text-success")
-            performanceStatusName.textContent = "{{ performance.title }}"
-
+            // Create a new DOMParser
+            var parser = new DOMParser;
+            // Parse the encoded string as HTML
+            var dom = parser.parseFromString('<!doctype html><body>' + "{{ performance.title }}", 'text/html');
+            // Get the decoded string
+            var decodedString = dom.body.textContent;
+            performanceStatusName.textContent = decodedString;
+            
             const numberOfInstructors = "{{ performance.instructors.count }}";
             instructorsStatusNumber.textContent = numberOfInstructors
             if ( numberOfInstructors > 0 ) {
@@ -233,10 +239,5 @@ If you have anything you would like to communicate to us about this performance,
   }
   const app = new App();
   </script>
-
-
-    }
-    const app = new App();
-</script>
 
 {% endblock %}

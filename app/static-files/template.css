@@ -49,3 +49,7 @@ hr {
 .pagination {
   margin: 2rem;
 }
+
+.highlight-yellow {
+  background-color: #ffffcc; /* A less bright yellow */
+}

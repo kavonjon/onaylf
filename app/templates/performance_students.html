@@ -12,7 +12,7 @@
 {% block featured %}
 Choose Students<br />
 
-Choose students for this performance by clicking the select link to the right of their names. Don't see your student? You can create a new student. Once you have created a student they will be available to you for any future performance.
+Choose students for this performance by clicking the check mark to the right of their names. Don't see your student? You can create a new student. Once you have created a student they will be available to you for any future performance.
 {% endblock %}
 
 
@@ -97,8 +97,13 @@ Choose students for this performance by clicking the select link to the right of
             });
 
             performanceStatusIcon.classList.add("text-success")
-            performanceStatusName.textContent = "{{ performance.title }}"
-
+            // Create a new DOMParser
+            var parser = new DOMParser;
+            // Parse the encoded string as HTML
+            var dom = parser.parseFromString('<!doctype html><body>' + "{{ performance.title }}", 'text/html');
+            // Get the decoded string
+            var decodedString = dom.body.textContent;
+            performanceStatusName.textContent = decodedString;
 
             const numberOfInstructors = "{{ performance.instructors.count }}";
             instructorsStatusNumber.textContent = numberOfInstructors
@@ -215,15 +220,15 @@ Choose students for this performance by clicking the select link to the right of
             this.tableObjects.forEach((tableObject) => {
                 const selectedSpan = this.students.includes(tableObject.id) ? 'include-performance-student-selected bg-success p-2' : "";
                 const html = `
-                <tr class="row small" data-id="${tableObject.id}">
+                <tr class="row small${this.students.includes(tableObject.id) ? ' highlight-yellow' : ''}" data-id="${tableObject.id}">
                     <td class="col-md-3 overflow-hidden">
                         ${tableObject.firstname} ${tableObject.lastname}    
                     </td>
                     <td class="col-md-3 overflow-hidden">
-                        s
+                        ${tableObject.grade_display}
                     </td>
                     <td class="col-md-3 overflow-hidden">
-                        s
+                        ${tableObject.hometown}, ${tableObject.state}
                     </td>
                     <td class="col-md-3 overflow-hidden">
                         <span>
@@ -258,6 +263,7 @@ Choose students for this performance by clicking the select link to the right of
             this._updatePerformance(performance_id, Number(id), 'students', add);
             button.classList.toggle('include-performance-student-selected');
             button.classList.toggle('bg-success');
+            row.classList.toggle('highlight-yellow');
             const numberOfStudents = table.querySelectorAll('.include-performance-student-selected').length;
             studentsStatusNumber.textContent = numberOfStudents;
             if ( numberOfStudents > 0 ) {

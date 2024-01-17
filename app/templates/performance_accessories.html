@@ -10,7 +10,7 @@
 {% block featured %}
 Choose accessories<br />
 
-The museum can provide a few accessories on stage for performances. Select from the list below and add quantity.
+The museum can provide a few accessories on stage for performances. Select from the list below by adding a quantity.
 {% endblock %}
 
 
@@ -124,8 +124,14 @@ The museum can provide a few accessories on stage for performances. Select from 
             buttonClose.addEventListener('click', this._modifySaveAndCloseButton.bind(this));
 
             performanceStatusIcon.classList.add("text-success")
-            performanceStatusName.textContent = "{{ performance.title }}"
-
+            // Create a new DOMParser
+            var parser = new DOMParser;
+            // Parse the encoded string as HTML
+            var dom = parser.parseFromString('<!doctype html><body>' + "{{ performance.title }}", 'text/html');
+            // Get the decoded string
+            var decodedString = dom.body.textContent;
+            performanceStatusName.textContent = decodedString;
+            
             const numberOfInstructors = "{{ performance.instructors.count }}";
             instructorsStatusNumber.textContent = numberOfInstructors
             if ( numberOfInstructors > 0 ) {
