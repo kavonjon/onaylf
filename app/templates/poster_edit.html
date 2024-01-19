@@ -228,7 +228,7 @@
             
             const performance_id = "{{ performance.id }}";
             const headers = { 'Content-Type': 'application/json' };
-            return fetch(`/api/instructors/?performance_id=${performance_id}`, { headers, })
+            return fetch(`/api/students/?performance_id=${performance_id}`, { headers, })
                 .then(res => res.json())
                 .then(data => {
                     this.students = data.map(student => student.id);
