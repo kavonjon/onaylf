@@ -274,6 +274,7 @@
           studentsTable.innerHTML = this.studentsTableHeader
           this.studentsTableBody = document.querySelector('.student-table tbody');
           this.studentsTableObjects.forEach((tableObject) => {
+            console.log("tableObject.id" , tableObject.id)
               const selectedSpan = this.students.includes(tableObject.id) ? 'include-performance-student-selected bg-success p-2' : "";
               const html = `
               <tr class="row small" data-id="${tableObject.id}">
