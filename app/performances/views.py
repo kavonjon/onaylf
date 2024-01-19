@@ -596,12 +596,16 @@ def poster_detail(request, post_pk):
 
     performance_user_organization = performance.user.organization
 
+    other_languoid = Languoid.objects.get(name='Other')
+
+    performance_includes_other_languoid = performance.languoids.filter(pk=other_languoid.pk).exists()
+
     template = 'poster_detail.html'
     context = {
         'currentFair': currentFair.name,
         'performance': performance,
-        'organization': performance_user_organization
-
+        'organization': performance_user_organization,
+        'includes_other_languoid': performance_includes_other_languoid
     }
     return render(request, template, context)
 
@@ -614,6 +618,8 @@ def poster_edit(request, post_pk):
 
     performance_user_organization = performance.user.organization
 
+    owning_user = performance.user
+
     if request.method == "POST":
         form = PosterForm(request.POST, instance=performance)
         if form.is_valid():
@@ -622,12 +628,13 @@ def poster_edit(request, post_pk):
             form.save()
             return redirect("../")
     else:
-        form = PerformanceForm(instance=performance)
+        form = PosterForm(instance=performance)
 
     template = 'poster_edit.html'
     context = {
         'currentFair': currentFair.name,
         'performance': performance,
+        'owning_user': owning_user,
         'organization': performance_user_organization,
         'form': form
     }

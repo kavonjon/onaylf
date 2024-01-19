@@ -20,14 +20,24 @@
     {% csrf_token %}
     <h3> Poster details </h3>
     <div>
-      <b>Language:*</b><br/>
-      {{form.languoids}}
+        <b>Title:*</b><br/>
+        {{form.title}}
+    </div>
+    <div class="row">
+        <div class="col-auto languoids">
+            <b>Language:*</b><br/>
+            {{form.languoids}}
+        </div>
+        <div class="col-auto other_languoid" style="display: none;">
+            <b>Other language:</b><br/>
+            {{form.other_languoid}}
+        </div>
     </div>
     <div>
       <b>Category Rules:</b>
     </div>
     <div class="text-danger">
-      Most posters are individual submissions. Groups may submit a poster but it will be with individual artwork. 
+      Most posters are individual submissions. No more than two students may collaborate on a single poster.  Enter each student individually. 
     </div>
     <div>
       <b>Grade range:*</b><br/>
@@ -45,7 +55,7 @@
       </tbody>
     </table>
     <div class="mb-3">
-      <a href="add/" class="btn btn-secondary">New Instructor</a>
+      <a href="instructor/add/" class="btn btn-secondary">New Instructor</a>
     </div>
     <hr />
 
@@ -62,7 +72,7 @@
       </tbody>
     </table>
     <div class="mb-3">
-      <a href="add/" class="btn btn-secondary">New Student</a>
+      <a href="student/add/" class="btn btn-secondary">New Student</a>
     </div>
 
     <hr />
@@ -77,6 +87,8 @@
 <script>
   let instructorsTable = document.querySelector('.instructor-table');
   let studentsTable = document.querySelector('.student-table');
+  const languoidsSelect = document.querySelector('#id_languoids');
+  const otherLanguoidDiv = document.querySelector('.other_languoid');
 
   class App {
       instructorsTableObjects
@@ -112,6 +124,8 @@
       constructor() {
       
         document.addEventListener('DOMContentLoaded', this._loadInstructorsTable.bind(this));
+
+        languoidsSelect.addEventListener('change', this._toggleOtherLanguoid.bind(this));
 
         this._clickInstructorPerformance = this._clickInstructorPerformance.bind(this);
         document.addEventListener('DOMContentLoaded', () => {
@@ -156,9 +170,25 @@
         return cookieValue;
       }
   
+      _toggleOtherLanguoid(){
+        const selectedOptions = Array.from(languoidsSelect.selectedOptions);
+        const otherIsSelected = selectedOptions.some(function(option) {
+            return option.text === 'Other';
+        });
+
+        if (otherIsSelected) {
+            // Show the other_languoid div when "Other" is selected
+            otherLanguoidDiv.style.display = 'block';
+        } else {
+            // Hide the other_languoid div when "Other" is not selected
+            otherLanguoidDiv.style.display = 'none';
+        }
+      }
+
       _getInstructors(){
   
-        const user_id = "{{ performance.user.id }}";
+        console.log("get instructors")
+        const user_id = "{{ owning_user.id }}";
         const headers = { 'Content-Type': 'application/json' };
         return fetch(`/api/instructors/?user_id=${user_id}`, { headers, })
             .then(res => res.json())
@@ -169,7 +199,7 @@
       }
   
       _getInstructorsOnPerformanceList(){
-          
+        
         const performance_id = "{{ performance.id }}";
         const headers = { 'Content-Type': 'application/json' };
         return fetch(`/api/instructors/?performance_id=${performance_id}`, { headers, })
@@ -183,7 +213,7 @@
   
       _getStudents(){
     
-        const user_id = "{{ performance.user.id }}";
+        const user_id = "{{ owning_user.id }}";
         const headers = { 'Content-Type': 'application/json' };
         return fetch(`/api/students/?user_id=${user_id}`, { headers, })
             .then(res => res.json())
@@ -198,7 +228,7 @@
             
             const performance_id = "{{ performance.id }}";
             const headers = { 'Content-Type': 'application/json' };
-            return fetch(`/api/students/?performance_id=${performance_id}`, { headers, })
+            return fetch(`/api/instructors/?performance_id=${performance_id}`, { headers, })
                 .then(res => res.json())
                 .then(data => {
                     this.students = data.map(student => student.id);
@@ -208,14 +238,13 @@
         }
 
       async _loadInstructorsTable(sort=null) {
-        await this._getInstructorsOnPerformanceList();
-    //   this.instructors = [];
-        await this._getInstructors()
-        instructorsTable.innerHTML = this.instructorsTableHeader
-        this.instructorsTableBody = document.querySelector('.instructor-table tbody');
-        this.instructorsTableObjects.forEach((tableObject) => {
-            const selectedSpan = this.instructors.includes(tableObject.id) ? 'include-performance-instructor-selected bg-success p-2' : "";
-            const html = `
+          await this._getInstructorsOnPerformanceList();
+          await this._getInstructors()
+          instructorsTable.innerHTML = this.instructorsTableHeader
+          this.instructorsTableBody = document.querySelector('.instructor-table tbody');
+          this.instructorsTableObjects.forEach((tableObject) => {
+              const selectedSpan = this.instructors.includes(tableObject.id) ? 'include-performance-instructor-selected bg-success p-2' : "";
+              const html = `
               <tr class="row small" data-id="${tableObject.id}">
                   <td class="col-md-3 overflow-hidden">
                       ${tableObject.firstname} ${tableObject.lastname}    
@@ -234,26 +263,25 @@
                   </td>
               </tr>
       `;
-            this.instructorsTableBody.insertAdjacentHTML('beforeend', html);
-        });
+              this.instructorsTableBody.insertAdjacentHTML('beforeend', html);
+          });
 
       }
 
       async _loadStudentsTable(sort=null) {
-        await this._getStudentsOnPerformanceList();
-        // this.students = [];
-        await this._getStudents()
-        studentsTable.innerHTML = this.studentsTableHeader
-        this.studentsTableBody = document.querySelector('.student-table tbody');
-        this.studentsTableObjects.forEach((tableObject) => {
-            const selectedSpan = this.students.includes(tableObject.id) ? 'include-performance-student-selected bg-success p-2' : "";
-            const html = `
+          await this._getStudentsOnPerformanceList();
+          await this._getStudents()
+          studentsTable.innerHTML = this.studentsTableHeader
+          this.studentsTableBody = document.querySelector('.student-table tbody');
+          this.studentsTableObjects.forEach((tableObject) => {
+              const selectedSpan = this.students.includes(tableObject.id) ? 'include-performance-student-selected bg-success p-2' : "";
+              const html = `
               <tr class="row small" data-id="${tableObject.id}">
                   <td class="col-md-3 overflow-hidden">
                       ${tableObject.firstname} ${tableObject.lastname}    
                   </td>
                   <td class="col-md-1 overflow-hidden">
-                      ${tableObject.grade} 
+                      ${tableObject.grade_display} 
                   </td>
                   <td class="col-md-3 overflow-hidden">
                       ${tableObject.hometown}, ${tableObject.state}    
@@ -272,8 +300,8 @@
                   </td>
               </tr>
       `;
-            this.studentsTableBody.insertAdjacentHTML('beforeend', html);
-        });
+              this.studentsTableBody.insertAdjacentHTML('beforeend', html);
+          });
 
       }
 

@@ -12,6 +12,7 @@
 
 <h3> Poster </h3>
 <b>Language:</b> {{ performance.languoids.all|join:", " }}<br />
+{% if includes_other_languoid %}<b>Other language:</b> {{ performance.other_languoid }}<br />{% endif %}
 <b>Grade Range:</b> {{ performance.grade_range }}<br />
 <b>User:</b> {{ performance.user }}<br />
 <hr />
@@ -55,7 +56,7 @@
                     {{ student.languoids.all|join:", " }}
                 </td>
                 <td class="col-md-1 overflow-hidden">
-                    {{ student.grade }}
+                    {{ student.get_grade_display }}
                 </td>
                 <td class="col-md-1 overflow-hidden">
                     {{ student.tshirt_size }}
@@ -75,127 +76,6 @@
         <a href="/" class="btn btn-danger">Delete</a>
     </span>
 </div>
-
-<script>
-    
-    const performanceStatusIcon = document.getElementById('performanceStatusIcon');
-    const instructorsStatusIcon = document.getElementById('instructorsStatusIcon');
-    const instructorsStatusNumber = document.getElementById('instructorsStatusNumber');
-    const instructorsStatusDiv = document.getElementById('instructorsStatusDiv');
-    const studentsStatusIcon = document.getElementById('studentsStatusIcon');
-    const studentsStatusNumber = document.getElementById('studentsStatusNumber');
-    const studentsStatusDiv = document.getElementById('studentsStatusDiv');
-    const accessoriesStatusIcon = document.getElementById('accessoriesStatusIcon');
-    const accessoriesStatusDiv = document.getElementById('accessoriesStatusDiv');
-    const reviewStatusIcon = document.getElementById('reviewStatusIcon');
-    const reviewStatusDiv = document.getElementById('reviewStatusDiv');
-    const approvalStatusIcon = document.getElementById('approvalStatusIcon');
-    const approvalStatusDiv = document.getElementById('approvalStatusDiv');
-
-    class App {
-    
-        constructor() {
-
-            languoidsSelect = document.querySelector('#id_languoids');
-            otherLanguoidDiv = document.querySelector('.other_languoid');
-        
-            performanceStatusIcon.classList.add("text-success")
-            // Create a new DOMParser
-            var parser = new DOMParser;
-            // Parse the encoded string as HTML
-            var dom = parser.parseFromString('<!doctype html><body>' + "{{ performance.title }}", 'text/html');
-            // Get the decoded string
-            var decodedString = dom.body.textContent;
-            performanceStatusName.textContent = decodedString;
-            
-            const numberOfInstructors = "{{ performance.instructors.count }}";
-            instructorsStatusNumber.textContent = numberOfInstructors
-            if ( numberOfInstructors > 0 ) {
-                instructorsStatusIcon.classList.add("text-success")
-                instructorsStatusDiv.textContent = "Completed"
-            } else if ( "{{ performance.instructors_status }}" == "in_progress" ) {
-                    instructorsStatusIcon.classList.add("text-warning")
-                    instructorsStatusDiv.textContent = "In progress"
-            } else {
-                    instructorsStatusIcon.classList.add("text-danger")
-                    instructorsStatusDiv.textContent = "Pending"
-            }
-
-            const numberOfStudents = "{{ performance.students.count }}";
-            studentsStatusNumber.textContent = numberOfStudents
-            if ( numberOfStudents > 0 ) {
-                studentsStatusIcon.classList.add("text-success")
-                studentsStatusDiv.textContent = "Completed"
-            } else if ( "{{ performance.students_status }}" == "in_progress" ) {
-                    studentsStatusIcon.classList.add("text-warning")
-                    studentsStatusDiv.textContent = "In progress"
-            } else {
-                    studentsStatusIcon.classList.add("text-danger")
-                    studentsStatusDiv.textContent = "Pending"
-            }
-
-            if ( "{{ performance.accessories_status }}" == "completed" ) {
-                accessoriesStatusIcon.classList.add("text-success")
-                accessoriesStatusDiv.textContent = "Completed"
-            } else if ( "{{ performance.accessories_status }}" == "in_progress" ) {
-                accessoriesStatusIcon.classList.add("text-warning")
-                accessoriesStatusDiv.textContent = "In progress"
-            } else {
-                accessoriesStatusIcon.classList.add("text-danger")
-                accessoriesStatusDiv.textContent = "Pending"
-            }
-
-            if ( "{{ performance.review_status }}" == "completed" ) {
-                reviewStatusIcon.classList.add("text-success")
-                reviewStatusDiv.textContent = "Completed"
-            } else if ( "{{ performance.review_status }}" == "in_progress" ) {
-                reviewStatusIcon.classList.add("text-warning")
-                reviewStatusDiv.textContent = "In progress"
-            } else {
-                reviewStatusIcon.classList.add("text-danger")
-                reviewStatusDiv.textContent = "Pending"
-            }
-
-            if ( "{{ performance.status }}" == "completed" ) {
-                approvalStatusIcon.classList.add("text-success")
-                approvalStatusDiv.textContent = "Completed"
-            } else if ( "{{ performance.status }}" == "in_progress" ) {
-                approvalStatusIcon.classList.add("text-warning")
-                approvalStatusDiv.textContent = "In progress"
-            } else if ( "{{ performance.status }}" == "disqualified" ) {
-                approvalStatusIcon.classList.add("text-danger")
-                approvalStatusDiv.textContent = "Disqualified"
-            } else {
-                approvalStatusIcon.classList.add("text-danger")
-                approvalStatusDiv.textContent = "Pending"
-            }
-        
-            document.addEventListener('DOMContentLoaded', this._toggleOtherLanguoid.bind(this));
-
-            languoidsSelect.addEventListener('change', this._toggleOtherLanguoid.bind(this));
-
-        }
-
-        _toggleOtherLanguoid(){
-            const selectedOptions = Array.from(languoidsSelect.selectedOptions);
-            const otherIsSelected = selectedOptions.some(function(option) {
-                return option.text === 'Other';
-            });
-
-            if (otherIsSelected) {
-                // Show the other_languoid div when "Other" is selected
-                otherLanguoidDiv.style.display = 'block';
-            } else {
-                // Hide the other_languoid div when "Other" is not selected
-                otherLanguoidDiv.style.display = 'none';
-            }
-        }
-
-        
-    
-    }
-    const app = new App();
-</script>
 
 
 {% endblock %}

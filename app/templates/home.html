@@ -126,14 +126,17 @@ You will also return to this page after submitting a Performance or Poster. You 
         let category;
         let performance_type;
         let group;
+        let detail_link;
         if ( tableObject.poster ) {
             category = 'Poster';
             performance_type = 'Individual';
             group = '';
+            detail_link = `/poster/${tableObject.id}/`;
         } else {
             category = tableObject.category.name;
             performance_type = tableObject.performance_type;
             group = tableObject.group;
+            detail_link = `/performance/${tableObject.id}/`;
         }
         
         const html = `
@@ -161,7 +164,7 @@ You will also return to this page after submitting a Performance or Poster. You 
             </td>
             <td class="col-md-1 overflow-hidden">
                 <span class="detail performance-detail">
-                        <a class="stealth" href="/performance/${tableObject.id}/">
+                        <a class="stealth" href="${detail_link}">
                             {% bs_icon 'info-circle-fill' %}
                         </a>
                 </span>
