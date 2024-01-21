@@ -4,3 +4,4 @@ RUN rm /etc/nginx/conf.d/default.conf
 RUN mkdir /app
 COPY ./local.conf /etc/nginx/conf.d/
 WORKDIR /app
+RUN chmod -R 755 /static/

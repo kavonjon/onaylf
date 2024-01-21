@@ -20,5 +20,3 @@ WORKDIR /app
 
 COPY ./entrypoint.sh /
 ENTRYPOINT ["sh", "/entrypoint.sh"]
-
-RUN chmod -R 755 /static
