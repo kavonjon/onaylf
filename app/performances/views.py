@@ -2,6 +2,8 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.generic.edit import FormView, DeleteView
+from django.core.mail import send_mail
+from django.conf import settings
 from rest_framework import generics, viewsets, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -274,6 +276,16 @@ class performance_add(FormView):
             self.object.modified_by = self.request.user.get_username()
             self.object.save()
             form.save_m2m()
+
+            # # Send email
+            # send_mail(
+            #     'New performance created',
+            #     'A new performance has been created.',
+            #     settings.EMAIL_HOST_USER,
+            #     [self.object.user],  # the email address to send to
+            #     fail_silently=False,
+            # )
+
             return redirect("/performance/%s/instructors" % self.object.pk)
     def form_invalid(self, form):
         print(form.errors)

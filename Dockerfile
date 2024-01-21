@@ -18,5 +18,10 @@ COPY ./app /app
 
 WORKDIR /app
 
+RUN python manage.py migrate --no-input
+RUN python manage.py collectstatic --no-input
+
+RUN chmod -R 755 /static
+
 COPY ./entrypoint.sh /
 ENTRYPOINT ["sh", "/entrypoint.sh"]
