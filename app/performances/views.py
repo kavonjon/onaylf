@@ -16,6 +16,15 @@ from .forms import PerformanceForm, PerformanceCommentsForm, InstructorForm, Stu
 def custom_500_view(request):
     return render(request, "500.html", status=500)
 
+def contact_info(request):
+    currentFair = CurrentFair.objects.first()
+
+    template = 'contact_info.html'
+    context = {
+        'currentFair': currentFair.name,
+    }
+    return render(request, template, context)
+
 @api_view(['GET'])
 def performance_list(request):
     performances = Performance.objects.filter(poster=False)
