@@ -12,6 +12,11 @@ ul {
   list-style: none;
 }
 
+.navbar-brand img {
+  max-width: 90%;
+  height: auto;
+}
+
 .stealth {
   color: inherit;
 }
