@@ -4,6 +4,7 @@ services:
   web:
     build: .
     container_name: django_gunicorn
+    command: bash -c "python manage.py collectstatic --no-input && python manage.py runserver 0.0.0.0:8000"
     volumes:
       - static:/app/static
     ports:
