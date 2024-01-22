@@ -2,4 +2,3 @@ FROM nginx:1.25
 
 RUN rm /etc/nginx/conf.d/default.conf
 COPY ./local.conf /etc/nginx/conf.d/
-RUN chmod -R 755 /static
