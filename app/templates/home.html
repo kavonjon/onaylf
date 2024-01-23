@@ -253,7 +253,7 @@ You will also return to this page after submitting a Performance or Poster. You 
                 ${tableObject.status_display}
             </td>
             <td>
-                <span>
+                ${moderator == "True" ? `<span>
                         <a class="stealth" href="javascript:void(0)"${approveTooltip}>
                             ${approveButton}
                         </a>
@@ -263,7 +263,7 @@ You will also return to this page after submitting a Performance or Poster. You 
                             ${unapproveButton}
                         </a>
                 </span>
-                <span> | </span>
+                <span> | </span>` : ``}
                 <span>
                         <a class="stealth" href="${detail_link}" title="Info">
                             {% bs_icon 'info-circle-fill' extra_classes="performance-detail" %}
@@ -274,11 +274,11 @@ You will also return to this page after submitting a Performance or Poster. You 
                             ${editButton}
                         </a>
                 </span>
-                <span>
+                ${moderator == "True" ? `<span>
                         <a class="stealth" href="javascript:void(0)" title="Delete">
                             {% bs_icon 'trash3-fill' extra_classes="performance-delete" color='red' %}
                         </a>
-                </span>
+                </span>` : ``}
             </td>
         </tr>
   `;
