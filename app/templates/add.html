@@ -48,7 +48,7 @@
       {{form.performance_type}}
     </div>
     <hr />
-    <input type="submit" value="Create {{ add_type }}"/>
+    <input type="submit" class="btn btn-primary" value="{% if add_type == 'Performance' %}Continue{% else %}Create {{ add_type }}{% endif %}"/>
 </form>
 
 <script>
