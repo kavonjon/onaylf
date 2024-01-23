@@ -222,6 +222,9 @@ def user_detail(request, user_pk):
 
     currentFair = CurrentFair.objects.first()
 
+    # Check if the user is a moderator
+    is_moderator = request.user.groups.filter(name='moderator').exists()
+
     allPerformances = Performance.objects.prefetch_related("user", "students").filter(fair=currentFair.fair).filter(user=currentUser.pk)
 
     performances = allPerformances.filter(poster=False)
@@ -231,6 +234,7 @@ def user_detail(request, user_pk):
     template = 'user_detail.html'
     context = {
         'currentUser': currentUser,
+        'moderator': is_moderator,
         'currentFair': currentFair.name,
         'performances': performances,
         'posters': posters
