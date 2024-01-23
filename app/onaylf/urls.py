@@ -35,6 +35,7 @@ urlpatterns = [
     path('api/performance/', views.performance_list, name='performances-get-list'),
     path('api/poster/', views.poster_list, name='posters-get-list'),
     path('api/performance-poster/', views.performance_poster_list, name='performances-posters-get-list'),
+    path('api/performance/<int:perf_pk>/', views.performance_get, name='performance-get'),
     path('api/category-update/<int:pk>/', views.CategoryUpdateView.as_view(), name='category-update'),
     path('api/performance-update/<int:pk>/', views.PerformanceUpdateView.as_view(), name='performance-update'),
     path('api/performance-accessory/add/', views.PerformanceAccessoryCreateView.as_view(), name='performance-accessory-add'),

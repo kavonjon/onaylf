@@ -153,14 +153,14 @@ Choose one or more instructors by clicking the check mark to the right of the in
                 approvalStatusIcon.classList.add("text-success")
                 approvalStatusDiv.textContent = "Completed"
             } else if ( "{{ performance.status }}" == "in_progress" ) {
-                approvalStatusIcon.classList.add("text-warning")
-                approvalStatusDiv.textContent = "In progress"
+                approvalStatusIcon.classList.add("text-danger")
+                approvalStatusDiv.textContent = "Unsubmitted"
             } else if ( "{{ performance.status }}" == "disqualified" ) {
                 approvalStatusIcon.classList.add("text-danger")
                 approvalStatusDiv.textContent = "Disqualified"
             } else {
-                approvalStatusIcon.classList.add("text-danger")
-                approvalStatusDiv.textContent = "Pending"
+                approvalStatusIcon.classList.add("text-warning")
+                approvalStatusDiv.textContent = "Submitted"
             }
         }
     
@@ -251,13 +251,14 @@ Choose one or more instructors by clicking the check mark to the right of the in
             } else {
                 add = false;
             }
-            this._updatePerformance(performance_id, Number(id), 'instructors', add);
+            await this._updatePerformance(performance_id, Number(id), 'instructors', add);
             button.classList.toggle('include-performance-instructor-selected');
             button.classList.toggle('bg-success');
             row.classList.toggle('highlight-yellow');
             const numberOfInstructors = table.querySelectorAll('.include-performance-instructor-selected').length;
             instructorsStatusNumber.textContent = numberOfInstructors;
             if ( numberOfInstructors > 0 ) {
+                console.log('does it ever hit completed')
                 instructorsStatusIcon.classList.remove("text-warning")
                 instructorsStatusIcon.classList.add("text-success")
                 instructorsStatusDiv.textContent = "Completed"

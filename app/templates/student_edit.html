@@ -16,12 +16,49 @@
 {% if error_message %}
     <p><strong>{{ error_message }}</strong></p>
 {% endif %}
-<form method="post" action="" enctype='multipart/form-data'>
+<form method="post" id="student_add_form" action="" enctype='multipart/form-data'>
     {% csrf_token %}
-    <table>
-        {{form}}
-    </table>
-    <input type="submit" value="Save"/>
+    <div>
+        <div>
+            <b>First name:*</b><br/>
+            {{form.firstname}}
+        </div>
+        <span>
+            <div>
+                <b>Last name:*</b><br/>
+                {{form.lastname}}
+            </div>
+        </span>
+    </div>
+    <div>
+        <b>Language:*</b><br/>
+        {{form.languoids}}
+    </div>
+    <div>
+        <b>Grade:*</b><br/>
+        {{form.grade}}
+    </div>
+    <div>
+        <b>Hometown:*</b><br/>
+        {{form.hometown}}
+    </div>
+    <div>
+        <b>State:*</b><br/>
+        {{form.state}}
+    </div>
+    <div>
+        <b>Tshirt size:*</b><br/>
+        <div class="text-danger">Please note that T-shirts are only given for performances in the following categories: master performer, modern song, skit/short play, spoken language, spoken poetry, spoken prayer, and traditional song.</div>
+        {{form.tshirt_size}}
+    </div>
+    <hr />
+
+    <div class="mb-3">
+    <input type="submit" class="btn btn-primary" value="Update student"/>
+    <span>
+        <a href="../" class="btn btn-secondary">Cancel</a>
+    </span>
+    </div>
 </form>
 
 {% endblock %}

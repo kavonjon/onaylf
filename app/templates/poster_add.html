@@ -76,11 +76,16 @@
     </div>
 
     <hr />
-    <div class="mb-3">
-      <input type="submit" class="btn btn-primary" value="Submit poster"/>
-      <span>
-          <a href="/" class="btn btn-secondary">Cancel</a>
-      </span>
+    <div class="d-flex">
+        <div>
+            <input type="submit" class="btn btn-primary" value="Submit poster"/>
+            <span>
+                <a href="/" class="btn btn-secondary">Cancel</a>
+            </span>
+        </div>
+        <div class="p-1 text-danger submit-incomplete" style="display: none;">
+            Please select at least one instructor and student.
+        </div>
     </div>
 </form>
 
@@ -89,6 +94,7 @@
   let studentsTable = document.querySelector('.student-table');
   const languoidsSelect = document.querySelector('#id_languoids');
   const otherLanguoidDiv = document.querySelector('.other_languoid');
+  const submitIncompleteDiv = document.querySelector('.submit-incomplete');
 
   class App {
       instructorsTableObjects
@@ -329,39 +335,49 @@
 
 
     _modifySubmitButton(e) {
-      e.preventDefault();
+        e.preventDefault();
 
-      // Get the selected instructor's ID
-      const selectedInstructorButton = document.querySelector('.include-performance-instructor-selected');
-      const selectedInstructorRow = selectedInstructorButton.closest('.row');
-      const selectedInstructorId = selectedInstructorRow.dataset.id;
+        // Get the selected instructor's ID
+        const selectedInstructorButton = document.querySelector('.include-performance-instructor-selected');
+        if ( selectedInstructorButton === null ) {
+            submitIncompleteDiv.style.display = 'block';
+            return;
+        }
+        const selectedInstructorRow = selectedInstructorButton.closest('.row');
+        const selectedInstructorId = selectedInstructorRow.dataset.id;
 
-      // Create a hidden input field
-      const instructorHiddenInput = document.createElement('input');
-      instructorHiddenInput.type = 'hidden';
-      instructorHiddenInput.name = 'instructors';
-      instructorHiddenInput.value = [selectedInstructorId];
+        // Create a hidden input field
+        const instructorHiddenInput = document.createElement('input');
+        instructorHiddenInput.type = 'hidden';
+        instructorHiddenInput.name = 'instructors';
+        instructorHiddenInput.value = [selectedInstructorId];
 
-      // Add the hidden input field to the form
-      this.form.appendChild(instructorHiddenInput);
+        // Add the hidden input field to the form
+        this.form.appendChild(instructorHiddenInput);
 
 
-      // Get the selected student's ID
-      const selectedStudentButton = document.querySelector('.include-performance-student-selected');
-      const selectedStudentRow = selectedStudentButton.closest('.row');
-      const selectedStudentId = selectedStudentRow.dataset.id;
+        // Get the selected student's ID
+        const selectedStudentButton = document.querySelector('.include-performance-student-selected');
+        if ( selectedStudentButton === null ) {
+                submitIncompleteDiv.style.display = 'block';
+                return;
+            }
+        const selectedStudentRow = selectedStudentButton.closest('.row');
+        const selectedStudentId = selectedStudentRow.dataset.id;
 
-      // Create a hidden input field
-      const studentHiddenInput = document.createElement('input');
-      studentHiddenInput.type = 'hidden';
-      studentHiddenInput.name = 'students';
-      studentHiddenInput.value = [selectedStudentId];
+        // Create a hidden input field
+        const studentHiddenInput = document.createElement('input');
+        studentHiddenInput.type = 'hidden';
+        studentHiddenInput.name = 'students';
+        studentHiddenInput.value = [selectedStudentId];
 
-      // Add the hidden input field to the form
-      this.form.appendChild(studentHiddenInput);
+        // Add the hidden input field to the form
+        this.form.appendChild(studentHiddenInput);
 
-      // Submit the form
-      this.form.submit();
+        submitIncompleteDiv.style.display = 'none';
+
+        // Submit the form
+        this.form.submit();
     }
 
 

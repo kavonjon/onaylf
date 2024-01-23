@@ -184,14 +184,14 @@ The museum can provide a few accessories on stage for performances. Select from 
                 approvalStatusIcon.classList.add("text-success")
                 approvalStatusDiv.textContent = "Completed"
             } else if ( "{{ performance.status }}" == "in_progress" ) {
-                approvalStatusIcon.classList.add("text-warning")
-                approvalStatusDiv.textContent = "In progress"
+                approvalStatusIcon.classList.add("text-danger")
+                approvalStatusDiv.textContent = "Unsubmitted"
             } else if ( "{{ performance.status }}" == "disqualified" ) {
                 approvalStatusIcon.classList.add("text-danger")
                 approvalStatusDiv.textContent = "Disqualified"
             } else {
-                approvalStatusIcon.classList.add("text-danger")
-                approvalStatusDiv.textContent = "Pending"
+                approvalStatusIcon.classList.add("text-warning")
+                approvalStatusDiv.textContent = "Submitted"
             }
         }
 
@@ -219,11 +219,11 @@ The museum can provide a few accessories on stage for performances. Select from 
             const countElement = row.querySelector('.performance-accessory-count');
             const performance_id = "{{ performance.id }}";
             const newCount = Number(count) + 1;
-            this._updatePerformanceAccessory(performance_id, Number(accessory_id), newCount);
+            await this._updatePerformanceAccessory(performance_id, Number(accessory_id), newCount);
             row.dataset.count = newCount;
             countElement.textContent = newCount;
             if ( "{{ performance.accessories_status }}" != "completed" ) {
-                await this._updatePerformancePartStatus("{{ performance.id }}", 'accessories_status', 'completed')
+                await this._updatePerformancePartStatus(performance_id, 'accessories_status', 'completed')
                 accessoriesStatusIcon.classList.remove("text-warning")
                 accessoriesStatusIcon.classList.add("text-success")
                 accessoriesStatusDiv.textContent = "Completed"
@@ -241,11 +241,11 @@ The museum can provide a few accessories on stage for performances. Select from 
                 return;
             }
             const newCount = Number(count) - 1;
-            this._updatePerformanceAccessory(performance_id, Number(accessory_id), newCount);
+            await this._updatePerformanceAccessory(performance_id, Number(accessory_id), newCount);
             row.dataset.count = newCount;
             countElement.textContent = newCount;
             if ( "{{ performance.accessories_status }}" != "completed" ) {
-                await this._updatePerformancePartStatus("{{ performance.id }}", 'accessories_status', 'completed')
+                await this._updatePerformancePartStatus(performance_id, 'accessories_status', 'completed')
                 accessoriesStatusIcon.classList.remove("text-warning")
                 accessoriesStatusIcon.classList.add("text-success")
                 accessoriesStatusDiv.textContent = "Completed"

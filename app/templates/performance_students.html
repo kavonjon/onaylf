@@ -157,14 +157,14 @@ Choose students for this performance by clicking the check mark to the right of 
                 approvalStatusIcon.classList.add("text-success")
                 approvalStatusDiv.textContent = "Completed"
             } else if ( "{{ performance.status }}" == "in_progress" ) {
-                approvalStatusIcon.classList.add("text-warning")
-                approvalStatusDiv.textContent = "In progress"
+                approvalStatusIcon.classList.add("text-danger")
+                approvalStatusDiv.textContent = "Unsubmitted"
             } else if ( "{{ performance.status }}" == "disqualified" ) {
                 approvalStatusIcon.classList.add("text-danger")
                 approvalStatusDiv.textContent = "Disqualified"
             } else {
-                approvalStatusIcon.classList.add("text-danger")
-                approvalStatusDiv.textContent = "Pending"
+                approvalStatusIcon.classList.add("text-warning")
+                approvalStatusDiv.textContent = "Submitted"
             }
         }
 
@@ -260,7 +260,7 @@ Choose students for this performance by clicking the check mark to the right of 
             } else {
                 add = false;
             }
-            this._updatePerformance(performance_id, Number(id), 'students', add);
+            await this._updatePerformance(performance_id, Number(id), 'students', add);
             button.classList.toggle('include-performance-student-selected');
             button.classList.toggle('bg-success');
             row.classList.toggle('highlight-yellow');

@@ -135,9 +135,6 @@ If you have anything you would like to communicate to us about this performance,
     const approvalStatusIcon = document.getElementById('approvalStatusIcon');
     const approvalStatusDiv = document.getElementById('approvalStatusDiv');
 
-    const languoidsSelect = document.querySelector('#id_languoids');
-    const otherLanguoidDiv = document.querySelector('.other_languoid');
-
     class App {
             
             constructor() {
@@ -203,38 +200,16 @@ If you have anything you would like to communicate to us about this performance,
                 approvalStatusIcon.classList.add("text-success")
                 approvalStatusDiv.textContent = "Completed"
             } else if ( "{{ performance.status }}" == "in_progress" ) {
-                approvalStatusIcon.classList.add("text-warning")
-                approvalStatusDiv.textContent = "In progress"
+                approvalStatusIcon.classList.add("text-danger")
+                approvalStatusDiv.textContent = "Unsubmitted"
             } else if ( "{{ performance.status }}" == "disqualified" ) {
                 approvalStatusIcon.classList.add("text-danger")
                 approvalStatusDiv.textContent = "Disqualified"
             } else {
-                approvalStatusIcon.classList.add("text-danger")
-                approvalStatusDiv.textContent = "Pending"
+                approvalStatusIcon.classList.add("text-warning")
+                approvalStatusDiv.textContent = "Submitted"
             }
-
-            document.addEventListener('DOMContentLoaded', this._toggleOtherLanguoid.bind(this));
-
-            languoidsSelect.addEventListener('change', this._toggleOtherLanguoid.bind(this));
-
         }
-
-      _toggleOtherLanguoid(){
-        const selectedOptions = Array.from(languoidsSelect.selectedOptions);
-        const otherIsSelected = selectedOptions.some(function(option) {
-            return option.text === 'Other';
-        });
-
-        if (otherIsSelected) {
-            // Show the other_languoid div when "Other" is selected
-            otherLanguoidDiv.style.display = 'block';
-        } else {
-            // Hide the other_languoid div when "Other" is not selected
-            otherLanguoidDiv.style.display = 'none';
-        }
-      }
-
-
 
   }
   const app = new App();

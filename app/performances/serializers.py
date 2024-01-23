@@ -10,16 +10,17 @@ class CategorySerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['email', 'first_name', 'last_name']
+        fields = ['id', 'email', 'first_name', 'last_name']
 
 class PerformanceSerializer(serializers.ModelSerializer):
     user = UserSerializer()
     category = CategorySerializer()
     grade_range_display = serializers.CharField(source='get_grade_range_display', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
 
     class Meta:
         model = Performance
-        fields = ['id', 'user', 'title', 'group', 'category', 'grade_range', 'grade_range_display', 'poster', 'performance_type', 'instructors', 'students', 'accessories', 'instructors_status', 'students_status', 'accessories_status', 'review_status']
+        fields = ['id', 'user', 'title', 'group', 'category', 'grade_range', 'grade_range_display', 'poster', 'performance_type', 'instructors', 'students', 'accessories', 'instructors_status', 'students_status', 'accessories_status', 'review_status', 'status', 'status_display']
 
 class InstructorSerializer(serializers.ModelSerializer):
     class Meta:

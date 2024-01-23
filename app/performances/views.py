@@ -7,7 +7,7 @@ from django.conf import settings
 from rest_framework import generics, viewsets, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny #!!!!!!!!!!!!!!!!!
+from rest_framework.permissions import IsAuthenticated
 from users.models import User
 from .models import Fair, CurrentFair, Languoid, Performance, Category, Instructor, Student, Accessory, PerformanceAccessory
 from .serializers import CategorySerializer, PerformanceSerializer, PosterSerializer, InstructorSerializer, StudentSerializer, PerformanceAccessorySerializer
@@ -27,6 +27,8 @@ def contact_info(request):
 
 @api_view(['GET'])
 def performance_list(request):
+    if not request.user.is_authenticated:
+        return Response({'detail': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
     performances = Performance.objects.filter(poster=False)
     user_id = request.GET.get('user_id')
     if user_id is not None:
@@ -37,12 +39,16 @@ def performance_list(request):
 
 @api_view(['GET'])
 def poster_list(request):
+    if not request.user.is_authenticated:
+        return Response({'detail': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
     performances = Performance.objects.filter(poster=True)
     serializer = PosterSerializer(performances, many=True)
     return Response(serializer.data)
 
 @api_view(['GET'])
 def performance_poster_list(request):
+    if not request.user.is_authenticated:
+        return Response({'detail': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
     performances = Performance.objects.all()
     user_id = request.GET.get('user_id')
     if user_id is not None:
@@ -51,10 +57,21 @@ def performance_poster_list(request):
     serializer = PerformanceSerializer(performances, many=True)
     return Response(serializer.data)
 
+@api_view(['GET'])
+def performance_get(request, perf_pk):
+    if not request.user.is_authenticated:
+        return Response({'detail': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
+        # Check if the user is in the "moderator" group
+    if not request.user.groups.filter(name='moderator').exists():
+        return Response({'detail': 'You do not have permission to perform this action.'}, status=status.HTTP_403_FORBIDDEN)
+    performance = get_object_or_404(Performance, pk=perf_pk)
+    serializer = PerformanceSerializer(performance)
+    return Response(serializer.data)
+
 class CategoryUpdateView(LoginRequiredMixin, generics.UpdateAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [AllowAny]  # Example: Allow any user to update tasks !!!!!!!!!!!!!!!
+    # permission_classes = [IsAuthenticated]  # Example: Allow any user to update tasks !!!!!!!!!!!!!!!
 
 
 class InstructorViewSet(LoginRequiredMixin, viewsets.ModelViewSet):
@@ -286,15 +303,6 @@ class performance_add(FormView):
             self.object.save()
             form.save_m2m()
 
-            # # Send email
-            # send_mail(
-            #     'New performance created',
-            #     'A new performance has been created.',
-            #     settings.EMAIL_HOST_USER,
-            #     [self.object.user],  # the email address to send to
-            #     fail_silently=False,
-            # )
-
             return redirect("/performance/%s/instructors" % self.object.pk)
     def form_invalid(self, form):
         print(form.errors)
@@ -311,7 +319,7 @@ def performance_instructors(request, perf_pk):
 
     performance = Performance.objects.get(pk=perf_pk)
 
-    if performance.instructors_status != "in_progress":
+    if performance.instructors_status == "pending":
         performance.instructors_status = "in_progress"
         performance.save()
 
@@ -384,7 +392,7 @@ def performance_students(request, perf_pk):
 
     performance = Performance.objects.get(pk=perf_pk)
 
-    if performance.students_status != "in_progress":
+    if performance.students_status == "pending":
         performance.students_status = "in_progress"
         performance.save()
 
@@ -456,7 +464,7 @@ def performance_accessories(request, perf_pk):
 
     performance = Performance.objects.get(pk=perf_pk)
 
-    if performance.accessories_status != "in_progress":
+    if performance.accessories_status == "pending":
         performance.accessories_status = "in_progress"
         performance.save()
 
@@ -517,7 +525,7 @@ def performance_review(request, perf_pk):
 
     performance = Performance.objects.prefetch_related("instructors", "students", "accessories").get(pk=perf_pk)
 
-    if performance.review_status != "in_progress":
+    if performance.review_status == "pending" :
         performance.review_status = "in_progress"
         performance.save()
 
@@ -547,11 +555,6 @@ def performance_review(request, perf_pk):
             print("valid penis")
             performance_form = form.save(commit=False)
             performance_form.review_status = "completed"
-            if ( performance_form.instructors_status == "completed" and 
-                performance_form.students_status == "completed" and 
-                performance_form.accessories_status == "completed" and
-                performance_form.review_status == "completed" ):
-                performance_form.status = "in_progress"
             performance_form.modified_by = request.user.get_username()
             performance_form.save()
             return redirect("/")
