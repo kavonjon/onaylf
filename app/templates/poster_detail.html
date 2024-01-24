@@ -11,6 +11,7 @@
 <hr />
 
 <h3> Poster </h3>
+<b>Title:</b> {{ performance.title }}<br />
 <b>Language:</b> {{ performance.languoids.all|join:", " }}<br />
 {% if includes_other_languoid %}<b>Other language:</b> {{ performance.other_languoid }}<br />{% endif %}
 <b>Grade Range:</b> {{ performance.grade_range }}<br />
@@ -71,11 +72,181 @@
 </p>
 <hr />
 <div class="mb-3">
-    <a href="edit/" class="btn btn-primary">Edit</a>
-    <span>
-        <a href="/" class="btn btn-danger">Delete</a>
-    </span>
+    {% if moderator %}
+        {% if performance.status == 'submitted' %}
+            <span>
+                <a href="javascript:void(0)" class="btn btn-success performance-approve">Approve</a>
+            </span>
+        {% else %}
+            <span>
+                <a href="javascript:void(0)" class="btn btn-secondary performance-approve">Approve</a>
+            </span>
+        {% endif %}
+    {% endif %}
+    {% if moderator %}
+        {% if performance.status != 'in_progress' %}
+            <span>
+                <a href="javascript:void(0)" class="btn btn-danger performance-unapprove">Unapprove</a>
+            </span>
+        {% else %}
+            <span>
+                <a href="javascript:void(0)" class="btn btn-secondary performance-unapprove">Unapprove</a>
+            </span>
+        {% endif %}
+        <span>
+            |
+        </span>
+    {% endif %}
+
+    {% if performance.status == 'in_progress' %}
+        <span>
+            <a href="edit/" class="btn btn-primary performance-edit">Edit</a>
+        </span>
+    {% else %}
+        {% if moderator %}
+            <span>
+                <a href="javascript:void(0)" class="btn btn-secondary performance-edit"">Edit</a>
+            </span>
+        {% else %}
+            {% if performance.status == 'submitted' %}
+                <span>
+                    <a href="javascript:void(0)" class="btn btn-warning performance-retract"">Retract Submission</a>
+                </span>
+            {% else %}
+                <span>
+                    <a href="javascript:void(0)" class="btn btn-secondary performance-edit"">Edit</a>
+                </span>
+            {% endif %}
+        {% endif %}
+    {% endif %}
+    {% if moderator %}
+        <span>
+            <a href="/" class="btn btn-danger performance-delete">Delete</a>
+        </span>
+    {% endif %}
 </div>
 
+
+<script>
+
+    class App {
+    
+        constructor() {
+        
+            this._clickApprovePerformance = this._clickApprovePerformance.bind(this);
+            document.addEventListener('DOMContentLoaded', () => {
+                document.body.addEventListener('click', (e) => {
+                    if(e.target.closest('.performance-approve')) {
+                        this._clickApprovePerformance(e);
+                    }
+                });
+            });
+
+            this._clickUnapprovePerformance = this._clickUnapprovePerformance.bind(this);
+            document.addEventListener('DOMContentLoaded', () => {
+                document.body.addEventListener('click', (e) => {
+                    if(e.target.closest('.performance-unapprove')) {
+                        this._clickUnapprovePerformance(e);
+                    }
+                });
+            });
+            document.addEventListener('DOMContentLoaded', () => {
+                document.body.addEventListener('click', (e) => {
+                    if(e.target.closest('.performance-retract')) {
+                        this._clickUnapprovePerformance(e);
+                    }
+                });
+            });
+        }
+
+        _getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        async _clickApprovePerformance(e) {
+            const performance_id = "{{ performance.id }}"
+            const status = "{{ performance.status }}"
+            if (status == "submitted") {
+                await this._updatePerformance(performance_id, 'approved');
+                location.reload();
+            }
+
+        }
+
+        async _clickUnapprovePerformance(e) {
+            const performance_id = "{{ performance.id }}"
+            const status = "{{ performance.status }}"
+            if (status == "submitted" || status == "approved") {
+                await this._updatePerformancePartStatus(performance_id, 'review_status', 'pending')
+                await this._updatePerformance(performance_id, 'in_progress');
+                location.reload();
+            }
+
+        }
+
+        _updatePerformance(performance_id, status) {
+                const body = JSON.stringify({
+                    status: status,});
+                const csrftoken = this._getCookie('csrftoken');
+                const headers = { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken,};
+                return fetch(`/api/performance-update/${performance_id}/`, {
+                    method: 'PATCH',
+                    headers,
+                    body: body,
+                })
+                .then(res => {
+                    res.json()
+                    // console.log(res)
+                })
+                .then(data => {
+                    console.log('Modified performance:', data);
+                    // Handle any further actions after modifying the performance
+                })
+                .catch(error => {
+                    console.error('Error modifying performance:', error);
+                    // Handle errors, if any
+                });
+        }
+
+        _updatePerformancePartStatus(performance_id, field, status) {
+
+            const body = JSON.stringify({
+                [field]: status});
+            const csrftoken = this._getCookie('csrftoken');
+            const headers = { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken,};
+            return fetch(`/api/performance-update/${performance_id}/`, {
+                method: 'PATCH',
+                headers,
+                body: body,
+            })
+            .then(res => {
+                res.json()
+                console.log(res)
+            })
+            .then(data => {
+                console.log('Modified performance status:', data);
+                // Handle any further actions after modifying the performance
+            })
+            .catch(error => {
+                console.error('Error modifying performance status:', error);
+                // Handle errors, if any
+            });
+        }
+    
+    }
+    const app = new App();
+</script>
 
 {% endblock %}

@@ -16,8 +16,8 @@ def mark_performance_submitted(sender, instance, **kwargs):
             currentFair = CurrentFair.objects.first()
             year = currentFair.name
             performance_title = instance.title
-            if len(performance_title) > 60:
-                short_title = performance_title[:60] + "..."
+            if len(performance_title) > 40:
+                short_title = performance_title[:40].strip() + "..."
             else:
                 short_title = performance_title
             template_subject = "[ONAYLF {year}] Performance submitted: {short_title}"
@@ -29,6 +29,8 @@ Please remember that your students' material submissions (Books, Comics & Cartoo
 
 You will receive an email when this performance is approved by ONAYLF staff.
 
+You can contact us at onaylf.samnoblemuseum@ou.edu with any questions.
+
 Thank you,
 ONAYLF Team"""
             send_mail(
@@ -38,4 +40,31 @@ ONAYLF Team"""
                 [instance.user.email],  # the email address to send to
                 fail_silently=True,
             )
+
+@receiver(post_save, sender=Performance)
+def at_performance_approved(sender, instance, **kwargs):
+    if instance.status == 'approved':
+        currentFair = CurrentFair.objects.first()
+        year = currentFair.name
+        performance_title = instance.title
+        if len(performance_title) > 40:
+            short_title = performance_title[:40].strip() + "..."
+        else:
+            short_title = performance_title
+        template_subject = "[ONAYLF {year}] Performance approved: {short_title}"
+        template_email = """Performance title: {title}
+
+Your students' performance has been approved by the ONAYLF Team.  We look forward to seeing you and your students at the Fair.
+
+You can contact us at onaylf.samnoblemuseum@ou.edu with any questions.
+
+Thank you,
+ONAYLF Team"""
+        send_mail(
+            template_subject.format(year=year, short_title=short_title),
+            template_email.format(title=performance_title, year=year),
+            settings.EMAIL_HOST_USER,
+            [instance.user.email],  # the email address to send to
+            fail_silently=True,
+        )
 

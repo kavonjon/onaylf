@@ -43,7 +43,7 @@ You can add a performance or poster for this user by clicking the buttons below.
 
 
 <div class="table-responsive">
-    <table class="table table-striped performance-table">
+    <table class="table table-striped small performance-table">
     <tbody>
     </tbody>
     </table>
@@ -51,8 +51,8 @@ You can add a performance or poster for this user by clicking the buttons below.
 
 <script>
   const table = document.querySelector('.performance-table');
-  const moderator = "{{ moderator }}"
-  console.log(moderator)
+  const moderatorText = "{{ moderator }}"
+  const moderator = moderatorText == 'True'
 
   class App {
     tableObjects
@@ -98,7 +98,13 @@ You can add a performance or poster for this user by clicking the buttons below.
                 }
             });
         });
-    
+        document.addEventListener('DOMContentLoaded', () => {
+            document.body.addEventListener('click', (e) => {
+                if(e.target.closest('.performance-retract')) {
+                    this._clickUnapprovePerformance(e);
+                }
+            });
+        });
     }
 
     _getCookie(name) {
@@ -203,18 +209,32 @@ You can add a performance or poster for this user by clicking the buttons below.
             editTooltip = ' title="Edit"'
             editButton = `{% bs_icon 'pencil-square' extra_classes="performance-edit" color='blue' %}`
         } else {
-            editHref = 'javascript:void(0)';
-            editTooltip = ''
-            editButton = `{% bs_icon 'pencil-square' extra_classes="performance-edit" color='grey' %}`
+            if (moderator) {
+                editHref = 'javascript:void(0)';
+                editTooltip = ''
+                editButton = `{% bs_icon 'pencil-square' extra_classes="performance-edit" color='grey' %}`
+            } else {
+                if ( tableObject.status=="submitted" ) {
+                    editHref = 'javascript:void(0)';
+                    editTooltip = ' title="Retract submission to continue editing"'
+                    editButton = `{% bs_icon 'arrow-counterclockwise' extra_classes="performance-retract" color='tomato' %}`
+                } else {
+                    editHref = 'javascript:void(0)';
+                    editTooltip = ''
+                    editButton = `{% bs_icon 'pencil-square' extra_classes="performance-edit" color='grey' %}`
+                }
+            }
+
         }
 
 
         const html = `
         <tr data-id="${tableObject.id}" data-status="${tableObject.status}">
             <td>
-                ${moderator == "True" ? `<a href='/user/${tableObject.user.id}'>` : ``}
-                    ${tableObject.user.email}
-                ${moderator == "True" ? `</a>` : ``}
+                ${moderator ? `<a href='/user/${tableObject.user.id}'>` : ``}
+                    ${tableObject.user.first_name} ${tableObject.user.last_name}<br />
+                    (${tableObject.user.email})
+                ${moderator ? `</a>` : ``}
             </td>
             <td class="overflow-wrap">
                 ${tableObject.title}
@@ -235,7 +255,7 @@ You can add a performance or poster for this user by clicking the buttons below.
                 ${tableObject.status_display}
             </td>
             <td>
-                ${moderator == "True" ? `<span>
+                ${moderator ? `<span>
                         <a class="stealth" href="javascript:void(0)"${approveTooltip}>
                             ${approveButton}
                         </a>
@@ -256,7 +276,7 @@ You can add a performance or poster for this user by clicking the buttons below.
                             ${editButton}
                         </a>
                 </span>
-                ${moderator == "True" ? `<span>
+                ${moderator ? `<span>
                         <a class="stealth" href="javascript:void(0)" title="Delete">
                             {% bs_icon 'trash3-fill' extra_classes="performance-delete" color='red' %}
                         </a>
@@ -279,8 +299,7 @@ You can add a performance or poster for this user by clicking the buttons below.
             row.outerHTML = html;
         }
 
-
-        }
+    }
 
     async _clickUnapprovePerformance(e) {
         const row = e.target.closest('tr');
@@ -294,8 +313,7 @@ You can add a performance or poster for this user by clicking the buttons below.
             row.outerHTML = html;
         }
 
-
-        }
+    }
 
     _updatePerformance(performance_id, status) {
             const body = JSON.stringify({
@@ -319,7 +337,7 @@ You can add a performance or poster for this user by clicking the buttons below.
                 console.error('Error modifying performance:', error);
                 // Handle errors, if any
             });
-        }
+    }
 
     _updatePerformancePartStatus(performance_id, field, status) {
 

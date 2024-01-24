@@ -76,11 +76,16 @@
     </div>
 
     <hr />
-    <div class="mb-3">
-      <input type="submit" class="btn btn-primary" value="Submit poster"/>
-      <span>
-          <a href="/" class="btn btn-secondary">Cancel</a>
-      </span>
+    <div class="d-flex">
+        <div>
+            <input type="submit" class="btn btn-primary" value="Submit poster"/>
+            <span>
+                <a href="../" class="btn btn-secondary">Cancel</a>
+            </span>
+        </div>
+        <div class="p-1 text-danger submit-incomplete" style="display: none;">
+            Please select at least one instructor and student.
+        </div>
     </div>
 </form>
 
@@ -89,6 +94,7 @@
   let studentsTable = document.querySelector('.student-table');
   const languoidsSelect = document.querySelector('#id_languoids');
   const otherLanguoidDiv = document.querySelector('.other_languoid');
+  const submitIncompleteDiv = document.querySelector('.submit-incomplete');
 
   class App {
       instructorsTableObjects
@@ -124,6 +130,8 @@
       constructor() {
       
         document.addEventListener('DOMContentLoaded', this._loadInstructorsTable.bind(this));
+
+        document.addEventListener('DOMContentLoaded', this._toggleOtherLanguoid.bind(this));
 
         languoidsSelect.addEventListener('change', this._toggleOtherLanguoid.bind(this));
 
@@ -306,76 +314,86 @@
 
       }
 
-      _clickInstructorPerformance(e) {
-          const buttons = document.querySelectorAll('.include-performance-instructor')
-          const clickledButton = e.target.closest('.include-performance-instructor');
-          const row = e.target.closest('.row');
-          if (!clickledButton.classList.contains('include-performance-instructor-selected')) {
-              buttons.forEach(button => {
-                  button.classList.remove('include-performance-instructor-selected');
-                  button.classList.remove('bg-success');
-              });
-              clickledButton.classList.add('include-performance-instructor-selected');
-              clickledButton.classList.add('bg-success');
-          } else {
-              clickledButton.classList.remove('include-performance-instructor-selected');
-              clickledButton.classList.remove('bg-success');
-          }
+    _clickInstructorPerformance(e) {
+        const buttons = document.querySelectorAll('.include-performance-instructor')
+        const clickledButton = e.target.closest('.include-performance-instructor');
+        const row = e.target.closest('.row');
+        if (!clickledButton.classList.contains('include-performance-instructor-selected')) {
+            buttons.forEach(button => {
+                button.classList.remove('include-performance-instructor-selected');
+                button.classList.remove('bg-success');
+            });
+            clickledButton.classList.add('include-performance-instructor-selected');
+            clickledButton.classList.add('bg-success');
+        } else {
+            clickledButton.classList.remove('include-performance-instructor-selected');
+            clickledButton.classList.remove('bg-success');
+        }
       }
 
-      _clickStudentPerformance(e) {
-          const buttons = document.querySelectorAll('.include-performance-student')
-          const clickledButton = e.target.closest('.include-performance-student');
-          const row = e.target.closest('.row');
-          if (!clickledButton.classList.contains('include-performance-student-selected')) {
-              buttons.forEach(button => {
-                  button.classList.remove('include-performance-student-selected');
-                  button.classList.remove('bg-success');
-              });
-              clickledButton.classList.add('include-performance-student-selected');
-              clickledButton.classList.add('bg-success');
-          } else {
-              clickledButton.classList.remove('include-performance-student-selected');
-              clickledButton.classList.remove('bg-success');
-          }
-      }
+    _clickStudentPerformance(e) {
+        const buttons = document.querySelectorAll('.include-performance-student')
+        const clickledButton = e.target.closest('.include-performance-student');
+        const row = e.target.closest('.row');
+        if (!clickledButton.classList.contains('include-performance-student-selected')) {
+            buttons.forEach(button => {
+                button.classList.remove('include-performance-student-selected');
+                button.classList.remove('bg-success');
+            });
+            clickledButton.classList.add('include-performance-student-selected');
+            clickledButton.classList.add('bg-success');
+        } else {
+            clickledButton.classList.remove('include-performance-student-selected');
+            clickledButton.classList.remove('bg-success');
+        }
+    }
 
 
     _modifySubmitButton(e) {
-      e.preventDefault();
+        e.preventDefault();
 
-      // Get the selected instructor's ID
-      const selectedInstructorButton = document.querySelector('.include-performance-instructor-selected');
-      const selectedInstructorRow = selectedInstructorButton.closest('.row');
-      const selectedInstructorId = selectedInstructorRow.dataset.id;
+        // Get the selected instructor's ID
+        const selectedInstructorButton = document.querySelector('.include-performance-instructor-selected');
+        if ( selectedInstructorButton === null ) {
+            submitIncompleteDiv.style.display = 'block';
+            return;
+        }
+        const selectedInstructorRow = selectedInstructorButton.closest('.row');
+        const selectedInstructorId = selectedInstructorRow.dataset.id;
 
-      // Create a hidden input field
-      const instructorHiddenInput = document.createElement('input');
-      instructorHiddenInput.type = 'hidden';
-      instructorHiddenInput.name = 'instructors';
-      instructorHiddenInput.value = [selectedInstructorId];
+        // Create a hidden input field
+        const instructorHiddenInput = document.createElement('input');
+        instructorHiddenInput.type = 'hidden';
+        instructorHiddenInput.name = 'instructors';
+        instructorHiddenInput.value = [selectedInstructorId];
 
-      // Add the hidden input field to the form
-      this.form.appendChild(instructorHiddenInput);
+        // Add the hidden input field to the form
+        this.form.appendChild(instructorHiddenInput);
 
 
-      // Get the selected student's ID
-      const selectedStudentButton = document.querySelector('.include-performance-student-selected');
-      const selectedStudentRow = selectedStudentButton.closest('.row');
-      const selectedStudentId = selectedStudentRow.dataset.id;
+        // Get the selected student's ID
+        const selectedStudentButton = document.querySelector('.include-performance-student-selected');
+        if ( selectedStudentButton === null ) {
+                submitIncompleteDiv.style.display = 'block';
+                return;
+            }
+        const selectedStudentRow = selectedStudentButton.closest('.row');
+        const selectedStudentId = selectedStudentRow.dataset.id;
 
-      // Create a hidden input field
-      const studentHiddenInput = document.createElement('input');
-      studentHiddenInput.type = 'hidden';
-      studentHiddenInput.name = 'students';
-      studentHiddenInput.value = [selectedStudentId];
+        // Create a hidden input field
+        const studentHiddenInput = document.createElement('input');
+        studentHiddenInput.type = 'hidden';
+        studentHiddenInput.name = 'students';
+        studentHiddenInput.value = [selectedStudentId];
 
-      // Add the hidden input field to the form
-      this.form.appendChild(studentHiddenInput);
+        // Add the hidden input field to the form
+        this.form.appendChild(studentHiddenInput);
 
-      // Submit the form
-      this.form.submit();
-    }
+        submitIncompleteDiv.style.display = 'none';
+
+        // Submit the form
+        this.form.submit();
+        }
 
 
 

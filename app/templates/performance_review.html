@@ -111,7 +111,7 @@ If you have anything you would like to communicate to us about this performance,
     </div>
     <hr />
     <div class="mb-3">
-      <input type="submit" value="Submit performance"/>
+      <input type="submit" class="btn btn-primary" value="Submit performance"/>
       <span>
           <a href="/" class="btn btn-secondary">Cancel</a>
       </span>
@@ -196,9 +196,9 @@ If you have anything you would like to communicate to us about this performance,
                 reviewStatusDiv.textContent = "Pending"
             }
 
-            if ( "{{ performance.status }}" == "completed" ) {
+            if ( "{{ performance.status }}" == "approved" ) {
                 approvalStatusIcon.classList.add("text-success")
-                approvalStatusDiv.textContent = "Completed"
+                approvalStatusDiv.textContent = "Approved"
             } else if ( "{{ performance.status }}" == "in_progress" ) {
                 approvalStatusIcon.classList.add("text-danger")
                 approvalStatusDiv.textContent = "Unsubmitted"

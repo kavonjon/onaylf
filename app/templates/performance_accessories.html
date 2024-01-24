@@ -180,9 +180,9 @@ The museum can provide a few accessories on stage for performances. Select from 
                 reviewStatusDiv.textContent = "Pending"
             }
 
-            if ( "{{ performance.status }}" == "completed" ) {
+            if ( "{{ performance.status }}" == "approved" ) {
                 approvalStatusIcon.classList.add("text-success")
-                approvalStatusDiv.textContent = "Completed"
+                approvalStatusDiv.textContent = "Approved"
             } else if ( "{{ performance.status }}" == "in_progress" ) {
                 approvalStatusIcon.classList.add("text-danger")
                 approvalStatusDiv.textContent = "Unsubmitted"

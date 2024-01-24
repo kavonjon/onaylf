@@ -27,7 +27,7 @@ You will also return to this page after submitting a Performance or Poster. You 
 {% endif %}
 
 <div class="table-responsive">
-    <table class="table table-striped performance-table">
+    <table class="table table-striped small performance-table">
     <tbody>
     <!-- {% for performance in performances %}
         <tr>
@@ -63,7 +63,8 @@ You will also return to this page after submitting a Performance or Poster. You 
 
 <script>
   const table = document.querySelector('.performance-table');
-  const moderator = "{{ moderator }}"
+  const moderatorText = "{{ moderator }}"
+  const moderator = moderatorText == 'True'
 
   class App {
     tableObjects
@@ -109,7 +110,13 @@ You will also return to this page after submitting a Performance or Poster. You 
                 }
             });
         });
-    
+        document.addEventListener('DOMContentLoaded', () => {
+            document.body.addEventListener('click', (e) => {
+                if(e.target.closest('.performance-retract')) {
+                    this._clickUnapprovePerformance(e);
+                }
+            });
+        });
     }
 
     _getCookie(name) {
@@ -131,8 +138,8 @@ You will also return to this page after submitting a Performance or Poster. You 
     _getPerformances(){
 
         let user_param;
-        console.log("moderator: " + moderator)
-        if (moderator == "True") {
+        // console.log("moderator: " + moderator)
+        if (moderator) {
             user_param = ""
         } else {
             const user_id = "{{ currentUser.id }}";
@@ -221,18 +228,32 @@ You will also return to this page after submitting a Performance or Poster. You 
             editTooltip = ' title="Edit"'
             editButton = `{% bs_icon 'pencil-square' extra_classes="performance-edit" color='blue' %}`
         } else {
-            editHref = 'javascript:void(0)';
-            editTooltip = ''
-            editButton = `{% bs_icon 'pencil-square' extra_classes="performance-edit" color='grey' %}`
+            if (moderator) {
+                editHref = 'javascript:void(0)';
+                editTooltip = ''
+                editButton = `{% bs_icon 'pencil-square' extra_classes="performance-edit" color='grey' %}`
+            } else {
+                if ( tableObject.status=="submitted" ) {
+                    editHref = 'javascript:void(0)';
+                    editTooltip = ' title="Retract submission to continue editing"'
+                    editButton = `{% bs_icon 'arrow-counterclockwise' extra_classes="performance-retract" color='tomato' %}`
+                } else {
+                    editHref = 'javascript:void(0)';
+                    editTooltip = ''
+                    editButton = `{% bs_icon 'pencil-square' extra_classes="performance-edit" color='grey' %}`
+                }
+            }
+
         }
 
 
         const html = `
         <tr data-id="${tableObject.id}" data-status="${tableObject.status}">
             <td>
-                ${moderator == "True" ? `<a href='/user/${tableObject.user.id}'>` : ``}
-                    ${tableObject.user.email}
-                ${moderator == "True" ? `</a>` : ``}
+                ${moderator ? `<a href='/user/${tableObject.user.id}'>` : ``}
+                    ${tableObject.user.first_name} ${tableObject.user.last_name}<br />
+                    (${tableObject.user.email})
+                ${moderator ? `</a>` : ``}
             </td>
             <td class="overflow-wrap">
                 ${tableObject.title}
@@ -253,7 +274,7 @@ You will also return to this page after submitting a Performance or Poster. You 
                 ${tableObject.status_display}
             </td>
             <td>
-                ${moderator == "True" ? `<span>
+                ${moderator ? `<span>
                         <a class="stealth" href="javascript:void(0)"${approveTooltip}>
                             ${approveButton}
                         </a>
@@ -274,7 +295,7 @@ You will also return to this page after submitting a Performance or Poster. You 
                             ${editButton}
                         </a>
                 </span>
-                ${moderator == "True" ? `<span>
+                ${moderator ? `<span>
                         <a class="stealth" href="javascript:void(0)" title="Delete">
                             {% bs_icon 'trash3-fill' extra_classes="performance-delete" color='red' %}
                         </a>
@@ -297,8 +318,7 @@ You will also return to this page after submitting a Performance or Poster. You 
             row.outerHTML = html;
         }
 
-
-        }
+    }
 
     async _clickUnapprovePerformance(e) {
         const row = e.target.closest('tr');
@@ -312,8 +332,7 @@ You will also return to this page after submitting a Performance or Poster. You 
             row.outerHTML = html;
         }
 
-
-        }
+    }
 
     _updatePerformance(performance_id, status) {
             const body = JSON.stringify({
@@ -337,7 +356,7 @@ You will also return to this page after submitting a Performance or Poster. You 
                 console.error('Error modifying performance:', error);
                 // Handle errors, if any
             });
-        }
+    }
 
     _updatePerformancePartStatus(performance_id, field, status) {
 

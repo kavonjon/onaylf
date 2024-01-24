@@ -149,9 +149,9 @@ Choose one or more instructors by clicking the check mark to the right of the in
                 reviewStatusDiv.textContent = "Pending"
             }
 
-            if ( "{{ performance.status }}" == "completed" ) {
+            if ( "{{ performance.status }}" == "approved" ) {
                 approvalStatusIcon.classList.add("text-success")
-                approvalStatusDiv.textContent = "Completed"
+                approvalStatusDiv.textContent = "Approved"
             } else if ( "{{ performance.status }}" == "in_progress" ) {
                 approvalStatusIcon.classList.add("text-danger")
                 approvalStatusDiv.textContent = "Unsubmitted"

@@ -62,9 +62,10 @@ def performance_get(request, perf_pk):
     if not request.user.is_authenticated:
         return Response({'detail': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
         # Check if the user is in the "moderator" group
-    if not request.user.groups.filter(name='moderator').exists():
-        return Response({'detail': 'You do not have permission to perform this action.'}, status=status.HTTP_403_FORBIDDEN)
     performance = get_object_or_404(Performance, pk=perf_pk)
+    if not request.user.groups.filter(name='moderator').exists():
+        if not request.user == performance.user:
+            return Response({'detail': 'You do not have permission to perform this action.'}, status=status.HTTP_403_FORBIDDEN)
     serializer = PerformanceSerializer(performance)
     return Response(serializer.data)
 
@@ -246,6 +247,9 @@ def performance_detail(request, perf_pk):
 
     currentFair = CurrentFair.objects.first()
 
+    # Check if the user is a moderator
+    is_moderator = request.user.groups.filter(name='moderator').exists()
+
     performance = Performance.objects.prefetch_related("instructors", "students", "accessories").get(pk=perf_pk)
 
     performance_user_organization = performance.user.organization
@@ -271,6 +275,7 @@ def performance_detail(request, perf_pk):
     template = 'performance_detail.html'
     context = {
         'currentFair': currentFair.name,
+        'moderator': is_moderator,
         'performance': performance,
         'organization': performance_user_organization,
         'includes_other_languoid': performance_includes_other_languoid,
@@ -500,6 +505,11 @@ def performance_edit(request, perf_pk):
 
     performance = get_object_or_404(Performance, id=perf_pk)
 
+    # Redirect if performance status is not 'in_progress'
+    if performance.status != 'in_progress':
+        return redirect('performance_detail', perf_pk=perf_pk)
+
+
     other_languoid = Languoid.objects.get(name='Other')
 
     performance_includes_other_languoid = performance.languoids.filter(pk=other_languoid.pk).exists()
@@ -600,6 +610,10 @@ class poster_add(LoginRequiredMixin, FormView):
             self.object.fair = currentFair.fair
             self.object.poster = True
             self.object.user = user
+            self.object.instructors_status = "completed"
+            self.object.students_status = "completed"
+            self.object.accessories_status = "completed"
+            self.object.review_status = "completed"
             self.object.modified_by = self.request.user.get_username()
             self.object.save()
             # self.object.title = "Poster " + str(self.object.pk)  # Set the name here
@@ -620,6 +634,9 @@ def poster_detail(request, post_pk):
 
     currentFair = CurrentFair.objects.first()
 
+    # Check if the user is a moderator
+    is_moderator = request.user.groups.filter(name='moderator').exists()
+
     performance = Performance.objects.prefetch_related("instructors", "students").get(pk=post_pk)
 
     performance_user_organization = performance.user.organization
@@ -631,6 +648,7 @@ def poster_detail(request, post_pk):
     template = 'poster_detail.html'
     context = {
         'currentFair': currentFair.name,
+        'moderator': is_moderator,
         'performance': performance,
         'organization': performance_user_organization,
         'includes_other_languoid': performance_includes_other_languoid
@@ -644,6 +662,10 @@ def poster_edit(request, post_pk):
 
     performance = Performance.objects.prefetch_related("instructors", "students", "accessories").get(pk=post_pk)
 
+    # Redirect if performance status is not 'in_progress'
+    if performance.status != 'in_progress':
+        return redirect('poster_detail', post_pk=post_pk)
+
     performance_user_organization = performance.user.organization
 
     owning_user = performance.user
@@ -651,9 +673,13 @@ def poster_edit(request, post_pk):
     if request.method == "POST":
         form = PosterForm(request.POST, instance=performance)
         if form.is_valid():
-            form.save(commit=False)
-            form.modified_by = request.user.get_username()
-            form.save()
+            performance = form.save(commit=False)
+            performance.instructors_status = "completed"
+            performance.students_status = "completed"
+            performance.accessories_status = "completed"
+            performance.review_status = "completed"
+            performance.modified_by = request.user.get_username()
+            performance.save()
             return redirect("../")
     else:
         form = PosterForm(instance=performance)
