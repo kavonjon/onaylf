@@ -29,34 +29,6 @@ You will also return to this page after submitting a Performance or Poster. You 
 <div class="table-responsive">
     <table class="table table-striped small performance-table">
     <tbody>
-    <!-- {% for performance in performances %}
-        <tr>
-            <td class="col-md-1 overflow-hidden">
-                {{ performance.user }}
-            </td>
-            <td class="col-md-1 overflow-wrap">
-                {{ performance.title }}
-            </td>
-            <td class="col-md-1 overflow-hidden">
-                {{ performance.category.name }}
-            </td>
-            <td class="col-md-1 overflow-hidden">
-                {{ performance.get_grade_range_display }}
-            </td>
-            <td class="col-md-1 overflow-hidden">
-                {{ performance.performance_type }}
-            </td>
-            <td class="col-md-1 overflow-hidden">
-                {{ performance.group }}
-            </td>
-            <td class="col-md-1 overflow-hidden">
-                status
-            </td>
-            <td class="col-md-1 overflow-hidden">
-                action <span class="edit edit-performance">{% bs_icon 'pencil' %}<span>
-            </td>
-        </tr>
-    {% endfor %} -->
     </tbody>
     </table>
 </div>
@@ -251,8 +223,8 @@ You will also return to this page after submitting a Performance or Poster. You 
         <tr data-id="${tableObject.id}" data-status="${tableObject.status}">
             <td>
                 ${moderator ? `<a href='/user/${tableObject.user.id}'>` : ``}
-                    ${tableObject.user.first_name} ${tableObject.user.last_name}<br />
-                    (${tableObject.user.email})
+                    ${(tableObject.user.first_name + ' ' + tableObject.user.last_name).substring(0, 30)}<br />
+                    ${(tableObject.user.email).substring(0, 30)}
                 ${moderator ? `</a>` : ``}
             </td>
             <td class="overflow-wrap">

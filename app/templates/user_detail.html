@@ -232,8 +232,8 @@ You can add a performance or poster for this user by clicking the buttons below.
         <tr data-id="${tableObject.id}" data-status="${tableObject.status}">
             <td>
                 ${moderator ? `<a href='/user/${tableObject.user.id}'>` : ``}
-                    ${tableObject.user.first_name} ${tableObject.user.last_name}<br />
-                    (${tableObject.user.email})
+                    ${(tableObject.user.first_name + ' ' + tableObject.user.last_name).substring(0, 30)}<br />
+                    ${(tableObject.user.email).substring(0, 30)}
                 ${moderator ? `</a>` : ``}
             </td>
             <td class="overflow-wrap">
