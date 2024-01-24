@@ -37,7 +37,7 @@ ONAYLF Team"""
                 template_subject.format(year=year, short_title=short_title),
                 template_email.format(title=performance_title, year=year),
                 settings.EMAIL_HOST_USER,
-                [instance.user.email],  # the email address to send to
+                [instance.user.email, 'onaylf.samnoblemuseum@ou.edu'],  # the email address to send to
                 fail_silently=True,
             )
 
@@ -64,7 +64,7 @@ ONAYLF Team"""
             template_subject.format(year=year, short_title=short_title),
             template_email.format(title=performance_title, year=year),
             settings.EMAIL_HOST_USER,
-            [instance.user.email],  # the email address to send to
+            [instance.user.email, 'onaylf.samnoblemuseum@ou.edu'],  # the email address to send to
             fail_silently=True,
         )
 
