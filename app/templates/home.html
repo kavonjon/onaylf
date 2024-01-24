@@ -8,11 +8,13 @@
 {% block title %}Home{% endblock %}
 
 {% block featured %}
-Welcome, {{ currentUser.first_name }}<br />
+<h5>Welcome, {{ currentUser.first_name }}</h5>
 
-This is your Homepage. On this page you can choose to enter a Performance (for all categories except Posters) or a Poster. We separated those for your convenience.<br />
+This is your Homepage. On this page you can add or edit performances. There is a special form for entering performances in the poster category.<br />
 
-You will also return to this page after submitting a Performance or Poster. You will be able to see all of your entries, their status, and go back into them to edit from here.
+-When you have completed your entry, its status will be "Submitted". You will not be able to edit it after that. If you need to make changes, you can click the "Retract submission" button to change the status back to "In progress" and then edit your entry. <br />
+
+-Once approved by the ONAYLF team, your entry status will change to "Approved". You will not be able to edit it after that. If you need to make changes, contact the ONAYLF team.
 
 {% endblock %}
 
