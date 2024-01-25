@@ -36,9 +36,12 @@ Choose one or more instructors by clicking the check mark to the right of the in
       </table>
 
     <div class="mb-3">
-        <a href="../students/" class="btn btn-primary">Continue</a>
+        <a href="../students/" class="btn btn-primary btn-continue">Continue</a>
         <span>
             <a href="/" class="btn btn-secondary">Close and save</a>
+        </span>
+        <span class="p-1 text-danger submit-incomplete" style="display: none;">
+            Please select at least one instructor.
         </span>
     </div>
 
@@ -60,6 +63,9 @@ Choose one or more instructors by clicking the check mark to the right of the in
     const approvalStatusDiv = document.getElementById('approvalStatusDiv');
 
     let table = document.querySelector('.instructor-table');
+
+    const submitIncompleteDiv = document.querySelector('.submit-incomplete');
+    const submitButton = document.querySelector('.btn-continue');
     
     class App {
         tableObjects
@@ -91,6 +97,9 @@ Choose one or more instructors by clicking the check mark to the right of the in
                     }
                 });
             });
+            
+            submitButton.addEventListener('click', this._modifySubmitButton.bind(this));
+
 
             performanceStatusIcon.classList.add("text-success")
             // Create a new DOMParser
@@ -332,6 +341,23 @@ Choose one or more instructors by clicking the check mark to the right of the in
                 // Handle errors, if any
             });
         }
+
+        _modifySubmitButton(e) {
+            e.preventDefault();
+
+            // Get the selected instructor's ID
+            const selectedInstructorButton = document.querySelector('.include-performance-instructor-selected');
+            if ( selectedInstructorButton === null ) {
+                submitIncompleteDiv.style.display = 'block';
+                return;
+            }
+
+            submitIncompleteDiv.style.display = 'none';
+
+            // Navigate to the href of the anchor tag
+            window.location.href = "../students/";
+        }
+
     }
     const app = new App();
     </script>

@@ -43,29 +43,41 @@ This is your Homepage. On this page you can add or edit performances. There is a
   class App {
     tableObjects
     tableHeader = `
-  <thead>
-    <tr>
-      <th>User</th>
-      <th>Title</th>
-      <th>Category</th>
-      <th>Grade</th>
-      <th>Performance type</th>
-      <th>Group</th>
-      <th>Status</th>
-      <th>Action</th>
-    </tr>
-  </thead>
-  <tbody>
-  </tbody>
+    <thead>
+        <tr>
+            <th class="sort-btn" data-field="user.first_name"><div class="d-flex align-items-center">User<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none" style="display:none"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none"></i></span></div></th>
+            <th class="sort-btn" data-field="title"><div class="d-flex align-items-center">Title<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none"></i></span></div></th>
+            <th class="sort-btn" data-field="category.name"><div class="d-flex align-items-center">Category<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none"></i></span></div></th>
+            <th class="sort-btn" data-field="grade_range_display"><div class="d-flex align-items-center">Grade<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none"></i></span></div></th>
+            <th class="sort-btn" data-field="performance_type"><div class="d-flex align-items-center">Performance type<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none"></i></span></div></th>
+            <th class="sort-btn" data-field="group"><div class="d-flex align-items-center">Group<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none"></i></span></div></th>
+            <th class="sort-btn" data-field="status_display"><div class="d-flex align-items-center">Status<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none"></i></span></div></th>
+            <th><div class="d-flex align-items-center">Action</div></th>
+        </tr>
+    </thead>
+    <tbody>
+    </tbody>
 `
     tableBody
     activeValue
     activeEditButton
+    sort = { field: 'updated', direction: 'desc'};
 
 
     constructor() {
 
-        document.addEventListener('DOMContentLoaded', this._loadTable.bind(this));
+        document.addEventListener('DOMContentLoaded', () => {
+            this._loadTable(true);
+        });
+
+        this._clickSortCaret = this._clickSortCaret.bind(this);
+        document.addEventListener('DOMContentLoaded', () => {
+            document.body.addEventListener('click', (e) => {
+                if(e.target.closest('.sort-btn')) {
+                    this._clickSortCaret(e);
+                }
+            });
+        });
 
         this._clickApprovePerformance = this._clickApprovePerformance.bind(this);
         document.addEventListener('DOMContentLoaded', () => {
@@ -140,17 +152,46 @@ This is your Homepage. On this page you can add or edit performances. There is a
 
     }
 
+    async _loadTable(doFetch, { field = 'updated', direction = 'desc' } = {}) {
+        if ( doFetch == true ) {
+            await this._getPerformances()
+        }
 
-    async _loadTable(sort=null) {
-      await this._getPerformances()
-      table.innerHTML = this.tableHeader
-      this.tableBody = document.querySelector('.performance-table tbody');
-      this.tableObjects.forEach((tableObject) => {
-        const html = this._buildRowHtml(tableObject);
-        // const row = this.tableBody.insertRow();
-        // row.innerHTML = html
-        this.tableBody.insertAdjacentHTML('beforeend', html);
-      });
+        console.log(field, direction)
+        // Sort tableObjects if a field is specified
+        if (field) {
+        this.tableObjects.sort((a, b) => {
+            // Check if the first index of the field exists in a or b
+            const firstIndex = field.split('.')[0];
+            if (!(firstIndex in a)) return 1;
+            if (!(firstIndex in b)) return -1;
+
+            // Split the field string into an array and use reduce to access the nested property
+            let aField = field.split('.').reduce((o, i) => (o ? o[i] : undefined), a);
+            let bField = field.split('.').reduce((o, i) => (o ? o[i] : undefined), b);
+
+            // If aField or bField is undefined, sort it last
+            if (aField === undefined) return 1;
+            if (bField === undefined) return -1;
+
+            // Convert fields to lowercase if they are strings
+            if (typeof aField === 'string') aField = aField.toLowerCase();
+            if (typeof bField === 'string') bField = bField.toLowerCase();
+
+            if (aField < bField) return direction === 'asc' ? -1 : 1;
+            if (aField > bField) return direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }
+
+        table.innerHTML = this.tableHeader
+        this.tableBody = document.querySelector('.performance-table tbody');
+        this.tableObjects.forEach((tableObject) => {
+            const html = this._buildRowHtml(tableObject);
+            // const row = this.tableBody.insertRow();
+            // row.innerHTML = html
+            this.tableBody.insertAdjacentHTML('beforeend', html);
+        });
 
     }
 
@@ -278,6 +319,24 @@ This is your Homepage. On this page you can add or edit performances. There is a
         </tr>
   `;
         return html
+    }
+
+
+    async _clickSortCaret(e) {
+        const carets = document.querySelectorAll('.sort-caret');
+        const thisCaret = e.target.closest('th').querySelector('.sort-caret');
+        const field = e.target.closest('th').dataset.field;
+        let direction;
+        if ( field == this.sort.field ) {
+            direction = this.sort.direction === 'asc' ? 'desc' : 'asc';
+        } else {
+            direction = 'asc';
+        }
+        console.log({ field:field, direction:direction })
+        await this._loadTable(false, { field:field, direction:direction });
+        carets.forEach(caret => caret.style.display = 'none');
+        thisCaret.style.display = 'inline';
+        this.sort = { field, direction };
     }
 
 
