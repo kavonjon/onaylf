@@ -35,3 +35,8 @@ services:
 volumes:
   postgres_data:
   static:
+
+networks:
+  default:
+    external: true
+    name: nginxproxymanager_default
