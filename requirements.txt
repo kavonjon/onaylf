@@ -8,6 +8,7 @@ django-appconf==1.0.6
 django-bootstrap-icons==0.8.7
 django-bootstrap-v5==1.0.11
 djangorestframework==3.14.0
+gunicorn==21.2.0
 idna==3.6
 psycopg2==2.9.9
 python-dotenv==1.0.0
