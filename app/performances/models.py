@@ -28,25 +28,25 @@ PERFORMANCE_PART_STATUS = (('in_progress', 'In progress'),
                       ('pending', 'Pending'),
                       ('completed', 'Completed'))
 
-GRADES = (('pk', 'PreK'),
-            ('k', 'Kindergarten'),
-            ('1', '1st'),
-            ('2', '2nd'),
-            ('3', '3rd'),
-            ('4', '4th'),
-            ('5', '5th'),
-            ('6', '6th'),
-            ('7', '7th'),
-            ('8', '8th'),
-            ('9', '9th'),
-            ('10', '10th'),
-            ('11', '11th'),
-            ('12', '12th'))
+GRADES = (('0_pk', 'PreK'),
+            ('1_k', 'Kindergarten'),
+            ('2_01', '1st'),
+            ('2_02', '2nd'),
+            ('2_03', '3rd'),
+            ('2_04', '4th'),
+            ('2_05', '5th'),
+            ('2_06', '6th'),
+            ('2_07', '7th'),
+            ('2_08', '8th'),
+            ('2_09', '9th'),
+            ('2_10', '10th'),
+            ('2_11', '11th'),
+            ('2_12', '12th'))
 
-GRADE_RANGES = (('pk_2', 'PreK-2nd'),
-                ('3-5', '3rd-5th'),
-                ('6-8', '6th-8th'),
-                ('9-12', '9th-12th'))
+GRADE_RANGES = (('0_pk-2', 'PreK-2nd'),
+                ('1_3-5', '3rd-5th'),
+                ('1_6-8', '6th-8th'),
+                ('1_9-12', '9th-12th'))
 
 STATE_CHOICES = (
     ('AL', 'Alabama'),
@@ -243,7 +243,7 @@ class Performance(models.Model):
     languoids = models.ManyToManyField(Languoid, verbose_name="list of languoids", related_name='performance_languoids', blank=True)
     other_languoid = models.CharField(max_length=255, blank=True)
     category = models.ForeignKey(Category, verbose_name="categories on performance", related_name='performance_category', null=True, on_delete=models.SET_NULL)
-    grade_range = models.CharField(max_length=4, choices=GRADE_RANGES, blank=True)
+    grade_range = models.CharField(max_length=6, choices=GRADE_RANGES, blank=True)
     performance_type = models.CharField(max_length=10, choices=PERFORMANCE_TYPE, blank=True)
     instructors = models.ManyToManyField(Instructor, verbose_name="instructors on performance", related_name='performance_instructor', blank=True)
     students = models.ManyToManyField(Student, verbose_name="students on performance", related_name='performance_student', blank=True)
