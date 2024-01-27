@@ -1,4 +1,4 @@
-from performances.models import Fair, CurrentFair, Languoid, Instructor, Student, Category, Accessory, Performance, Prize
+from performances.models import Fair, CurrentFair, Languoid, Tribe, Instructor, Student, Category, Accessory, Performance, Prize
 from users.models import User
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
@@ -106,6 +106,63 @@ class Command(BaseCommand):
         #     languoid = Languoid.objects.create(glottocode=lang[0], name=lang[1], level=lang[2], modified_by="admin@nal.ou.edu")
 
 
+        # # create tribes
+        current_fair = CurrentFair.objects.first()
+        tribe_list = [
+            ('Other',),
+            ('Absentee Shawnee Tribe',),
+            ('Alabama-Quassarte Tribal Town',),
+            ('Apache Tribe of Oklahoma',),
+            ('Caddo Nation',),
+            ('Cherokee Nation',),
+            ('Cheyenne and Arapaho Tribes',),
+            ('Chickasaw Nation',),
+            ('Choctaw Nation of Oklahoma',),
+            ('Citizen Potawatomi Nation',),
+            ('Comanche Nation',),
+            ('Delaware Nation',),
+            ('Delaware Tribe of Indians',),
+            ('Eastern Shawnee Tribe',),
+            ('Euchee/Yuchi Tribe',),
+            ('Fort Sill Apache Tribe',),
+            ('Havasupai Tribe',),
+            ('Hopi Tribe',),
+            ('Iowa Tribe',),
+            ('Kaw Nation',),
+            ('Kialegee Tribal Town',),
+            ('Kickapoo Tribe',),
+            ('Kiowa Tribe',),
+            ('Laguna Pueblo',),
+            ('Miami Tribe',),
+            ('Mississippi Band of Choctaw Indians',),
+            ('Modoc Nation',),
+            ('Muscogee Nation',),
+            ('Navajo Nation',),
+            ('Osage Nation',),
+            ('Otoe-Missouria Tribe',),
+            ('Ottawa Tribe',),
+            ('Pawnee Nation',),
+            ('Peoria Tribe of Indians',),
+            ('Poarch Band of Creek Indians',),
+            ('Ponca Tribe',),
+            ('Quapaw Nation',),
+            ('Sac and Fox Nation',),
+            ('San Carlos Apache Tribe',),
+            ('Seminole Nation',),
+            ('Seneca-Cayuga Nation',),
+            ('Shawnee Tribe',),
+            ('Thlopthlocco Tribal Town',),
+            ('Tonkawa Tribe',),
+            ('United Keetoowah Band of Cherokees',),
+            ('Wichita and Affiliated Tribes',),
+            ('Wyandotte Nation',),
+            ('Zuni Pueblo',)
+        ]
+
+        for tribe in tribe_list:
+            tribe = Tribe.objects.create(fair=current_fair.fair, name=tribe[0], modified_by="admin@nal.ou.edu")
+
+
         # # delete all categories
         # Category.objects.all().delete()
 
@@ -118,6 +175,7 @@ class Command(BaseCommand):
         #     ("Master Performer",),
         #     ("Mobile Video",),
         #     ("Modern Song",),
+        #     ("Poster",),
         #     ("Puppet Show",),
         #     ("Skit/Short Play",),
         #     ("Spoken Language",),

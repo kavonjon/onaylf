@@ -11,7 +11,6 @@ def get_superuser():
         # Just return the first user, probably an admin
         return User.objects.first()
 
-
 LANGUOID_LEVEL_CHOICES = (('family', 'Family'),
                           ('language', 'Language'),
                           ('dialect', 'Dialect'))
@@ -152,12 +151,25 @@ class Languoid(models.Model):
     name = models.CharField(max_length=255, blank=True)
     level = models.CharField(max_length=8, choices=LANGUOID_LEVEL_CHOICES, default="language")
     active = models.BooleanField(default=True)
+    fair = models.ForeignKey('Fair', related_name='fair_languoids', on_delete=models.CASCADE)
     added = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     modified_by = models.CharField(max_length=255)
 
     objects = LanguoidManager()
 
+    class Meta:
+        ordering = ['name']
+    def __str__(self):
+        return self.name
+
+class Tribe(models.Model):
+    name = models.CharField(max_length=255)
+    fair = models.ForeignKey('Fair', related_name='fair_tribes', on_delete=models.CASCADE)
+    active = models.BooleanField(default=True)
+    added = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    modified_by = models.CharField(max_length=255)
     class Meta:
         ordering = ['name']
     def __str__(self):
@@ -182,7 +194,7 @@ class Student(models.Model):
     user = models.ForeignKey('users.User', related_name='student_user', null=False, on_delete=models.SET(get_superuser)) # on delete set to superuser
     lastname = models.CharField(max_length=255)
     firstname = models.CharField(max_length=255)
-    languoids = models.ManyToManyField(Languoid, verbose_name="list of languoids", related_name='student_languoids', blank=True)
+    tribe = models.ManyToManyField(Tribe, verbose_name="tribes of student", related_name='student_tribe', blank=True)
     grade = models.CharField(max_length=4, choices=GRADES, blank=True)
     hometown = models.CharField(max_length=255, blank=True)
     state = models.CharField(max_length=2, choices=STATE_CHOICES, blank=True)

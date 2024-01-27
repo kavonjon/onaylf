@@ -54,7 +54,7 @@ class StudentForm(forms.ModelForm):
         prefix = 'student'
         fields = ['firstname',
                   'lastname',
-                  'languoids',
+                  'tribe',
                   'grade',
                   'hometown',
                   'state',
