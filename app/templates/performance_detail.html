@@ -20,7 +20,7 @@
 {% if includes_other_languoid %}<b>Other language:</b> {{ performance.other_languoid }}<br />{% endif %}
 <b>User:</b> {{ performance.user }}<br />
 <b>Category:</b> {{ performance.category }}<br />
-<b>Grade Range:</b> {{ performance.grade_range }}<br />
+<b>Grade Range:</b> {{ performance.get_grade_range_display }}<br />
 <b>Organizational:</b> {{ organization }}
 
 <hr />
@@ -64,7 +64,7 @@
                     {{ student.tribe }}
                 </td>
                 <td class="col-md-1 overflow-hidden">
-                    {{ student.grade }}
+                    {{ student.get_grade_display }}
                 </td>
                 <td class="col-md-1 overflow-hidden">
                     {{ student.tshirt_size }}
