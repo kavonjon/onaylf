@@ -61,7 +61,7 @@
                     {{ student.hometown }}, {{ student.state }}
                 </td>
                 <td class="col-md-2 overflow-hidden">
-                    {{ student.tribe }}
+                    {{ student.tribe.all|join:", " }}
                 </td>
                 <td class="col-md-1 overflow-hidden">
                     {{ student.get_grade_display }}
