@@ -8,6 +8,20 @@ class CategoryNameWidget(forms.Select):
         return ''
 
 class PerformanceForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        selected_category = kwargs.pop('selected_category', None)
+        super(PerformanceForm, self).__init__(*args, **kwargs)
+        if selected_category:
+            try:
+                category_instance = Category.objects.get(name=selected_category)
+                self.fields['category'].initial = category_instance
+            except Category.DoesNotExist:
+                pass  # Just don't change the form if the category does not exist
+
+        # Make the 'title' field optional in Django's server-side validation
+        self.fields['title'].required = False
+
+
     class Meta:
         model = Performance
         prefix = 'performance'

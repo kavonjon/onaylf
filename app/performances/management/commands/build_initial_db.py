@@ -107,60 +107,60 @@ class Command(BaseCommand):
 
 
         # # create tribes
-        current_fair = CurrentFair.objects.first()
-        tribe_list = [
-            ('Other',),
-            ('Absentee Shawnee Tribe',),
-            ('Alabama-Quassarte Tribal Town',),
-            ('Apache Tribe of Oklahoma',),
-            ('Caddo Nation',),
-            ('Cherokee Nation',),
-            ('Cheyenne and Arapaho Tribes',),
-            ('Chickasaw Nation',),
-            ('Choctaw Nation of Oklahoma',),
-            ('Citizen Potawatomi Nation',),
-            ('Comanche Nation',),
-            ('Delaware Nation',),
-            ('Delaware Tribe of Indians',),
-            ('Eastern Shawnee Tribe',),
-            ('Euchee/Yuchi Tribe',),
-            ('Fort Sill Apache Tribe',),
-            ('Havasupai Tribe',),
-            ('Hopi Tribe',),
-            ('Iowa Tribe',),
-            ('Kaw Nation',),
-            ('Kialegee Tribal Town',),
-            ('Kickapoo Tribe',),
-            ('Kiowa Tribe',),
-            ('Laguna Pueblo',),
-            ('Miami Tribe',),
-            ('Mississippi Band of Choctaw Indians',),
-            ('Modoc Nation',),
-            ('Muscogee Nation',),
-            ('Navajo Nation',),
-            ('Osage Nation',),
-            ('Otoe-Missouria Tribe',),
-            ('Ottawa Tribe',),
-            ('Pawnee Nation',),
-            ('Peoria Tribe of Indians',),
-            ('Poarch Band of Creek Indians',),
-            ('Ponca Tribe',),
-            ('Quapaw Nation',),
-            ('Sac and Fox Nation',),
-            ('San Carlos Apache Tribe',),
-            ('Seminole Nation',),
-            ('Seneca-Cayuga Nation',),
-            ('Shawnee Tribe',),
-            ('Thlopthlocco Tribal Town',),
-            ('Tonkawa Tribe',),
-            ('United Keetoowah Band of Cherokees',),
-            ('Wichita and Affiliated Tribes',),
-            ('Wyandotte Nation',),
-            ('Zuni Pueblo',)
-        ]
+        # current_fair = CurrentFair.objects.first()
+        # tribe_list = [
+        #     ('Other',),
+        #     ('Absentee Shawnee Tribe',),
+        #     ('Alabama-Quassarte Tribal Town',),
+        #     ('Apache Tribe of Oklahoma',),
+        #     ('Caddo Nation',),
+        #     ('Cherokee Nation',),
+        #     ('Cheyenne and Arapaho Tribes',),
+        #     ('Chickasaw Nation',),
+        #     ('Choctaw Nation of Oklahoma',),
+        #     ('Citizen Potawatomi Nation',),
+        #     ('Comanche Nation',),
+        #     ('Delaware Nation',),
+        #     ('Delaware Tribe of Indians',),
+        #     ('Eastern Shawnee Tribe',),
+        #     ('Euchee/Yuchi Tribe',),
+        #     ('Fort Sill Apache Tribe',),
+        #     ('Havasupai Tribe',),
+        #     ('Hopi Tribe',),
+        #     ('Iowa Tribe',),
+        #     ('Kaw Nation',),
+        #     ('Kialegee Tribal Town',),
+        #     ('Kickapoo Tribe',),
+        #     ('Kiowa Tribe',),
+        #     ('Laguna Pueblo',),
+        #     ('Miami Tribe',),
+        #     ('Mississippi Band of Choctaw Indians',),
+        #     ('Modoc Nation',),
+        #     ('Muscogee Nation',),
+        #     ('Navajo Nation',),
+        #     ('Osage Nation',),
+        #     ('Otoe-Missouria Tribe',),
+        #     ('Ottawa Tribe',),
+        #     ('Pawnee Nation',),
+        #     ('Peoria Tribe of Indians',),
+        #     ('Poarch Band of Creek Indians',),
+        #     ('Ponca Tribe',),
+        #     ('Quapaw Nation',),
+        #     ('Sac and Fox Nation',),
+        #     ('San Carlos Apache Tribe',),
+        #     ('Seminole Nation',),
+        #     ('Seneca-Cayuga Nation',),
+        #     ('Shawnee Tribe',),
+        #     ('Thlopthlocco Tribal Town',),
+        #     ('Tonkawa Tribe',),
+        #     ('United Keetoowah Band of Cherokees',),
+        #     ('Wichita and Affiliated Tribes',),
+        #     ('Wyandotte Nation',),
+        #     ('Zuni Pueblo',)
+        # ]
 
-        for tribe in tribe_list:
-            tribe = Tribe.objects.create(fair=current_fair.fair, name=tribe[0], modified_by="admin@nal.ou.edu")
+        # for tribe in tribe_list:
+        #     tribe = Tribe.objects.create(fair=current_fair.fair, name=tribe[0], modified_by="admin@nal.ou.edu")
 
 
         # # delete all categories
@@ -169,23 +169,31 @@ class Command(BaseCommand):
         # # create Categories
         # current_fair = CurrentFair.objects.first()
         # cat_list = [
-        #     ("Books",),
-        #     ("Comics and Cartoons",),
-        #     ("Film and Video",),
-        #     ("Master Performer",),
-        #     ("Mobile Video",),
-        #     ("Modern Song",),
-        #     ("Poster",),
-        #     ("Puppet Show",),
-        #     ("Skit/Short Play",),
-        #     ("Spoken Language",),
-        #     ("Spoken Poetry",),
-        #     ("Spoken Prayer",),
-        #     ("Traditional Song",)
+        #     ("Books", "True"),
+        #     ("Comics and Cartoons", "True"),
+        #     ("Film and Video", "True"),
+        #     ("Master Performer", "False"),
+        #     ("Mobile Video", "True"),
+        #     ("Modern Song", "False"),
+        #     ("Poster", "True",2),
+        #     ("Puppet Show", "True"),
+        #     ("Skit/Short Play", "False"),
+        #     ("Spoken Language", "False"),
+        #     ("Spoken Poetry", "False"),
+        #     ("Spoken Prayer", "False"),
+        #     ("Traditional Song", "False")
         # ]
 
         # for cat in cat_list:
-        #     category = Category.objects.create(fair=current_fair.fair, name=cat[0], modified_by="admin@nal.ou.edu")
+        #     max_students = cat[2] if len(cat) > 2 else None
+
+        #     category = Category.objects.create(
+        #         fair=current_fair.fair,
+        #         name=cat[0],
+        #         material_submission=cat[1],
+        #         max_students=max_students,
+        #         modified_by="admin@nal.ou.edu"
+        #     )
 
         # # delete all accessories
         # Accessory.objects.all().delete()

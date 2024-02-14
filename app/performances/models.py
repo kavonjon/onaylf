@@ -11,42 +11,6 @@ def get_superuser():
         # Just return the first user, probably an admin
         return User.objects.first()
 
-LANGUOID_LEVEL_CHOICES = (('family', 'Family'),
-                          ('language', 'Language'),
-                          ('dialect', 'Dialect'))
-
-PERFORMANCE_TYPE = (('individual', 'Individual'),
-                    ('group', 'Group'),
-                    ('both', 'Individual and group'))
-
-PERFORMANCE_STATUS = (('in_progress', 'In progress'),
-                      ('submitted', 'Submitted'),
-                      ('approved', 'Approved'),
-                      ('disqualified', 'Disqualified'))
-
-PERFORMANCE_PART_STATUS = (('in_progress', 'In progress'),
-                      ('pending', 'Pending'),
-                      ('completed', 'Completed'))
-
-GRADES = (('0_pk', 'PreK'),
-            ('1_k', 'Kindergarten'),
-            ('2_01', '1st'),
-            ('2_02', '2nd'),
-            ('2_03', '3rd'),
-            ('2_04', '4th'),
-            ('2_05', '5th'),
-            ('2_06', '6th'),
-            ('2_07', '7th'),
-            ('2_08', '8th'),
-            ('2_09', '9th'),
-            ('2_10', '10th'),
-            ('2_11', '11th'),
-            ('2_12', '12th'))
-
-GRADE_RANGES = (('0_pk-2', 'PreK-2nd'),
-                ('1_3-5', '3rd-5th'),
-                ('1_6-8', '6th-8th'),
-                ('1_9-12', '9th-12th'))
 
 STATE_CHOICES = (
     ('AL', 'Alabama'),
@@ -102,17 +66,6 @@ STATE_CHOICES = (
     ('WY', 'Wyoming')
 )
 
-TSHIRT_SIZES = (
-    ('ys', 'Youth Small (YS)'),
-    ('ym', 'Youth Medium (YM)'),
-    ('yl', 'Youth Large (YL)'),
-    ('s', 'Adult Small (S)'),
-    ('m', 'Adult Medium (M)'),
-    ('l', 'Adult Large (L)'),
-    ('xl', 'Adult Extra Large (XL)'),
-    ('xxl', 'Adult Extra Extra Large (XXL)'),
-    ('xxxl', 'Adult Extra Extra Extra Large (XXXL)'))
-
 class Fair(models.Model):
     name = models.CharField(max_length=255)
     notes = models.CharField(max_length=255, blank=True)
@@ -146,6 +99,9 @@ class LanguoidManager(models.Manager):
         ).order_by('is_other', 'name')
 
 class Languoid(models.Model):
+    LANGUOID_LEVEL_CHOICES = (('family', 'Family'),
+                          ('language', 'Language'),
+                          ('dialect', 'Dialect'))
     glottocode = models.CharField(max_length=25)
     isocode = models.CharField(max_length=50)
     name = models.CharField(max_length=255, blank=True)
@@ -190,6 +146,30 @@ class Instructor(models.Model):
         return self.lastname + ', ' + self.firstname
 
 class Student(models.Model):
+    GRADES = (('0_pk', 'PreK'),
+            ('1_k', 'Kindergarten'),
+            ('2_01', '1st'),
+            ('2_02', '2nd'),
+            ('2_03', '3rd'),
+            ('2_04', '4th'),
+            ('2_05', '5th'),
+            ('2_06', '6th'),
+            ('2_07', '7th'),
+            ('2_08', '8th'),
+            ('2_09', '9th'),
+            ('2_10', '10th'),
+            ('2_11', '11th'),
+            ('2_12', '12th'))
+    TSHIRT_SIZES = (
+            ('ys', 'Youth Small (YS)'),
+            ('ym', 'Youth Medium (YM)'),
+            ('yl', 'Youth Large (YL)'),
+            ('s', 'Adult Small (S)'),
+            ('m', 'Adult Medium (M)'),
+            ('l', 'Adult Large (L)'),
+            ('xl', 'Adult Extra Large (XL)'),
+            ('xxl', 'Adult Extra Extra Large (XXL)'),
+            ('xxxl', 'Adult Extra Extra Extra Large (XXXL)'))
     fair = models.ForeignKey('Fair', related_name='fair_students', on_delete=models.CASCADE)
     user = models.ForeignKey('users.User', related_name='student_user', null=False, on_delete=models.SET(get_superuser)) # on delete set to superuser
     lastname = models.CharField(max_length=255)
@@ -210,6 +190,8 @@ class Student(models.Model):
 class Category(models.Model):
     fair = models.ForeignKey('Fair', related_name='fair_categories', on_delete=models.CASCADE)
     name = models.CharField(max_length=500)
+    material_submission = models.BooleanField(default=False)
+    max_students = models.PositiveIntegerField(default=None, null=True, blank=True)
     added = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     modified_by = models.CharField(max_length=255)
@@ -235,12 +217,26 @@ class PerformanceAccessory(models.Model):
     count = models.PositiveIntegerField(default=0)
 
 class Performance(models.Model):
+    GRADE_RANGES = (('0_pk-2', 'PreK-2nd'),
+                ('1_3-5', '3rd-5th'),
+                ('1_6-8', '6th-8th'),
+                ('1_9-12', '9th-12th'))
+    PERFORMANCE_TYPE = (('individual', 'Individual'),
+                    ('group', 'Group'),
+                    ('both', 'Individual and group'))
+    PERFORMANCE_STATUS = (('in_progress', 'In progress'),
+                        ('submitted', 'Submitted'),
+                        ('approved', 'Approved'),
+                        ('disqualified', 'Disqualified'))
+    PERFORMANCE_PART_STATUS = (('in_progress', 'In progress'),
+                        ('pending', 'Pending'),
+                        ('completed', 'Completed'))
     fair = models.ForeignKey('Fair', related_name='fair_performances', on_delete=models.CASCADE)
     user = models.ForeignKey('users.User', related_name='performance_user', null=False, on_delete=models.SET(get_superuser)) # on delete set to superuser
     poster = models.BooleanField(default=False)
     title = models.CharField(max_length=500)
-    group = models.CharField(max_length=255) #pull automatically from user
-    languoids = models.ManyToManyField(Languoid, verbose_name="list of languoids", related_name='performance_languoids', blank=True)
+    group = models.CharField(max_length=255, blank=True)
+    languoids = models.ManyToManyField(Languoid, verbose_name="list of languoids", related_name='performance_languoids')
     other_languoid = models.CharField(max_length=255, blank=True)
     category = models.ForeignKey(Category, verbose_name="categories on performance", related_name='performance_category', null=True, on_delete=models.SET_NULL)
     grade_range = models.CharField(max_length=6, choices=GRADE_RANGES, blank=True)
@@ -249,7 +245,8 @@ class Performance(models.Model):
     students = models.ManyToManyField(Student, verbose_name="students on performance", related_name='performance_student', blank=True)
     accessories = models.ManyToManyField(Accessory, through='PerformanceAccessory', verbose_name="accessories on performance", related_name='performance_accessory', blank=True)
     comments = models.TextField(blank=True)
-    submitted = models.BooleanField(default=False)
+    submitted_email_sent = models.BooleanField(default=False)
+    approved_email_sent = models.BooleanField(default=False)
     status = models.CharField(max_length=12, choices=PERFORMANCE_STATUS, default="in_progress")
     instructors_status = models.CharField(max_length=12, choices=PERFORMANCE_PART_STATUS, default="pending")
     students_status = models.CharField(max_length=12, choices=PERFORMANCE_PART_STATUS, default="pending")
@@ -263,15 +260,10 @@ class Performance(models.Model):
     def __str__(self):
         return "(" + self.fair.name + ") " + self.title
 
-class Prize(models.Model):
-    fair = models.ForeignKey('Fair', related_name='fair_prizes', on_delete=models.CASCADE)
-    category = models.ManyToManyField(Category, verbose_name="categories on prize", related_name='prize_categories', blank=True)
-    # grade
-    performance_type = models.CharField(max_length=10, choices=PERFORMANCE_TYPE, blank=True)
-    added = models.DateTimeField(auto_now_add=True)
-    updated = models.DateTimeField(auto_now=True)
-    modified_by = models.CharField(max_length=255)
-    class Meta:
-        ordering = ['-fair', 'id']
-    def __str__(self):
-        return "(" + self.fair.name + ") " + self.id
+# for perf in perfs:
+#     if perf.poster:
+#         print(perf.id)
+#         perf.category = poster
+#         print(str(perf.id) + ": " + perf.title + " added to poster category")
+#         perf.save()
+        

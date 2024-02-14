@@ -1,15 +1,18 @@
+import json
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.generic.edit import FormView, DeleteView
 from django.core.mail import send_mail
 from django.conf import settings
+from django.http import Http404
 from rest_framework import generics, viewsets, status
+from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from users.models import User
-from .models import Fair, CurrentFair, Languoid, Performance, Category, Instructor, Student, Accessory, PerformanceAccessory
+from .models import STATE_CHOICES, Fair, CurrentFair, Languoid, Tribe, Performance, Category, Instructor, Student, Accessory, PerformanceAccessory
 from .serializers import CategorySerializer, PerformanceSerializer, PosterSerializer, InstructorSerializer, StudentSerializer, PerformanceAccessorySerializer
 from .forms import PerformanceForm, PerformanceCommentsForm, InstructorForm, StudentForm, PosterForm
 
@@ -74,6 +77,49 @@ class CategoryUpdateView(LoginRequiredMixin, generics.UpdateAPIView):
     serializer_class = CategorySerializer
     # permission_classes = [IsAuthenticated]  # Example: Allow any user to update tasks !!!!!!!!!!!!!!!
 
+class InstructorAddView(APIView):
+    def post(self, request):
+        # Get the current fair
+        currentFair = CurrentFair.objects.first()
+        # Get the user id from the request data
+        user_id = request.data.get('user_id')
+
+        # Get the user from the request
+        user = User.objects.get(id=user_id)
+
+        # Create a new instructor with the data from the request
+        instructor = Instructor(
+            firstname=request.data.get('firstname'),
+            lastname=request.data.get('lastname'),
+            user=user,
+            fair=currentFair.fair,
+            modified_by=request.user.get_username(),
+        )
+
+        # Save the instructor
+        instructor.save()
+
+        # Serialize the instructor
+        serializer = InstructorSerializer(instructor)
+
+        # Return the serialized instructor
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+class InstructorUpdateView(APIView):
+    def put(self, request, instr_pk):
+        instructor = self.get_object(instr_pk)
+        serializer = InstructorSerializer(instructor, data=request.data)
+        if serializer.is_valid():
+            serializer.validated_data['modified_by'] = request.user.get_username()
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get_object(self, instr_pk):
+        try:
+            return Instructor.objects.get(pk=instr_pk)
+        except Instructor.DoesNotExist:
+            raise Http404
 
 class InstructorViewSet(LoginRequiredMixin, viewsets.ModelViewSet):
     serializer_class = InstructorSerializer
@@ -87,6 +133,76 @@ class InstructorViewSet(LoginRequiredMixin, viewsets.ModelViewSet):
         if performance_id is not None:
             queryset = queryset.filter(performance_instructor__id=performance_id)
         return queryset
+
+class StudentAddView(APIView):
+    def post(self, request):
+        # Get the current fair
+        currentFair = CurrentFair.objects.first()
+        # Get the user id from the request data
+        user_id = request.data.get('user_id')
+
+        # Get the user from the request
+        user = User.objects.get(id=user_id)
+
+        # Create a new student with the data from the request
+        student = Student(
+            firstname=request.data.get('firstname'),
+            lastname=request.data.get('lastname'),
+            grade=request.data.get('grade'),
+            hometown=request.data.get('hometown'),
+            state=request.data.get('state'),
+            tshirt_size=request.data.get('tshirt_size'),
+            user=user,
+            fair=currentFair.fair,
+            modified_by=request.user.get_username(),
+        )
+
+        # Save the student
+        student.save()
+
+        student.tribe.set(request.data.get('tribes'))
+
+        # Serialize the student
+        serializer = StudentSerializer(student)
+
+        # Return the serialized student
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+class StudentUpdateView(APIView):
+    def put(self, request, stud_pk):
+        # Get the current fair
+        currentFair = CurrentFair.objects.first()
+        # Get the user id from the request data
+        user_id = request.data.get('user_id')
+
+        # Get the user from the request
+        user = User.objects.get(id=user_id)
+
+        # Get the student to update
+        student = get_object_or_404(Student, pk=stud_pk)
+
+        # Update the student with the data from the request
+        student.firstname = request.data.get('firstname')
+        student.lastname = request.data.get('lastname')
+        student.grade = request.data.get('grade')
+        student.hometown = request.data.get('hometown')
+        student.state = request.data.get('state')
+        student.tshirt_size = request.data.get('tshirt_size')
+        # student.user = user # This line is commented out because the user should not be updated
+        # student.fair = currentFair.fair # This line is commented out because the fair should not be updated
+        student.modified_by = request.user.get_username()
+
+        # Save the student
+        student.save()
+
+        student.tribe.set(request.data.get('tribes'))
+
+        # Serialize the student
+        serializer = StudentSerializer(student)
+
+        # Return the serialized student
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 class StudentViewSet(LoginRequiredMixin, viewsets.ModelViewSet):
     serializer_class = StudentSerializer
@@ -254,6 +370,11 @@ def performance_detail(request, perf_pk):
 
     performance_user_organization = performance.user.organization
 
+    # get the non material submission categories for the current fair
+    non_material_submission_categories = list(Category.objects.filter(fair=currentFair.fair, material_submission=False).values_list('name', flat=True))
+    # check if this performance is a non-material submission
+    non_material_submission = performance.category.name in non_material_submission_categories
+
     # Fetch the PerformanceAccessory instances related to the current performance
     performance_accessories = PerformanceAccessory.objects.filter(performance=performance)
 
@@ -278,25 +399,69 @@ def performance_detail(request, perf_pk):
         'moderator': is_moderator,
         'performance': performance,
         'organization': performance_user_organization,
+        'non_material_submission': non_material_submission,
         'includes_other_languoid': performance_includes_other_languoid,
         'accessories': accessories
 
     }
     return render(request, template, context)
 
-class performance_add(FormView):
+class performance_add(LoginRequiredMixin, FormView):
     def handle_no_permission(self):
-        return redirect('/no-permission')
+        return redirect('/accounts/login/')
     form_class = PerformanceForm
-    template_name = "add.html"
+    template_name = "performance_add.html"
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['add_type'] = 'Performance'
+
         if 'user_pk' in self.kwargs:
             user_pk = self.kwargs['user_pk']  # Access the pk value
             user = User.objects.get(pk=user_pk)  # Get the user object
-            context['owning_user'] = user
+        else:
+            user = self.request.user
+        context['owning_user'] = user
+
+        currentFair = CurrentFair.objects.first()
+
+        context['selected_category'] = self.kwargs.get('category', None)
+
+
+        material_submission_categories = list(Category.objects.filter(fair=currentFair.fair, material_submission=True).values_list('name', flat=True))
+        context['material_submission_categories'] = json.dumps(material_submission_categories)
+
+        non_material_submission_categories = list(Category.objects.filter(fair=currentFair.fair, material_submission=False).values_list('name', flat=True))
+        context['non_material_submission_categories'] = json.dumps(non_material_submission_categories)
+
+        categories = Category.objects.filter(fair=currentFair.fair)
+        categories_list = list(categories.values('name', 'max_students'))
+        context['categories'] = json.dumps(categories_list)
+
+        categories = Category.objects.filter(fair=currentFair.fair)
+        categories_dict = {category.name: category.max_students for category in categories}
+        context['category_student_max'] = json.dumps(categories_dict)
+
+        accessories = Accessory.objects.filter(fair=currentFair.fair)
+        context['accessories'] = accessories
+
+        grades = Student.GRADES
+        context['grades'] = grades
+
+        tribes = Tribe.objects.filter(fair=currentFair.fair)
+        context['tribes'] = tribes
+
+        states = STATE_CHOICES
+        context['states'] = states
+
+        tshirt_sizes = Student.TSHIRT_SIZES
+        context['tshirt_sizes'] = tshirt_sizes
+
         return context
+
+    def get(self, request, *args, **kwargs):
+        form = self.form_class(selected_category=self.get_context_data()['selected_category'])
+        return self.render_to_response(self.get_context_data(form=form))
+    
     def form_valid(self, form):
         if form.is_valid():
             currentFair = CurrentFair.objects.first()
@@ -312,7 +477,74 @@ class performance_add(FormView):
             self.object.save()
             form.save_m2m()
 
-            return redirect("/performance/%s/instructors" % self.object.pk)
+            # Get the instructors from the form data
+            instructors_json = self.request.POST.get('instructors')
+
+            # Check if instructors_json exists
+            if instructors_json:
+                # Parse the instructors_json as a JSON array
+                instructor_ids = json.loads(instructors_json)
+
+                # For each instructor_id in the instructor_ids array...
+                for instructor_id in instructor_ids:
+                    # Get the Instructor object with the given ID
+                    instructor = Instructor.objects.get(id=instructor_id)
+
+                    # Add the instructor to the performance's instructors
+                    self.object.instructors.add(instructor)
+
+            # Get the students from the form data
+            students_json = self.request.POST.get('students')
+
+            # Check if students_json exists
+            if students_json:
+                # Parse the students_json as a JSON array
+                student_ids = json.loads(students_json)
+
+                # For each student_id in the student_ids array...
+                for student_id in student_ids:
+                    # Get the Student object with the given ID
+                    student = Student.objects.get(id=student_id)
+
+                    # Add the student to the performance's students
+                    self.object.students.add(student)
+
+            # Save the performance object to update the instructors and students
+            self.object.save()
+
+            # Get the performance_accessory_counts from the form data
+            performance_accessory_counts = self.request.POST.get('performance_accessory_counts')
+
+            # Check if performance_accessory_counts exists
+            if performance_accessory_counts:
+                # Parse the performance_accessory_counts as a JSON object
+                try:
+                    accessory_counts = json.loads(performance_accessory_counts)
+                except json.JSONDecodeError:
+                    print(f"Invalid JSON: {performance_accessory_counts}")
+                    accessory_counts = {}
+                # For each key-value pair in the accessory_counts object...
+                for accessory_id, count in accessory_counts.items():
+                    # Create a PerformanceAccessory object
+                    PerformanceAccessory.objects.create(
+                        performance=self.object,
+                        accessory_id=accessory_id,
+                        count=count
+                    )
+
+            self.object.instructors_status = "completed"
+            self.object.students_status = "completed"
+            self.object.accessories_status = "completed"
+            self.object.review_status = "completed"
+            self.object.status = "submitted"
+            self.object.save()
+
+            # Determine the redirect URL based on the request path
+            print("submit-and-add" in self.request.POST)
+            if 'submit-and-add' in self.request.POST:
+                return redirect("/performance/add/%s/" % self.object.category.name)
+            else:
+                return redirect("/performance/%s/" % self.object.pk)
     def form_invalid(self, form):
         print(form.errors)
         return super().form_invalid(form)
@@ -619,6 +851,11 @@ class poster_add(LoginRequiredMixin, FormView):
             # self.object.title = "Poster " + str(self.object.pk)  # Set the name here
             self.object.save()  # Save the object again to store the new name
             form.save_m2m()
+            for performance_accessory_count in form.performance_accessory_counts:
+                if performance_accessory_count['count'] > 0:
+                    print(performance_accessory_count['accessory'])
+                    performance_accessory = PerformanceAccessory(performance=self.object, accessory=performance_accessory_count['accessory'], count=performance_accessory_count['count'])
+                    performance_accessory.save()
             return redirect("../../")
     def form_invalid(self, form):
         print(form.errors)

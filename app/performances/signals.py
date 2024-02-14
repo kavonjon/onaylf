@@ -6,22 +6,19 @@ from .models import CurrentFair, Performance
 
 @receiver(post_save, sender=Performance)
 def mark_performance_submitted(sender, instance, **kwargs):
-    if ( instance.instructors_status=="completed" and
-        instance.students_status=="completed" and
-        instance.accessories_status=="completed" and
-        instance.review_status=="completed" ):
-        if instance.status == 'in_progress':
-            instance.status = 'submitted'
-            instance.save(update_fields=['status'])
-            currentFair = CurrentFair.objects.first()
-            year = currentFair.name
-            performance_title = instance.title
-            if len(performance_title) > 40:
-                short_title = performance_title[:40].strip() + "..."
-            else:
-                short_title = performance_title
-            template_subject = "[ONAYLF {year}] Performance submitted: {short_title}"
-            template_email = """Performance title: {title}
+
+    if instance.status == 'submitted' and instance.submitted_email_sent == False:
+        instance.submitted_email_sent = True
+        instance.save(update_fields=['submitted_email_sent'])
+        currentFair = CurrentFair.objects.first()
+        year = currentFair.name
+        performance_title = instance.title
+        if len(performance_title) > 40:
+            short_title = performance_title[:40].strip() + "..."
+        else:
+            short_title = performance_title
+        template_subject = "[ONAYLF {year}] Performance submitted: {short_title}"
+        template_email = """Performance title: {title}
 
 Thank you for registering your student's performance for the {year} ONAYLF.
 
@@ -33,17 +30,19 @@ You can contact us at onaylf.samnoblemuseum@ou.edu with any questions.
 
 Thank you,
 ONAYLF Team"""
-            send_mail(
-                template_subject.format(year=year, short_title=short_title),
-                template_email.format(title=performance_title, year=year),
-                settings.EMAIL_HOST_USER,
-                [instance.user.email, 'onaylf.samnoblemuseum@ou.edu'],  # the email address to send to
-                fail_silently=True,
-            )
+        send_mail(
+            template_subject.format(year=year, short_title=short_title),
+            template_email.format(title=performance_title, year=year),
+            settings.EMAIL_HOST_USER,
+            [instance.user.email, 'onaylf.samnoblemuseum@ou.edu'],  # the email address to send to
+            fail_silently=True,
+        )
 
 @receiver(post_save, sender=Performance)
 def at_performance_approved(sender, instance, **kwargs):
-    if instance.status == 'approved':
+    if instance.status == 'approved' and instance.approved_email_sent == False:
+        instance.approved_email_sent = True
+        instance.save(update_fields=['approved_email_sent'])
         currentFair = CurrentFair.objects.first()
         year = currentFair.name
         performance_title = instance.title

@@ -58,3 +58,20 @@ hr {
 .highlight-yellow {
   background-color: #ffffcc; /* A less bright yellow */
 }
+
+.check-unchecked {
+  color: grey
+}
+
+.check-checked {
+  color: green
+}
+
+@keyframes flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.flash-animation {
+  animation: flash 0.2s 2;
+}
