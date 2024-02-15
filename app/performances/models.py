@@ -221,6 +221,22 @@ class Performance(models.Model):
                 ('1_3-5', '3rd-5th'),
                 ('1_6-8', '6th-8th'),
                 ('1_9-12', '9th-12th'))
+    GRADE_RANGES_DICT = {
+        '0_pk': '0_pk-2',
+        '1_k': '0_pk-2',
+        '2_01': '0_pk-2',
+        '2_02': '0_pk-2',
+        '2_03': '1_3-5',
+        '2_04': '1_3-5',
+        '2_05': '1_3-5',
+        '2_06': '1_6-8',
+        '2_07': '1_6-8',
+        '2_08': '1_6-8',
+        '2_09': '1_9-12',
+        '2_10': '1_9-12',
+        '2_11': '1_9-12',
+        '2_12': '1_9-12'
+    }
     PERFORMANCE_TYPE = (('individual', 'Individual'),
                     ('group', 'Group'),
                     ('both', 'Individual and group'))
@@ -241,6 +257,7 @@ class Performance(models.Model):
     category = models.ForeignKey(Category, verbose_name="categories on performance", related_name='performance_category', null=True, on_delete=models.SET_NULL)
     grade_range = models.CharField(max_length=6, choices=GRADE_RANGES, blank=True)
     performance_type = models.CharField(max_length=10, choices=PERFORMANCE_TYPE, blank=True)
+    override_performance_type = models.BooleanField(default=False)
     instructors = models.ManyToManyField(Instructor, verbose_name="instructors on performance", related_name='performance_instructor', blank=True)
     students = models.ManyToManyField(Student, verbose_name="students on performance", related_name='performance_student', blank=True)
     accessories = models.ManyToManyField(Accessory, through='PerformanceAccessory', verbose_name="accessories on performance", related_name='performance_accessory', blank=True)

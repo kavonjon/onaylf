@@ -10,12 +10,23 @@
 {% block featured %}
 <h5>Welcome, {{ currentUser.first_name }}</h5>
 
-This is your Homepage. On this page you can add or edit performances. There is a special form for entering performances in the poster category.<br />
+{% if moderator %}
+As a moderator, you can view all performances for the current fair. Click on column headers to sort by that column.<br />
+
+Approve or unapprove performances in the "Action" column. Perfomances can only be edited before they are submitted, so unapprove them first in order to edit and then resubmit them.<br />
+
+Emails will be sent for each performance the first time it is submitted and approved.<br />
+
+Click on a user to see a listing of their performances. You can also approve or unapprove performances from the user's page. You can add a performance for that user on their page.
+
+{% else %}
+This is your Homepage. On this page you can add or edit performances. Click "New Performance" to add a performance. Have a lot of posters? Try clicking the "New poster" button to pre-select the poster category. The table below shows your performances. You can view and edit each by clicking the info or edit buttons in the "Action" column.<br />
 
 -When you have completed your entry, its status will be "Submitted". You will not be able to edit it after that. If you need to make changes, you can click the "Retract submission" button to change the status back to "In progress" and then edit your entry. <br />
 
 -Once approved by the ONAYLF team, your entry status will change to "Approved". You will not be able to edit it after that. If you need to make changes, contact the ONAYLF team.
 
+{% endif %}
 {% endblock %}
 
 
@@ -45,14 +56,14 @@ This is your Homepage. On this page you can add or edit performances. There is a
     tableHeader = `
     <thead>
         <tr>
-            <th class="sort-btn" data-field="user.first_name"><div class="d-flex align-items-center">User<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none" style="display:none"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none"></i></span></div></th>
-            <th class="sort-btn" data-field="title"><div class="d-flex align-items-center">Title<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none"></i></span></div></th>
-            <th class="sort-btn" data-field="category.name"><div class="d-flex align-items-center">Category<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none"></i></span></div></th>
-            <th class="sort-btn" data-field="grade_range"><div class="d-flex align-items-center">Grade<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none"></i></span></div></th>
-            <th class="sort-btn" data-field="performance_type"><div class="d-flex align-items-center">Performance type<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none"></i></span></div></th>
-            <th class="sort-btn" data-field="group"><div class="d-flex align-items-center">Group<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none"></i></span></div></th>
-            <th class="sort-btn" data-field="status_display"><div class="d-flex align-items-center">Status<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none"></i></span></div></th>
-            <th><div class="d-flex align-items-center">Action</div></th>
+            <th class="sort-btn" data-field="user.first_name"><div class="d-flex align-items-center">User<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none;"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none;"></i></span></div></th>
+            <th class="sort-btn" data-field="title"><div class="d-flex align-items-center">Title<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none;"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none;"></i></span></div></th>
+            <th class="sort-btn" data-field="category.name"><div class="d-flex align-items-center">Category<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none;"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none;"></i></span></div></th>
+            <th class="sort-btn" data-field="grade_range"><div class="d-flex align-items-center">Grade<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none;"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none;"></i></span></div></th>
+            <th class="sort-btn" data-field="performance_type"><div class="d-flex align-items-center">Performance type<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none;"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none;"></i></span></div></th>
+            <th class="sort-btn" data-field="group"><div class="d-flex align-items-center">Group<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none;"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none;"></i></span></div></th>
+            <th class="sort-btn" data-field="status_display"><div class="d-flex align-items-center">Status<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none;"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none;"></i></span></div></th>
+            <th class="sort-btn" data-field="updated"><div class="d-flex align-items-center">Action<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none;"></i><i class="bi bi-caret-down-fill sort-caret" style="display:block;"></i></span></div></th>
         </tr>
     </thead>
     <tbody>
@@ -67,7 +78,7 @@ This is your Homepage. On this page you can add or edit performances. There is a
     constructor() {
 
         document.addEventListener('DOMContentLoaded', () => {
-            this._loadTable(true);
+            this._loadTable(true, true);
         });
 
         this._clickSortCaret = this._clickSortCaret.bind(this);
@@ -152,37 +163,41 @@ This is your Homepage. On this page you can add or edit performances. There is a
 
     }
 
-    async _loadTable(doFetch, { field = 'updated', direction = 'desc' } = {}) {
+    async _loadTable(doFetch, sort, { field = 'updated', direction = 'desc' } = {}) {
         if ( doFetch == true ) {
             await this._getPerformances()
+        } 
+        if (!sort) {
+            field = this.sort.field;
+            direction = this.sort.direction;
         }
 
         console.log(field, direction)
-        // Sort tableObjects if a field is specified
-        if (field) {
-        this.tableObjects.sort((a, b) => {
-            // Check if the first index of the field exists in a or b
-            const firstIndex = field.split('.')[0];
-            if (!(firstIndex in a)) return 1;
-            if (!(firstIndex in b)) return -1;
+            // Sort tableObjects if a field is specified
+            if (field) {
+                this.tableObjects.sort((a, b) => {
+                    // Check if the first index of the field exists in a or b
+                    const firstIndex = field.split('.')[0];
+                    if (!(firstIndex in a)) return 1;
+                    if (!(firstIndex in b)) return -1;
 
-            // Split the field string into an array and use reduce to access the nested property
-            let aField = field.split('.').reduce((o, i) => (o ? o[i] : undefined), a);
-            let bField = field.split('.').reduce((o, i) => (o ? o[i] : undefined), b);
+                    // Split the field string into an array and use reduce to access the nested property
+                    let aField = field.split('.').reduce((o, i) => (o ? o[i] : undefined), a);
+                    let bField = field.split('.').reduce((o, i) => (o ? o[i] : undefined), b);
 
-            // If aField or bField is undefined, sort it last
-            if (aField === undefined) return 1;
-            if (bField === undefined) return -1;
+                    // If aField or bField is undefined, sort it last
+                    if (aField === undefined) return 1;
+                    if (bField === undefined) return -1;
 
-            // Convert fields to lowercase if they are strings
-            if (typeof aField === 'string') aField = aField.toLowerCase();
-            if (typeof bField === 'string') bField = bField.toLowerCase();
+                    // Convert fields to lowercase if they are strings
+                    if (typeof aField === 'string') aField = aField.toLowerCase();
+                    if (typeof bField === 'string') bField = bField.toLowerCase();
 
-            if (aField < bField) return direction === 'asc' ? -1 : 1;
-            if (aField > bField) return direction === 'asc' ? 1 : -1;
-            return 0;
-        });
-    }
+                    if (aField < bField) return direction === 'asc' ? -1 : 1;
+                    if (aField > bField) return direction === 'asc' ? 1 : -1;
+                    return 0;
+                });
+            }
 
         table.innerHTML = this.tableHeader
         this.tableBody = document.querySelector('.performance-table tbody');
@@ -323,19 +338,35 @@ This is your Homepage. On this page you can add or edit performances. There is a
 
 
     async _clickSortCaret(e) {
-        const carets = document.querySelectorAll('.sort-caret');
-        const thisCaret = e.target.closest('th').querySelector('.sort-caret');
-        const field = e.target.closest('th').dataset.field;
+        const target = e.target;
+        let thElement;
+
+        if (target.tagName.toLowerCase() === 'th') {
+            thElement = target;
+        } else {
+            thElement = target.closest('th');
+        }
+
+        const field = thElement.dataset.field;
         let direction;
         if ( field == this.sort.field ) {
             direction = this.sort.direction === 'asc' ? 'desc' : 'asc';
         } else {
             direction = 'asc';
         }
-        console.log({ field:field, direction:direction })
-        await this._loadTable(false, { field:field, direction:direction });
-        carets.forEach(caret => caret.style.display = 'none');
-        thisCaret.style.display = 'inline';
+        await this._loadTable(false, true, { field:field, direction:direction });
+        
+        const carets = document.querySelectorAll('.sort-caret');
+        await carets.forEach(caret => caret.style.display = 'none');
+        const thisColumn = document.querySelector(`.performance-table th[data-field="${field}"]`);
+        if ( direction == 'asc' ) {
+            const thisCaret = thisColumn.querySelector('.bi-caret-up-fill');
+            thisCaret.style.display = 'block';
+        } else {
+            const thisCaret = thisColumn.querySelector('.bi-caret-down-fill');
+            thisCaret.style.display = 'block';
+        }
+
         this.sort = { field, direction };
     }
 
@@ -347,8 +378,9 @@ This is your Homepage. On this page you can add or edit performances. There is a
         if (status == "submitted") {
             await this._updatePerformance(performance_id, 'approved');
             const updatedPerformance = await this._getPerformance(performance_id);
-            const html = this._buildRowHtml(updatedPerformance);
-            row.outerHTML = html;
+            // const html = this._buildRowHtml(updatedPerformance);
+            // row.outerHTML = html;
+            await this._loadTable(true, false);
         }
 
     }
@@ -361,8 +393,9 @@ This is your Homepage. On this page you can add or edit performances. There is a
             await this._updatePerformancePartStatus(performance_id, 'review_status', 'pending')
             await this._updatePerformance(performance_id, 'in_progress');
             const updatedPerformance = await this._getPerformance(performance_id);
-            const html = this._buildRowHtml(updatedPerformance);
-            row.outerHTML = html;
+            // const html = this._buildRowHtml(updatedPerformance);
+            // row.outerHTML = html;
+            await this._loadTable(true, false);
         }
 
     }

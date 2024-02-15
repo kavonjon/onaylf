@@ -1,4 +1,5 @@
 import json
+from django.db.models import Min, Max
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -509,6 +510,20 @@ class performance_add(LoginRequiredMixin, FormView):
                     # Add the student to the performance's students
                     self.object.students.add(student)
 
+            # Set performance_type based on the numner of students
+            if self.object.students.count() > 1:
+                self.object.performance_type = "group"
+            else:
+                self.object.performance_type = "individual"
+
+            # get the student in the highest grade
+            max_grade = self.object.students.aggregate(Max('grade'))
+            max_grade_value = max_grade['grade__max']
+            # look up the grade range based on the highest grade
+            grade_range = Performance.GRADE_RANGES_DICT.get(max_grade_value)
+            # set the grade range (based on the student in the highest grade)
+            self.object.grade_range = grade_range
+
             # Save the performance object to update the instructors and students
             self.object.save()
 
@@ -733,6 +748,10 @@ def performance_accessories(request, perf_pk):
 
 @login_required
 def performance_edit(request, perf_pk):
+
+    # Check if the user is a moderator
+    is_moderator = request.user.groups.filter(name='moderator').exists()
+
     currentFair = CurrentFair.objects.first()
 
     performance = get_object_or_404(Performance, id=perf_pk)
@@ -741,25 +760,129 @@ def performance_edit(request, perf_pk):
     if performance.status != 'in_progress':
         return redirect('performance_detail', perf_pk=perf_pk)
 
+    material_submission_categories = list(Category.objects.filter(fair=currentFair.fair, material_submission=True).values_list('name', flat=True))
+    non_material_submission_categories = list(Category.objects.filter(fair=currentFair.fair, material_submission=False).values_list('name', flat=True))
+
+    categories = Category.objects.filter(fair=currentFair.fair)
+    categories_list = list(categories.values('name', 'max_students'))
+    categories_dict = {category.name: category.max_students for category in categories}
 
     other_languoid = Languoid.objects.get(name='Other')
 
     performance_includes_other_languoid = performance.languoids.filter(pk=other_languoid.pk).exists()
 
+    accessories = Accessory.objects.filter(fair=currentFair.fair)
+
+    grades = Student.GRADES
+
+    tribes = Tribe.objects.filter(fair=currentFair.fair)
+
+    states = STATE_CHOICES
+
+    tshirt_sizes = Student.TSHIRT_SIZES
+
     if request.method == "POST":
         form = PerformanceForm(request.POST, instance=performance)
         if form.is_valid():
-            form.save(commit=False)
-            form.modified_by = request.user.get_username()
-            form.save()
-            return redirect("/performance/%s/instructors/" % performance.pk)
+            edited_performance = form.save(commit=False)
+            edited_performance.modified_by = request.user.get_username()
+            edited_performance.save()
+            form.save_m2m()
+
+            # Get the instructors from the form data
+            instructors_json = request.POST.get('instructors')
+
+            # Check if instructors_json exists
+            if instructors_json:
+                # Parse the instructors_json as a JSON array
+                instructor_ids = json.loads(instructors_json)
+
+                # Get the Instructor objects with the given IDs
+                instructors = Instructor.objects.filter(id__in=instructor_ids)
+
+                # Set the performance's instructors to match the provided list
+                edited_performance.instructors.set(instructors)
+
+            # Get the students from the form data
+            students_json = request.POST.get('students')
+
+            # Check if students_json exists
+            if students_json:
+                # Parse the students_json as a JSON array
+                student_ids = json.loads(students_json)
+
+                # Get the Student objects with the given IDs
+                students = Student.objects.filter(id__in=student_ids)
+
+                # Set the performance's students to match the provided list
+                edited_performance.students.set(students)
+
+            # if override_performance_type is checked, do nothing special with performance type
+            if not edited_performance.override_performance_type:
+            # otherwise: set performance_type based on the numner of students
+                if edited_performance.students.count() > 1:
+                    edited_performance.performance_type = "group"
+                else:
+                    edited_performance.performance_type = "individual"
+
+
+            # get the student in the highest grade
+            max_grade = edited_performance.students.aggregate(Max('grade'))
+            max_grade_value = max_grade['grade__max']
+            # look up the grade range based on the highest grade
+            grade_range = Performance.GRADE_RANGES_DICT.get(max_grade_value)
+            # set the grade range (based on the student in the highest grade)
+            edited_performance.grade_range = grade_range
+
+            # Save the performance object to update the instructors and students
+            edited_performance.save()
+
+            # Get the performance_accessory_counts from the form data
+            performance_accessory_counts = request.POST.get('performance_accessory_counts')
+
+            # Check if performance_accessory_counts exists
+            if performance_accessory_counts:
+                # Parse the performance_accessory_counts as a JSON object
+                try:
+                    accessory_counts = json.loads(performance_accessory_counts)
+                except json.JSONDecodeError:
+                    print(f"Invalid JSON: {performance_accessory_counts}")
+                    accessory_counts = {}
+                # For each key-value pair in the accessory_counts object...
+                for accessory_id, count in accessory_counts.items():
+                    # Create a PerformanceAccessory object
+                    PerformanceAccessory.objects.update_or_create(
+                        performance=edited_performance,
+                        accessory_id=accessory_id,
+                        defaults={'count': count}
+                    )
+            
+            edited_performance.instructors_status = "completed"
+            edited_performance.students_status = "completed"
+            edited_performance.accessories_status = "completed"
+            edited_performance.review_status = "completed"
+            edited_performance.status = "submitted"
+            edited_performance.save()
+
+            return redirect(".")
     else:
         form = PerformanceForm(instance=performance)
-    template = 'performance_edit.html'
+    template = 'performance_add.html'
     context = {
+        'moderator': is_moderator,
         'currentFair': currentFair.name,
         'performance': performance,
+        'owning_user': performance.user,
+        'material_submission_categories': json.dumps(material_submission_categories),
+        'non_material_submission_categories': json.dumps(non_material_submission_categories),
+        'categories': json.dumps(categories_list),
+        'category_student_max': json.dumps(categories_dict),
         'includes_other_languoid': performance_includes_other_languoid,
+        'accessories': accessories,
+        'grades': grades,
+        'tribes': tribes,
+        'states': states,
+        'tshirt_sizes': tshirt_sizes,
         'form': form
     }
     return render(request, template, context)

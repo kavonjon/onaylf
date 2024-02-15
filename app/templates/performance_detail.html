@@ -6,6 +6,14 @@
 
 {% block page_content %}
 
+{% if moderator %}
+<p>
+<a href="{% url 'user_detail' performance.user.id %}" class="stealth">
+    <i class="bi bi-arrow-left"></i>Back to {{ performance.user.first_name }}'s overview
+</a>
+</p>
+{% endif %}
+
 <h3> Performance: {{ performance.title }}</h3>
 <b>Submission status:</b> {% if performance.status == "submitted" or performance.status == "approved" %}Submitted <i class="bi-check-square-fill check-checked"></i>{% else %}Incomplete <i class="bi-hourglass-split"></i>{% endif %}<br />
 <b>Approval status:</b> {% if performance.status == "approved" %}Approved <i class="bi-hand-thumbs-up-fill check-checked"></i>{% else %}Not yet approved <i class="bi-hourglass-split"></i>{% endif %}<br />
@@ -18,6 +26,7 @@
 <b>User:</b> {{ performance.user }}<br />
 <b>Category:</b> {{ performance.category }}<br />
 <b>Grade Range:</b> {{ performance.get_grade_range_display }}<br />
+<b>Performance Type:</b> {{ performance.get_performance_type_display }}<br />
 <b>Organizational:</b> {{ organization }}
 
 <hr />

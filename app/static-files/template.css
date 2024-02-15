@@ -55,6 +55,10 @@ hr {
   margin: 2rem;
 }
 
+.sort-btn:hover {
+  cursor: pointer;
+}
+
 .highlight-yellow {
   background-color: #ffffcc; /* A less bright yellow */
 }

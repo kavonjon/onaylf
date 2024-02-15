@@ -46,10 +46,27 @@
             Please select at least one language.
         </div>
     </div>
+    {% if performance %}{% if moderator %}
+    <div class="">
+        <b>Performance type:</b><br/>
+    </div>
+    <div class="col-2" id="performance-type-text">
+        {{ performance.get_performance_type_display }}
+    </div>
+    <div class="col-2" id="performance-type-field">
+        {{form.performance_type}}
+    </div>
+    <div class="" id="performance-type-overrride">
+        <b>Override performance type?</b> {{form.override_performance_type}}
+    </div>
+    {% endif %}{% endif %}
 
     <hr />
 
     <h3> Select instructor </h3>
+    <div>
+        Click on a check mark to select one or more instructors for this performance.
+    </div>
     <div class="p-1 text-danger submit-incomplete-instructor" style="display: none;">
         Please select at least one instructor.
     </div>
@@ -78,6 +95,9 @@
     <hr />
 
     <h3> Select student </h3>
+    <div>
+        Click on a check mark to select one or more students for this performance.
+    </div>
     <div class="student-max" style="display: none;">
         <span class="poster-student-rules">Most posters are individual submissions. </span><span>The maximum number of students for this category is </span><span class="student-max-value"></span>.
     </div>
@@ -271,15 +291,21 @@
     const submitIncompleteTitleDiv = document.querySelector('.title-incomplete');
     const languoidsSelect = document.querySelector('#id_languoids');
     const otherLanguoidDiv = document.querySelector('.other_languoid');
+    const performanceTypeText = document.querySelector('#performance-type-text');
+    const performanceTypeField = document.querySelector('#performance-type-field');
+    const performanceTypeOverride = document.querySelector('#performance-type-overrride input');
+
     const submitIncompleteDiv = document.querySelector('.submit-incomplete');
     const submitIncompleteStudentDiv = document.querySelector('.submit-incomplete-student');
     const submitIncompleteInstructorDiv = document.querySelector('.submit-incomplete-instructor');
     const submitIncompleteLanguageDiv = document.querySelector('.submit-incomplete-language');
 
     // Define a list of categories that are material submissions
-    const materialSubmissions = JSON.parse("{{ material_submission_categories|escapejs }}");
+    const materialSubmissions = JSON.parse( "{{ material_submission_categories|escapejs }}" );
     // Define a list of categories that are non material submissions
-    const nonMaterialSubmissions = JSON.parse("{{ non_material_submission_categories|escapejs }}");
+    const nonMaterialSubmissions = JSON.parse( "{{ non_material_submission_categories|escapejs }}" );
+    console.log('materialSubmissions', materialSubmissions);
+    console.log('nonMaterialSubmissions', nonMaterialSubmissions);
 
     const newInstructorAddButton = document.querySelector('.new-instructor-add');
     const newInstructorFirstNameInput = document.querySelector('#instructor_firstname');
@@ -293,6 +319,8 @@
     const maxStudentsValue = document.querySelector('.student-max-value');
     const categoryStudentMax = JSON.parse("{{ category_student_max|escapejs }}");
     const formFieldCategory = document.querySelector('select[name="category"]');
+    console.log('formfieldcategory', formFieldCategory);
+    console.log('categoryStudentMax', categoryStudentMax);
 
     const studentAddModalButton = document.querySelector('.btn-student-add-modal');
     const studentAddModalElement = document.getElementById('newStudentModal');
@@ -373,6 +401,12 @@
 
             document.addEventListener('DOMContentLoaded', this._toggleOtherLanguoid.bind(this));
             languoidsSelect.addEventListener('change', this._toggleOtherLanguoid.bind(this));
+
+            // if the performance type override box exists in the DOM, add an event listener for the change event
+            if (performanceTypeOverride) {
+                document.addEventListener('DOMContentLoaded', this._togglePerformanceType.bind(this));
+                performanceTypeOverride.addEventListener('change', this._togglePerformanceType.bind(this));
+            }
 
             document.addEventListener('DOMContentLoaded', this._setStudentsMax.bind(this));
             formFieldCategory.addEventListener('change', this._setStudentsMax.bind(this));
@@ -532,6 +566,17 @@
             } else {
                 // Hide the other_languoid div when "Other" is not selected
                 otherLanguoidDiv.style.display = 'none';
+            }
+        }
+
+        _togglePerformanceType() {
+            // if the performance type override is checked, enable the performance type field
+            if (performanceTypeOverride.checked) {
+                performanceTypeText.style.display = 'none';
+                performanceTypeField.style.display = 'block';
+            } else {
+                performanceTypeText.style.display = 'block';
+                performanceTypeField.style.display = 'none';
             }
         }
 
@@ -698,7 +743,7 @@
         async _setStudentsMax(e) {
             // Get the selected category name
             const categoryName = formFieldCategory.options[formFieldCategory.selectedIndex].text;
-
+            console.log('categoryName', categoryName)
             // Get the max students value from the lookup object
             this.studentsMax = categoryStudentMax[categoryName];
 
@@ -1255,13 +1300,10 @@
             console.log(formFieldCategory.options[formFieldCategory.selectedIndex].text)
             if (formFieldCategory.options[formFieldCategory.selectedIndex].text === 'Poster') {
                 if (!formFieldTitle.value) {
-                    const selectedStudentButtons = document.querySelectorAll('.include-performance-student-selected');
-                    const selectedStudentRows = Array.from(selectedStudentButtons).map(function(button) {
-                        return button.closest('.row');
-                    });
-                    const studentNames = selectedStudentRows.map(function(row) {
-                        return row.querySelector('td').textContent;
-                    });
+                    // Get the names of the selected students from this.students
+                    const studentNames = this.studentsTableObjects.filter(student => this.students.includes(student.id)).map(student => `${student.firstname} ${student.lastname}`);
+
+                    // join the names with " and "
                     const studentNamesString = studentNames.join(' and ');
                     formFieldTitle.value = `${studentNamesString}'s Poster`;
                 }

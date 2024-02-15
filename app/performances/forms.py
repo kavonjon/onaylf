@@ -21,6 +21,9 @@ class PerformanceForm(forms.ModelForm):
         # Make the 'title' field optional in Django's server-side validation
         self.fields['title'].required = False
 
+        # Make the override_performance_type field optional in Django's server-side validation
+        self.fields['override_performance_type'].required = False
+
 
     class Meta:
         model = Performance
@@ -32,6 +35,7 @@ class PerformanceForm(forms.ModelForm):
                   'category',
                   'grade_range',
                   'performance_type',
+                  'override_performance_type',
                   'comments',]
         # widgets = {
         # #     'languoid': forms.SelectMultiple(),
