@@ -216,19 +216,11 @@ This is your Homepage. On this page you can add or edit performances. Click "New
         let group;
         let detail_link;
         let edit_link;
-        if ( tableObject.poster ) {
-            category = 'Poster';
-            performance_type = 'Individual';
-            group = '';
-            detail_link = `/poster/${tableObject.id}/`;
-            edit_link = detail_link + 'edit/';
-        } else {
-            category = tableObject.category.name;
-            performance_type = tableObject.performance_type;
-            group = tableObject.group;
-            detail_link = `/performance/${tableObject.id}/`;
-            edit_link = detail_link + 'edit/';
-        }
+        category = tableObject.category.name;
+        performance_type = tableObject.performance_type;
+        group = tableObject.group;
+        detail_link = `/performance/${tableObject.id}/`;
+        edit_link = detail_link + 'edit/';
 
         let approveTooltip;
         let approveButton
