@@ -353,7 +353,8 @@ def user_list(request):
     # Check if the user is a moderator
     is_moderator = request.user.groups.filter(name='moderator').exists()
 
-    all_users = User.objects.all()
+    # get all users sorted by first name
+    all_users = User.objects.order_by('first_name')
 
     template = 'user_list.html'
     context = {
