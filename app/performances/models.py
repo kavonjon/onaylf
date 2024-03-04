@@ -68,6 +68,7 @@ STATE_CHOICES = (
 
 class Fair(models.Model):
     name = models.CharField(max_length=255)
+    registration_open = models.BooleanField(default=False)
     notes = models.CharField(max_length=255, blank=True)
     added = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)

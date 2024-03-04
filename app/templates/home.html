@@ -32,11 +32,11 @@ This is your Homepage. On this page you can add or edit performances. Click "New
 
 {% block page_content %}
 
-{% if moderator %}{% else %}
+{% if moderator %}{% else %}{% if registrationOpen %}
 <div class="mb-3">
     <a href="performance/add/" class="btn btn-primary">New Performance</a>
 </div>
-{% endif %}
+{% endif %}{% endif %}
 
 <div class="table-responsive">
     <table class="table table-striped small performance-table">
@@ -49,6 +49,8 @@ This is your Homepage. On this page you can add or edit performances. Click "New
   const table = document.querySelector('.performance-table');
   const moderatorText = "{{ moderator }}"
   const moderator = moderatorText == 'True'
+  const registrationOpenText = "{{ registrationOpen }}"
+  const registrationOpen = registrationOpenText == 'True'
 
   class App {
     tableObjects
@@ -171,7 +173,7 @@ This is your Homepage. On this page you can add or edit performances. Click "New
             direction = this.sort.direction;
         }
 
-        console.log(field, direction)
+        // console.log(field, direction)
             // Sort tableObjects if a field is specified
             if (field) {
                 this.tableObjects.sort((a, b) => {
@@ -246,28 +248,35 @@ This is your Homepage. On this page you can add or edit performances. Click "New
         let editTooltip;
         let editButton;
         let editHref;
-        if ( tableObject.status=="in_progress" ) {
-            editHref = edit_link;
-            editTooltip = ' title="Edit"'
-            editButton = `{% bs_icon 'pencil-square' extra_classes="performance-edit" color='blue' %}`
-        } else {
-            if (moderator) {
-                editHref = 'javascript:void(0)';
-                editTooltip = ''
-                editButton = `{% bs_icon 'pencil-square' extra_classes="performance-edit" color='grey' %}`
+        if ( registrationOpen ) {
+            if ( tableObject.status=="in_progress" ) {
+                editHref = edit_link;
+                editTooltip = ' title="Edit"'
+                editButton = `{% bs_icon 'pencil-square' extra_classes="performance-edit" color='blue' %}`
             } else {
-                if ( tableObject.status=="submitted" ) {
-                    editHref = 'javascript:void(0)';
-                    editTooltip = ' title="Retract submission to continue editing"'
-                    editButton = `{% bs_icon 'arrow-counterclockwise' extra_classes="performance-retract" color='tomato' %}`
-                } else {
+                if (moderator) {
                     editHref = 'javascript:void(0)';
                     editTooltip = ''
                     editButton = `{% bs_icon 'pencil-square' extra_classes="performance-edit" color='grey' %}`
+                } else {
+                    if ( tableObject.status=="submitted" ) {
+                        editHref = 'javascript:void(0)';
+                        editTooltip = ' title="Retract submission to continue editing"'
+                        editButton = `{% bs_icon 'arrow-counterclockwise' extra_classes="performance-retract" color='tomato' %}`
+                    } else {
+                        editHref = 'javascript:void(0)';
+                        editTooltip = ''
+                        editButton = `{% bs_icon 'pencil-square' extra_classes="performance-edit" color='grey' %}`
+                    }
                 }
-            }
 
+            }
+        } else {
+            editHref = 'javascript:void(0)';
+            editTooltip = ''
+            editButton = `{% bs_icon 'pencil-square' extra_classes="performance-edit" color='grey' %}`
         }
+
 
 
         const html = `

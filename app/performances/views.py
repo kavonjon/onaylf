@@ -20,6 +20,9 @@ from .forms import PerformanceForm, PerformanceCommentsForm, InstructorForm, Stu
 import requests
 from django.http import JsonResponse
 
+def is_moderator(user):
+    return user.groups.filter(name='moderator').exists()
+
 def custom_500_view(request):
     return render(request, "500.html", status=500)
 
@@ -331,12 +334,14 @@ def home(request):
     context = {
         'currentUser': currentUser,
         'moderator': is_moderator,
+        'registrationOpen': currentFair.fair.registration_open,
         'currentFair': currentFair.name,
         'performances': performances
     }
     return render(request, template, context)
 
 @login_required
+@user_passes_test(is_moderator)
 def user_detail(request, user_pk):
 
     currentUser = User.objects.get(pk=user_pk)
