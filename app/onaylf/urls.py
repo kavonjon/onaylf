@@ -44,6 +44,7 @@ urlpatterns = [
     path('api/instructor/update/<int:instr_pk>/', views.InstructorUpdateView.as_view(), name='instructor-update'),
     path('api/student/add/', views.StudentAddView.as_view(), name='student-add'),
     path('api/student/update/<int:stud_pk>/', views.StudentUpdateView.as_view(), name='student-update'),
+    path('api/fair/<int:fair_pk>/download/', views.FairDownloadView.as_view(), name='fair-download'),
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),
     path('accounts/signup/', SignUpView.as_view(), name='signup'),
@@ -81,7 +82,8 @@ urlpatterns = [
     path("select-fair/", views.select_fair, name="select_fair"),
     path("select-fair/<int:pk>/", views.select_fair, name="set_fair"),
     path("edit-fair/<int:pk>/", views.edit_fair, name="edit_fair"),
-
+    path("fair/", views.fair_detail, name="fair_detail"),
+    # path("pen/", views.query_inveniordm, name="pen")
 ]
 
 urlpatterns += router.urls

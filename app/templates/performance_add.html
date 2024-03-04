@@ -19,7 +19,7 @@
     {% csrf_token %}
     <h3> Basic details </h3>
     <div>
-        <b>Title:*</b><br/>
+        <b>Title:<span class="title-required">*</span></b><br/>
         {{form.title}}
     </div>
     <div class="p-1 text-danger title-incomplete" style="display: none;">
@@ -163,7 +163,7 @@
     <hr />
     <div>
         <b>Comments:</b><br/>
-        If you have anything you would like to communicate to us about this performance, please put it in the notes field below.
+        If you have anything you would like to communicate to us about this submission, please put it in the notes field below.
         {{form.comments}}
     </div>
     <div>
@@ -287,6 +287,7 @@
 <script>
     let instructorsTable = document.querySelector('.instructor-table');
     let studentsTable = document.querySelector('.student-table');
+    const titleRequired = document.querySelector('.title-required');
     const formFieldTitle = document.querySelector('input[name="title"]');
     const submitIncompleteTitleDiv = document.querySelector('.title-incomplete');
     const languoidsSelect = document.querySelector('#id_languoids');
@@ -304,8 +305,6 @@
     const materialSubmissions = JSON.parse( "{{ material_submission_categories|escapejs }}" );
     // Define a list of categories that are non material submissions
     const nonMaterialSubmissions = JSON.parse( "{{ non_material_submission_categories|escapejs }}" );
-    console.log('materialSubmissions', materialSubmissions);
-    console.log('nonMaterialSubmissions', nonMaterialSubmissions);
 
     const newInstructorAddButton = document.querySelector('.new-instructor-add');
     const newInstructorFirstNameInput = document.querySelector('#instructor_firstname');
@@ -319,8 +318,6 @@
     const maxStudentsValue = document.querySelector('.student-max-value');
     const categoryStudentMax = JSON.parse("{{ category_student_max|escapejs }}");
     const formFieldCategory = document.querySelector('select[name="category"]');
-    console.log('formfieldcategory', formFieldCategory);
-    console.log('categoryStudentMax', categoryStudentMax);
 
     const studentAddModalButton = document.querySelector('.btn-student-add-modal');
     const studentAddModalElement = document.getElementById('newStudentModal');
@@ -753,8 +750,10 @@
             // Show or hide the poster student rules div based on the selected category
             if ( categoryName == 'Poster' ) {
                 posterStudentRulesDiv.style.display = 'inline';
+                titleRequired.style.display = 'none';
             } else {
                 posterStudentRulesDiv.style.display = 'none';
+                titleRequired.style.display = 'inline';
             }
 
             // console.log('studentsMax', this.studentsMax)

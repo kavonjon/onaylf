@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Fair details for {{ currentFair }}{% endblock %}
+
+{% block page_content %}
+{% if moderator %}
+    <h2>Fair Information for {{ currentFair }}</h2>
+
+    <p>
+        <button class="btn btn-primary" id="downloadButton">Download</button>
+        (Download feature is in development)
+    </p>
+
+    <h3>Performances</h3>
+    <ul>
+    <li>Number of performances submitted: {{ performances_submitted_count }}</li>
+    <li>Of those, number approved: {{ performances_approved_count }}</li>
+    </ul>
+
+    <h2>Stats for approved performances:</h2>
+
+    <h3>Categories</h3>
+    <ul class="categories-totals">
+    {% for category, count in approved_performances_by_category.items %}
+    <li>{{ category }}: {{ count }}</li>
+    {% endfor %}
+    </ul>
+
+    <h3>Languages</h3>
+    <ul class="languages-totals">
+    {% for language, count in approved_performances_by_language.items %}
+    <li>{{ language }}: {{ count }}</li>
+    {% endfor %}
+    </ul>
+
+    <h3>Grade Ranges</h3>
+    <ul class="grade-ranges-totals">
+    {% for grade_range, count in approved_performances_by_grade_range.items %}
+    <li>{{ grade_range }}: {{ count }}</li>
+    {% endfor %}
+    </ul>
+
+    <h3>T-Shirts</h3>
+    <ul class="tshirt-sizes-totals">
+    {% for tshirt_size, count in approved_tshirt_sizes.items %}
+    <li>{{ tshirt_size }}: {{ count }}</li>
+    {% endfor %}
+    </ul>
+
+    <h3>Accessories</h3>
+    <ul class="accessories-totals">
+    {% for accessory, count in approved_accessories.items %}
+    <li>{{ accessory }}: {{ count }}</li>
+    {% endfor %}
+    </ul>
+
+
+
+    <script>
+        const downloadButton = document.getElementById('downloadButton');
+        class App {
+    
+            constructor() {
+                downloadButton.addEventListener('click', this._downloadMetadata.bind(this));
+            }
+
+            _getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        // Does this cookie string begin with the name we want?
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+            
+            _downloadMetadata(){
+                const fair_pk = "{{ fair.pk }}"
+                fetch(`/api/fair/${fair_pk}/download/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Create a blob with the data and download it
+                        const blob = new Blob([JSON.stringify(data, null, 2)], {type : 'application/json'});
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(blob);
+                        link.download = 'performance_data.json';
+                        link.click();
+                    })
+                    .catch(error => console.error('Error:', error));
+            }
+
+        }
+        const app = new App();
+    </script>
+
+{% endif %}
+{% endblock %}

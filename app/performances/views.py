@@ -1,5 +1,5 @@
 import json
-from django.db.models import Min, Max
+from django.db.models import Min, Max, Sum
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -14,8 +14,11 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from users.models import User
 from .models import STATE_CHOICES, Fair, CurrentFair, Languoid, Tribe, Performance, Category, Instructor, Student, Accessory, PerformanceAccessory
-from .serializers import CategorySerializer, PerformanceSerializer, PosterSerializer, InstructorSerializer, StudentSerializer, PerformanceAccessorySerializer
+from .serializers import CategorySerializer, PerformanceSerializer, PosterSerializer, InstructorSerializer, StudentSerializer, PerformanceAccessorySerializer, PerformanceJsonSerializer
 from .forms import PerformanceForm, PerformanceCommentsForm, InstructorForm, StudentForm, PosterForm
+
+import requests
+from django.http import JsonResponse
 
 def custom_500_view(request):
     return render(request, "500.html", status=500)
@@ -557,7 +560,7 @@ class performance_add(LoginRequiredMixin, FormView):
             # Determine the redirect URL based on the request path
             print("submit-and-add" in self.request.POST)
             if 'submit-and-add' in self.request.POST:
-                return redirect("/performance/add/%s/" % self.object.category.name)
+                return redirect("/performance/add/")
             else:
                 return redirect("/performance/%s/" % self.object.pk)
     def form_invalid(self, form):
@@ -1053,3 +1056,128 @@ def poster_edit(request, post_pk):
         'form': form
     }
     return render(request, template, context)
+
+@login_required
+def fair_detail(request, fair_pk=None):
+
+    # Check if the user is a moderator
+    is_moderator = request.user.groups.filter(name='moderator').exists()
+
+    currentFair = CurrentFair.objects.first()
+
+    if fair_pk is None:
+        fair = currentFair.fair
+    else:
+        fair = Fair.objects.get(pk=fair_pk)
+
+    # find the number of performances that are approved
+    performances_approved = Performance.objects.filter(fair=fair).filter(status="approved")
+    performances_approved_count = performances_approved.count()
+
+    # find the number of performances that are submitted
+    performances_submitted = Performance.objects.filter(fair=fair).filter(status="submitted")
+    performances_submitted_count = performances_approved_count + performances_submitted.count()
+
+    # find the number of approved performances in each category
+    approved_performances_by_category = {}
+    categories = Category.objects.filter(fair=fair)
+    for category in categories:
+        approved_performances_by_category[category.name] = performances_approved.filter(category=category).count()
+
+    # find the number of performances that are approved for each language, and store only the non-zero results
+    approved_performances_by_language = {}
+    languoids = Languoid.objects.filter(fair=fair)
+    for languoid in languoids:
+        approved_performances_by_language[languoid.name] = performances_approved.filter(languoids=languoid).count()
+    approved_performances_by_language = {k: v for k, v in approved_performances_by_language.items() if v != 0}
+
+    # find the number of performances that are approved for each grade range
+    approved_performances_by_grade_range = {}
+    grade_ranges = Performance.GRADE_RANGES
+    for grade_range, grade_range_display_value in grade_ranges:
+        approved_performances_by_grade_range[grade_range_display_value] = performances_approved.filter(grade_range=grade_range).count()
+    
+    # filter performances_approved to only include performances with a category that is not a material submission
+    performances_approved_non_material = performances_approved.filter(category__material_submission=False)        
+
+    # find the total number of tshirts needed in each size for all the approved performances
+    approved_tshirt_sizes = {}
+    tshirt_sizes = Student.TSHIRT_SIZES
+    for tshirt_size, tshirt_size_display_value in tshirt_sizes:
+        approved_tshirt_sizes[tshirt_size_display_value] = performances_approved_non_material.filter(students__tshirt_size=tshirt_size).values("students").distinct().count()
+
+    # filter PerformanceAccessory instances to only include those related to performances that are approved
+    performance_accessories_approved = PerformanceAccessory.objects.filter(performance__in=performances_approved)
+
+    # filter performance_accessories_approved to only include those related to performances with a category that is not a material submission
+    performance_accessories_approved_non_material = performance_accessories_approved.filter(performance__category__material_submission=False)
+
+    # find the total number of accessories in each type of accessory for all the approved performances
+    approved_accessories = {}
+    accessories = Accessory.objects.filter(fair=fair)
+    for accessory in accessories:
+        approved_accessories[accessory.name] = performance_accessories_approved_non_material.filter(accessory=accessory).aggregate(Sum('count'))['count__sum']
+    
+
+
+    template = 'fair_detail.html'
+    context = {
+        'currentFair': currentFair.name,
+        'fair': fair,
+        'moderator': is_moderator,
+        'performances_submitted_count': performances_submitted_count,
+        'performances_approved_count': performances_approved_count,
+        'approved_performances_by_category': approved_performances_by_category,
+        'approved_performances_by_language': approved_performances_by_language,
+        'approved_performances_by_grade_range': approved_performances_by_grade_range,
+        'approved_tshirt_sizes': approved_tshirt_sizes,
+        'approved_accessories': approved_accessories
+
+    }
+    return render(request, template, context)
+
+
+# and API view that returns JSON for all the performances for the fair given by the fair_pk, with all the metadata for each performance. This is sent to the browser as a download when the user clicks the "Download All Performance data" button on the fair detail page.
+class FairDownloadView(APIView):
+    def get(self, request, fair_pk):
+        fair = Fair.objects.get(pk=fair_pk)
+        performances = Performance.objects.filter(fair=fair)
+        serializer = PerformanceJsonSerializer(performances, many=True)
+        return Response(serializer.data)
+    
+
+
+
+# def query_inveniordm(request):
+#     # The URL to the InvenioRDM records API endpoint
+#     url = "https://143.244.215.98/api/records"
+
+#     # Parameters for the search query
+#     params = {
+#         "q": "metadata.languages.props.family:(\"coch1271\")"
+#     } 
+
+# # https://143.244.215.98/api/records?q=%22rood%22%20AND%20metadata.languages.id%3A%28%22wich1260%22%29
+
+
+#     # Make a GET request to the API
+#     try:
+#         response = requests.get(url, params=params, verify=False)  # Use verify=False only if necessary for self-signed certificates
+#     except requests.exceptions.RequestException as e:
+#         # Handle request exceptions (e.g., network errors)
+#         return JsonResponse({"error": "Network error or invalid URL", "details": str(e)}, status=500)
+
+#     # Check if the request was successful
+#     if response.status_code == 200:
+#         # Parse the response JSON and return it
+#         data = response.json()
+#         return JsonResponse(data, safe=False)
+#     else:
+#         # Handle errors or unsuccessful responses
+#         error_message = response.text
+#         try:
+#             error_data = response.json()
+#             error_message = error_data.get('message', response.text)
+#         except ValueError:
+#             pass  # JSON parsing failed, use the raw text
+#         return JsonResponse({"error": "Failed to fetch data", "details": error_message}, status=response.status_code)
