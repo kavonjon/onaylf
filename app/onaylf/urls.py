@@ -52,6 +52,7 @@ urlpatterns = [
     path('accounts/profile/edit/', user_account_edit, name='user_account_edit'),
     path("", views.home, name="home"),
     path("contact/", views.contact_info, name="contact"),
+    path("users/", views.user_list, name="user_list"),
     path("user/<int:user_pk>/", views.user_detail, name="user_detail"),
     path("user/<int:user_pk>/performance/add/", views.performance_add_admin.as_view(), name="performance_add_admin"),
     path("user/<int:user_pk>/performance/add/<str:category>/", views.performance_add_admin.as_view(), name="performance_add_admin_with_category"),

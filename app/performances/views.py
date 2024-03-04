@@ -343,6 +343,27 @@ def home(request):
     }
     return render(request, template, context)
 
+
+@login_required
+@user_passes_test(is_moderator)
+def user_list(request):
+
+    currentFair = CurrentFair.objects.first()
+
+    # Check if the user is a moderator
+    is_moderator = request.user.groups.filter(name='moderator').exists()
+
+    all_users = User.objects.all()
+
+    template = 'user_list.html'
+    context = {
+        'moderator': is_moderator,
+        'currentFair': currentFair.name,
+        'users': all_users
+    }
+    return render(request, template, context)
+
+
 @login_required
 @user_passes_test(is_moderator)
 def user_detail(request, user_pk):
