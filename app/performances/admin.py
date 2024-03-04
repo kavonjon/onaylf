@@ -9,7 +9,7 @@ class PerformanceAdmin(admin.ModelAdmin):
     list_display = [field.name for field in Performance._meta.fields]
 
     def get_readonly_fields(self, request, obj=None):
-        return [field.name for field in Performance._meta.fields if field.auto_now or field.auto_now_add]
+        return ["added", "updated"]
 
 admin.site.register(Performance, PerformanceAdmin)
 
