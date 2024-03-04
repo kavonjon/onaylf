@@ -297,6 +297,8 @@ class PerformanceAccessoryViewSet(LoginRequiredMixin, viewsets.ModelViewSet):
 @login_required
 def edit_fair(request, pk):
 
+    is_moderator = currentUser.groups.filter(name='moderator').exists()
+
     currentFair = CurrentFair.objects.first()
 
     fair = Fair.objects.prefetch_related("fair_categories", "fair_accessories").get(id=pk)
@@ -304,6 +306,7 @@ def edit_fair(request, pk):
     print(fair.fair_categories)
     template = 'edit_fair.html'
     context = {
+        'moderator': is_moderator,
         'currentFair': currentFair.name,
         'fair': fair,
     }
@@ -432,6 +435,7 @@ class performance_add(LoginRequiredMixin, FormView):
         context['owning_user'] = user
 
         currentFair = CurrentFair.objects.first()
+        context['currentFair'] = currentFair.name
 
         context['selected_category'] = self.kwargs.get('category', None)
 
@@ -1063,6 +1067,7 @@ def poster_edit(request, post_pk):
     return render(request, template, context)
 
 @login_required
+@user_passes_test(is_moderator)
 def fair_detail(request, fair_pk=None):
 
     # Check if the user is a moderator
