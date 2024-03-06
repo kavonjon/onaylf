@@ -1110,7 +1110,7 @@ def fair_detail(request, fair_pk=None):
     performances_submitted = Performance.objects.filter(fair=fair).filter(status="submitted")
     performances_submitted_count = performances_submitted.count()
 
-    all_performances_count = performances_approved_count + performances_submitted_count
+    performances_total_count = performances_approved_count + performances_submitted_count
 
     # find the number of approved performances in each category
     performances_by_category = {}
@@ -1183,7 +1183,7 @@ def fair_detail(request, fair_pk=None):
         'moderator': is_moderator,
         'performances_submitted_count': performances_submitted_count,
         'performances_approved_count': performances_approved_count,
-        'all_performances_count': all_performances_count,
+        'performances_total_count': performances_total_count,
         'performances_by_category': performances_by_category,
         'performances_by_language': performances_by_language,
         'performances_by_grade_range': performances_by_grade_range,
