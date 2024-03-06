@@ -97,7 +97,7 @@
             </tr>
         </thead>
         <tbody>
-        {% for tshirt_size, counts in tshirt_sizes.items %}
+        {% for tshirt_size, counts in tshirt_sizes_summary.items %}
             <tr>
                 <td>{{ tshirt_size }}</td>
                 <td>{{ counts.approved }}</td>
@@ -119,7 +119,7 @@
             </tr>
         </thead>
         <tbody>
-        {% for accessory, counts in accessories.items %}
+        {% for accessory, counts in accessories_summary.items %}
             <tr>
                 <td>{{ accessory }}</td>
                 <td>{{ counts.approved }}</td>
