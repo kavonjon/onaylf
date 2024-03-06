@@ -1108,49 +1108,73 @@ def fair_detail(request, fair_pk=None):
 
     # find the number of performances that are submitted
     performances_submitted = Performance.objects.filter(fair=fair).filter(status="submitted")
-    performances_submitted_count = performances_approved_count + performances_submitted.count()
+    performances_submitted_count = performances_submitted.count()
+
+    all_performances_count = performances_approved_count + performances_submitted_count
 
     # find the number of approved performances in each category
-    approved_performances_by_category = {}
+    performances_by_category = {}
     categories = Category.objects.filter(fair=fair)
     for category in categories:
-        approved_performances_by_category[category.name] = performances_approved.filter(category=category).count()
+        performances_by_category[category.name] = {
+            "approved": performances_approved.filter(category=category).count(),
+            "submitted": performances_submitted.filter(category=category).count(),
+            "all": performances_approved.filter(category=category).count() + performances_submitted.filter(category=category).count()
+        }
 
     # find the number of performances that are approved for each language, and store only the non-zero results
-    approved_performances_by_language = {}
+    performances_by_language = {}
     languoids = Languoid.objects.filter(fair=fair)
     for languoid in languoids:
-        approved_performances_by_language[languoid.name] = performances_approved.filter(languoids=languoid).count()
-    approved_performances_by_language = {k: v for k, v in approved_performances_by_language.items() if v != 0}
+        performances_by_language[languoid.name] = {
+            "approved": performances_approved.filter(languoids=languoid).count(),
+            "submitted": performances_submitted.filter(languoids=languoid).count(),
+            "all": performances_approved.filter(languoids=languoid).count() + performances_submitted.filter(languoids=languoid).count()
+        }
+    # remove any languages with no performances
+    performances_by_language = {k: v for k, v in performances_by_language.items() if v['all'] != 0}
 
     # find the number of performances that are approved for each grade range
-    approved_performances_by_grade_range = {}
+    performances_by_grade_range = {}
     grade_ranges = Performance.GRADE_RANGES
     for grade_range, grade_range_display_value in grade_ranges:
-        approved_performances_by_grade_range[grade_range_display_value] = performances_approved.filter(grade_range=grade_range).count()
+        performances_by_grade_range[grade_range_display_value] = {
+            "approved": performances_approved.filter(grade_range=grade_range).count(),
+            "submitted": performances_submitted.filter(grade_range=grade_range).count(),
+            "all": performances_approved.filter(grade_range=grade_range).count() + performances_submitted.filter(grade_range=grade_range).count()
+        }
     
-    # filter performances_approved to only include performances with a category that is not a material submission
-    performances_approved_non_material = performances_approved.filter(category__material_submission=False)        
+    # filter performances_approved and performances_submitted to only include performances with a category that is not a material submission
+    performances_approved_non_material = performances_approved.filter(category__material_submission=False)
+    performances_submitted_non_material = performances_submitted.filter(category__material_submission=False)
 
-    # find the total number of tshirts needed in each size for all the approved performances
-    approved_tshirt_sizes = {}
+    # find the total number of tshirts needed in each size for all the approved or submitted performances
+    tshirt_sizes_summary = {}
     tshirt_sizes = Student.TSHIRT_SIZES
     for tshirt_size, tshirt_size_display_value in tshirt_sizes:
-        approved_tshirt_sizes[tshirt_size_display_value] = performances_approved_non_material.filter(students__tshirt_size=tshirt_size).values("students").distinct().count()
+        tshirt_sizes_summary[tshirt_size_display_value] = {
+            "approved": performances_approved_non_material.filter(students__tshirt_size=tshirt_size).values("students").distinct().count(),
+            "submitted": performances_submitted_non_material.filter(students__tshirt_size=tshirt_size).values("students").distinct().count(),
+            "all": performances_approved_non_material.filter(students__tshirt_size=tshirt_size).values("students").distinct().count() + performances_submitted_non_material.filter(students__tshirt_size=tshirt_size).values("students").distinct().count()
+        }
 
-    # filter PerformanceAccessory instances to only include those related to performances that are approved
+    # filter PerformanceAccessory instances to only include those related to performances that are approved or submitted
     performance_accessories_approved = PerformanceAccessory.objects.filter(performance__in=performances_approved)
+    performance_accessories_submitted = PerformanceAccessory.objects.filter(performance__in=performances_submitted)
 
-    # filter performance_accessories_approved to only include those related to performances with a category that is not a material submission
+    # filter performance_accessories_approved and performance_accessories_submitted to only include those related to performances with a category that is not a material submission
     performance_accessories_approved_non_material = performance_accessories_approved.filter(performance__category__material_submission=False)
+    performance_accessories_submitted_non_material = performance_accessories_submitted.filter(performance__category__material_submission=False)
 
     # find the total number of accessories in each type of accessory for all the approved performances
-    approved_accessories = {}
+    accessories_summary = {}
     accessories = Accessory.objects.filter(fair=fair)
     for accessory in accessories:
-        approved_accessories[accessory.name] = performance_accessories_approved_non_material.filter(accessory=accessory).aggregate(Sum('count'))['count__sum']
-    
-
+        accessories_summary[accessory.name] = {
+            "approved": performance_accessories_approved_non_material.filter(accessory=accessory).aggregate(Sum('count'))['count__sum'],
+            "submitted": performance_accessories_submitted_non_material.filter(accessory=accessory).aggregate(Sum('count'))['count__sum'],
+            "all": performance_accessories_approved_non_material.filter(accessory=accessory).aggregate(Sum('count'))['count__sum'] + performance_accessories_submitted_non_material.filter(accessory=accessory).aggregate(Sum('count'))['count__sum']
+        }
 
     template = 'fair_detail.html'
     context = {
@@ -1159,11 +1183,12 @@ def fair_detail(request, fair_pk=None):
         'moderator': is_moderator,
         'performances_submitted_count': performances_submitted_count,
         'performances_approved_count': performances_approved_count,
-        'approved_performances_by_category': approved_performances_by_category,
-        'approved_performances_by_language': approved_performances_by_language,
-        'approved_performances_by_grade_range': approved_performances_by_grade_range,
-        'approved_tshirt_sizes': approved_tshirt_sizes,
-        'approved_accessories': approved_accessories
+        'all_performances_count': all_performances_count,
+        'performances_by_category': performances_by_category,
+        'performances_by_language': performances_by_language,
+        'performances_by_grade_range': performances_by_grade_range,
+        'tshirt_sizes_summary': tshirt_sizes_summary,
+        'accessories_summary': accessories_summary
 
     }
     return render(request, template, context)

@@ -21,39 +21,114 @@
     <h2>Stats for approved performances:</h2>
 
     <h3>Categories</h3>
-    <ul class="categories-totals">
-    {% for category, count in approved_performances_by_category.items %}
-    <li>{{ category }}: {{ count }}</li>
-    {% endfor %}
-    </ul>
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">Category</th>
+                <th scope="col">Approved</th>
+                <th scope="col">Submitted</th>
+                <th scope="col">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for category, counts in performances_by_category.items %}
+            <tr>
+                <td>{{ category }}</td>
+                <td>{{ counts.approved }}</td>
+                <td>{{ counts.submitted }}</td>
+                <td>{{ counts.all }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
 
     <h3>Languages</h3>
-    <ul class="languages-totals">
-    {% for language, count in approved_performances_by_language.items %}
-    <li>{{ language }}: {{ count }}</li>
-    {% endfor %}
-    </ul>
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">Language</th>
+                <th scope="col">Approved</th>
+                <th scope="col">Submitted</th>
+                <th scope="col">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for language, counts in performances_by_language.items %}
+            <tr>
+                <td>{{ language }}</td>
+                <td>{{ counts.approved }}</td>
+                <td>{{ counts.submitted }}</td>
+                <td>{{ counts.all }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
 
     <h3>Grade Ranges</h3>
-    <ul class="grade-ranges-totals">
-    {% for grade_range, count in approved_performances_by_grade_range.items %}
-    <li>{{ grade_range }}: {{ count }}</li>
-    {% endfor %}
-    </ul>
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">Grade range</th>
+                <th scope="col">Approved</th>
+                <th scope="col">Submitted</th>
+                <th scope="col">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for grade_range, counts in performances_by_grade_range.items %}
+            <tr>
+                <td>{{ grade_range }}</td>
+                <td>{{ counts.approved }}</td>
+                <td>{{ counts.submitted }}</td>
+                <td>{{ counts.all }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
 
     <h3>T-Shirts</h3>
-    <ul class="tshirt-sizes-totals">
-    {% for tshirt_size, count in approved_tshirt_sizes.items %}
-    <li>{{ tshirt_size }}: {{ count }}</li>
-    {% endfor %}
-    </ul>
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">T-shirt size</th>
+                <th scope="col">Approved</th>
+                <th scope="col">Submitted</th>
+                <th scope="col">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for tshirt_size, counts in tshirt_sizes.items %}
+            <tr>
+                <td>{{ tshirt_size }}</td>
+                <td>{{ counts.approved }}</td>
+                <td>{{ counts.submitted }}</td>
+                <td>{{ counts.all }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
 
     <h3>Accessories</h3>
-    <ul class="accessories-totals">
-    {% for accessory, count in approved_accessories.items %}
-    <li>{{ accessory }}: {{ count }}</li>
-    {% endfor %}
-    </ul>
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">Accessories</th>
+                <th scope="col">Approved</th>
+                <th scope="col">Submitted</th>
+                <th scope="col">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for accessory, counts in accessories.items %}
+            <tr>
+                <td>{{ accessory }}</td>
+                <td>{{ counts.approved }}</td>
+                <td>{{ counts.submitted }}</td>
+                <td>{{ counts.all }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
 
 
 
