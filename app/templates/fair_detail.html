@@ -135,6 +135,11 @@
 
     <script>
         const downloadButton = document.getElementById('downloadButton');
+
+        function sanitizeFilename(filename) {
+            return filename.replace(/[^a-z0-9_.-]/gi, '_');
+        }
+
         class App {
     
             constructor() {
@@ -159,15 +164,19 @@
             
             _downloadMetadata(){
                 const fair_pk = "{{ fair.pk }}"
+                const currentFair = "{{ currentFair }}"
                 fetch(`/api/fair/${fair_pk}/download/`)
-                    .then(response => response.json())
-                    .then(data => {
-                        // Create a blob with the data and download it
-                        const blob = new Blob([JSON.stringify(data, null, 2)], {type : 'application/json'});
+                    .then(response => response.blob())
+                    .then(blob => {
+                        // Create a link and download the file
+                        const url = window.URL.createObjectURL(blob);
                         const link = document.createElement('a');
-                        link.href = URL.createObjectURL(blob);
-                        link.download = 'performance_data.json';
+                        link.href = url;
+                        link.download = sanitizeFilename(`fair_${currentFair}_data.zip`);
+                        document.body.appendChild(link); // Append the link to the body
                         link.click();
+                        document.body.removeChild(link); // Remove the link from the body
+                        window.URL.revokeObjectURL(url); // Revoke the object URL
                     })
                     .catch(error => console.error('Error:', error));
             }
