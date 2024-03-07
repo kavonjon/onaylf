@@ -166,7 +166,12 @@
                 const fair_pk = "{{ fair.pk }}"
                 const currentFair = "{{ currentFair }}"
                 fetch(`/api/fair/${fair_pk}/download/`)
-                    .then(response => response.blob())
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.blob();
+                    })
                     .then(blob => {
                         // Create a link and download the file
                         const url = window.URL.createObjectURL(blob);
