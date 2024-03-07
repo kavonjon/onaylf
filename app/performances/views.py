@@ -1203,136 +1203,139 @@ def fair_detail(request, fair_pk=None):
 # and API view that returns JSON for all the performances for the fair given by the fair_pk, with all the metadata for each performance. This is sent to the browser as a download when the user clicks the "Download All Performance data" button on the fair detail page.
 class FairDownloadView(APIView):
     def get(self, request, fair_pk):
-        fair = Fair.objects.get(pk=fair_pk)
-        performances = Performance.objects.filter(fair=fair)
+        try:
+            fair = Fair.objects.get(pk=fair_pk)
+            performances = Performance.objects.filter(fair=fair)
 
-        ## Make json document
-        serializer = PerformanceJsonSerializer(performances, many=True)
+            ## Make json document
+            serializer = PerformanceJsonSerializer(performances, many=True)
 
-        # Convert the serialized data to JSON and save it to a file
-        data = json.dumps(serializer.data)
-        json_file_name = f'fair_{fair.name}_data.json'
-        json_file = default_storage.save(json_file_name, ContentFile(data))
-
-
-        ## Make xlsx for performances (non material)
-
-        non_material_submission_categories = list(Category.objects.filter(fair=fair, material_submission=False).values_list('name', flat=True))
-
-        performance_workbook = Workbook()
-
-        # # Define your default font
-        # default_font = Font(name='Arial')
-
-        # # Apply the default font to all cells in the workbook
-        # for sheet in performance_workbook:
-        #     for row in sheet.iter_rows():
-        #         for cell in row:
-        #             cell.font = default_font
+            # Convert the serialized data to JSON and save it to a file
+            data = json.dumps(serializer.data)
+            json_file_name = f'fair_{fair.name}_data.json'
+            json_file = default_storage.save(json_file_name, ContentFile(data))
 
 
+            ## Make xlsx for performances (non material)
 
-        for category in non_material_submission_categories:
-            # sanitize the category name to remove any characters that are not allowed in a sheet name
-            category = re.sub(r'[\\/*?[\]:]', '_', category)
-            # create a new sheet
-            performance_workbook.create_sheet(title=category)
-            # make the sheet active
-            performance_workbook.active = performance_workbook[category]
-            sheet = performance_workbook.active
-            # merge the first 7 columns of the first row
-            sheet.merge_cells('A1:G1')
-            # set the value of the merged cells to the category name
-            sheet['A1'] = category
-            # set the font size of the merged cells to 20 and bold
-            sheet['A1'].font = Font(size=20, bold=True)
-            # set the height of the first row to 30
-            sheet.row_dimensions[1].height = 30
-            # set the background color of the first 7 columns of the second row to blue, and the text color to white
-            for cell in sheet['A2:G2']:
-                for c in cell:
-                    c.fill = PatternFill(start_color="007bff", end_color="007bff", fill_type="solid")
-                    c.font = Font(color="FFFFFF")
-            # list of column headers
-            headers = ["Title", "Organization", "Performance group", "Language", "Grade Range", "Performance type", "Student count"]
-            # set the values of the second row to the column headers
-            for i, header in enumerate(headers):
-                sheet.cell(row=2, column=i+1, value=header)
-            # add data to the sheet, starting at the third row. the data are non material performances with the current category
-            performances = Performance.objects.filter(fair=fair, category__name=category, poster=False)
-            for i, performance in enumerate(performances):
-                row = i + 3
-                sheet.cell(row=row, column=1, value=performance.title)
-                sheet.cell(row=row, column=2, value=performance.user.organization)
-                sheet.cell(row=row, column=3, value=performance.group)
-                sheet.cell(row=row, column=4, value=", ".join([languoid.name for languoid in performance.languoids.all()]))
-                sheet.cell(row=row, column=5, value=performance.get_grade_range_display())
-                sheet.cell(row=row, column=6, value=performance.get_performance_type_display())
-                sheet.cell(row=row, column=7, value=performance.students.count())
+            non_material_submission_categories = list(Category.objects.filter(fair=fair, material_submission=False).values_list('name', flat=True))
 
-            # Iterate over the columns
-            for column in range(1, 8):
-                max_length = 0
-                column = get_column_letter(column)
-                for cell in sheet[column]:
-                    try: 
-                        if len(str(cell.value)) > max_length:
-                            max_length = len(cell.value)
-                    except:
-                        pass
-                adjusted_width = (max_length + 1)
-                sheet.column_dimensions[column].width = adjusted_width
+            performance_workbook = Workbook()
 
-        # remove the default sheet
-        performance_workbook.remove(performance_workbook['Sheet'])
+            # # Define your default font
+            # default_font = Font(name='Arial')
 
-        # Create a BytesIO object and save the workbook to it
-        xlsx_file_io = BytesIO()
-        performance_workbook.save(xlsx_file_io)
+            # # Apply the default font to all cells in the workbook
+            # for sheet in performance_workbook:
+            #     for row in sheet.iter_rows():
+            #         for cell in row:
+            #             cell.font = default_font
 
-        # Go back to the start of the BytesIO object
-        xlsx_file_io.seek(0)
 
-        # Save the BytesIO object to a file in default storage
-        xlsx_file_name = f'Fair{fair.name}-PerformanceCounts.xlsx'
-        xlsx_file = default_storage.save(xlsx_file_name, ContentFile(xlsx_file_io.read()))
 
-        # Get the full path of the files
-        json_file_path = default_storage.path(json_file)
-        print(json_file_path)
-        xlsx_file_path = default_storage.path(xlsx_file)
-        print(xlsx_file_path)
+            for category in non_material_submission_categories:
+                # sanitize the category name to remove any characters that are not allowed in a sheet name
+                category = re.sub(r'[\\/*?[\]:]', '_', category)
+                # create a new sheet
+                performance_workbook.create_sheet(title=category)
+                # make the sheet active
+                performance_workbook.active = performance_workbook[category]
+                sheet = performance_workbook.active
+                # merge the first 7 columns of the first row
+                sheet.merge_cells('A1:G1')
+                # set the value of the merged cells to the category name
+                sheet['A1'] = category
+                # set the font size of the merged cells to 20 and bold
+                sheet['A1'].font = Font(size=20, bold=True)
+                # set the height of the first row to 30
+                sheet.row_dimensions[1].height = 30
+                # set the background color of the first 7 columns of the second row to blue, and the text color to white
+                for cell in sheet['A2:G2']:
+                    for c in cell:
+                        c.fill = PatternFill(start_color="007bff", end_color="007bff", fill_type="solid")
+                        c.font = Font(color="FFFFFF")
+                # list of column headers
+                headers = ["Title", "Organization", "Performance group", "Language", "Grade Range", "Performance type", "Student count"]
+                # set the values of the second row to the column headers
+                for i, header in enumerate(headers):
+                    sheet.cell(row=2, column=i+1, value=header)
+                # add data to the sheet, starting at the third row. the data are non material performances with the current category
+                performances = Performance.objects.filter(fair=fair, category__name=category, poster=False)
+                for i, performance in enumerate(performances):
+                    row = i + 3
+                    sheet.cell(row=row, column=1, value=performance.title)
+                    sheet.cell(row=row, column=2, value=performance.user.organization)
+                    sheet.cell(row=row, column=3, value=performance.group)
+                    sheet.cell(row=row, column=4, value=", ".join([languoid.name for languoid in performance.languoids.all()]))
+                    sheet.cell(row=row, column=5, value=performance.get_grade_range_display())
+                    sheet.cell(row=row, column=6, value=performance.get_performance_type_display())
+                    sheet.cell(row=row, column=7, value=performance.students.count())
 
-        zip_folder_name = f'fair_{fair.name}_data/'
+                # Iterate over the columns
+                for column in range(1, 8):
+                    max_length = 0
+                    column = get_column_letter(column)
+                    for cell in sheet[column]:
+                        try: 
+                            if len(str(cell.value)) > max_length:
+                                max_length = len(cell.value)
+                        except:
+                            pass
+                    adjusted_width = (max_length + 1)
+                    sheet.column_dimensions[column].width = adjusted_width
 
-        # Create a new zip file
-        zip_file_name = f'fair_{fair.name}_data.zip'
-        with zipfile.ZipFile(zip_file_name, 'w') as zip_file:
-            # Add the json file to the zip file
-            zip_file.write(json_file_path, arcname=zip_folder_name+json_file_name)
+            # remove the default sheet
+            performance_workbook.remove(performance_workbook['Sheet'])
 
-            # Add the xlsx file to the zip file
-            zip_file.write(xlsx_file_path, arcname=zip_folder_name+xlsx_file_name)
+            # Create a BytesIO object and save the workbook to it
+            xlsx_file_io = BytesIO()
+            performance_workbook.save(xlsx_file_io)
 
-        # Create a generator that reads the file and yields the data
-        def file_iterator():
-            try:
-                with open(zip_file_name, 'rb') as f:
-                    for chunk in iter(lambda: f.read(4096), b''):
-                        yield chunk
-            finally:
-                os.remove(zip_file_name)
+            # Go back to the start of the BytesIO object
+            xlsx_file_io.seek(0)
 
-        # Create a StreamingHttpResponse that uses the file_iterator
-        response = StreamingHttpResponse(file_iterator(), content_type='application/zip')
-        response['Content-Disposition'] = f'attachment; filename="{zip_file_name}"'
+            # Save the BytesIO object to a file in default storage
+            xlsx_file_name = f'Fair{fair.name}-PerformanceCounts.xlsx'
+            xlsx_file = default_storage.save(xlsx_file_name, ContentFile(xlsx_file_io.read()))
 
-        # Delete the files from the default storage
-        default_storage.delete(json_file)
-        default_storage.delete(xlsx_file)
+            # Get the full path of the files
+            json_file_path = default_storage.path(json_file)
+            print(json_file_path)
+            xlsx_file_path = default_storage.path(xlsx_file)
+            print(xlsx_file_path)
 
-        return response
+            zip_folder_name = f'fair_{fair.name}_data/'
 
+            # Create a new zip file
+            zip_file_name = f'fair_{fair.name}_data.zip'
+            with zipfile.ZipFile(zip_file_name, 'w') as zip_file:
+                # Add the json file to the zip file
+                zip_file.write(json_file_path, arcname=zip_folder_name+json_file_name)
+
+                # Add the xlsx file to the zip file
+                zip_file.write(xlsx_file_path, arcname=zip_folder_name+xlsx_file_name)
+
+            # Create a generator that reads the file and yields the data
+            def file_iterator():
+                try:
+                    with open(zip_file_name, 'rb') as f:
+                        for chunk in iter(lambda: f.read(4096), b''):
+                            yield chunk
+                finally:
+                    os.remove(zip_file_name)
+
+            # Create a StreamingHttpResponse that uses the file_iterator
+            response = StreamingHttpResponse(file_iterator(), content_type='application/zip')
+            response['Content-Disposition'] = f'attachment; filename="{zip_file_name}"'
+
+            # Delete the files from the default storage
+            default_storage.delete(json_file)
+            default_storage.delete(xlsx_file)
+
+            return response
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # def query_inveniordm(request):
 #     # The URL to the InvenioRDM records API endpoint

@@ -165,10 +165,13 @@
             _downloadMetadata(){
                 const fair_pk = "{{ fair.pk }}"
                 const currentFair = "{{ currentFair }}"
+                downloadButton.disabled = true;
+                downloadButton.classList.remove('btn-primary');
+                downloadButton.classList.add('btn-secondary');
                 fetch(`/api/fair/${fair_pk}/download/`)
                     .then(response => {
                         if (!response.ok) {
-                            return response.json().then(err => { throw new Error(`HTTP error! status: ${response.status}, message: ${err.message}`); });
+                            return response.json().then(err => { throw new Error(`HTTP error! status: ${response.status}, message: ${err.error}`); });
                         }
                         return response.blob();
                     })
@@ -177,13 +180,21 @@
                         const url = window.URL.createObjectURL(blob);
                         const link = document.createElement('a');
                         link.href = url;
-                        link.download = sanitizeFilename(`fair_${currentFair}_data.zip`);
+                        link.download = sanitizeFilename(`fair${currentFair}-data.zip`);
                         document.body.appendChild(link); // Append the link to the body
                         link.click();
                         document.body.removeChild(link); // Remove the link from the body
                         window.URL.revokeObjectURL(url); // Revoke the object URL
+                        downloadButton.disabled = false;
+                        downloadButton.classList.remove('btn-secondary');
+                        downloadButton.classList.add('btn-primary');
                     })
-                    .catch(error => console.error('Error:', error));
+                    .catch(error => {
+                        console.error('Error:', error);
+                        downloadButton.disabled = false;
+                        downloadButton.classList.remove('btn-secondary');
+                        downloadButton.classList.add('btn-primary');
+                    });
             }
 
         }
