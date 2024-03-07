@@ -1220,7 +1220,7 @@ class FairDownloadView(APIView):
 
             # filter performances to only include those that are submitted or approved
             performances = performances.filter(status__in=["submitted", "approved"])
-            
+
             non_material_submission_categories = list(Category.objects.filter(fair=fair, material_submission=False).values_list('name', flat=True))
 
             performance_workbook = Workbook()
@@ -1238,11 +1238,11 @@ class FairDownloadView(APIView):
 
             for category in non_material_submission_categories:
                 # sanitize the category name to remove any characters that are not allowed in a sheet name
-                category = re.sub(r'[\\/*?[\]:]', '_', category)
+                category_name = re.sub(r'[\\/*?[\]:]', '_', category)
                 # create a new sheet
-                performance_workbook.create_sheet(title=category)
+                performance_workbook.create_sheet(title=category_name)
                 # make the sheet active
-                performance_workbook.active = performance_workbook[category]
+                performance_workbook.active = performance_workbook[category_name]
                 sheet = performance_workbook.active
                 # merge the first 7 columns of the first row
                 sheet.merge_cells('A1:G1')
