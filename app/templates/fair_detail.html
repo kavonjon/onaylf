@@ -7,10 +7,17 @@
 {% if moderator %}
     <h2>Fair Information for {{ currentFair }}</h2>
 
-    <p>
-        <button class="btn btn-primary" id="downloadButton">Download</button>
-        (Download feature is in development)
-    </p>
+    <div class="d-flex mt-3 mb-2">
+        <div>
+            <button class="btn btn-primary me-1" id="downloadButton">Download</button>
+        </div>
+        <div class="spinner-border text-primary d-none" id="spinner" role="status">
+            <span class="sr-only"></span>
+        </div>
+        <div class="ms-1 d-flex align-items-center">
+            (This can take a minute or two)
+        </div>
+    </div>
 
     <h3>Performances</h3>
     <ul>
@@ -135,6 +142,7 @@
 
     <script>
         const downloadButton = document.getElementById('downloadButton');
+        const spinner = document.getElementById('spinner');
 
         function sanitizeFilename(filename) {
             return filename.replace(/[^a-z0-9_.-]/gi, '_');
@@ -168,6 +176,7 @@
                 downloadButton.disabled = true;
                 downloadButton.classList.remove('btn-primary');
                 downloadButton.classList.add('btn-secondary');
+                spinner.classList.remove('d-none');
                 fetch(`/api/fair/${fair_pk}/download/`)
                     .then(response => {
                         const contentType = response.headers.get("content-type");
@@ -196,12 +205,14 @@
                         downloadButton.disabled = false;
                         downloadButton.classList.remove('btn-secondary');
                         downloadButton.classList.add('btn-primary');
+                        spinner.classList.add('d-none');
                     })
                     .catch(error => {
                         console.error('Error:', error);
                         downloadButton.disabled = false;
                         downloadButton.classList.remove('btn-secondary');
                         downloadButton.classList.add('btn-primary');
+                        spinner.classList.add('d-none');
                     });
             }
 
