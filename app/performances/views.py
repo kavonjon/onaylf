@@ -1219,7 +1219,7 @@ class FairDownloadView(APIView):
             ## Make xlsx for performances (non material)
 
             # filter performances to only include those that are submitted or approved
-            performances = performances.filter(status__in=["submitted", "approved"])
+            performances = performances.filter(status__in=["approved"])
 
             non_material_submission_categories = list(Category.objects.filter(fair=fair, material_submission=False).values_list('name', flat=True))
 
