@@ -170,10 +170,18 @@
                 downloadButton.classList.add('btn-secondary');
                 fetch(`/api/fair/${fair_pk}/download/`)
                     .then(response => {
+                        const contentType = response.headers.get("content-type");
                         if (!response.ok) {
-                            return response.json().then(err => { throw new Error(`HTTP error! status: ${response.status}, message: ${err.error}`); });
+                            if (contentType && contentType.includes("application/json")) {
+                                return response.json().then(err => { throw new Error(`HTTP error! status: ${response.status}, message: ${err.error}`); });
+                            } else {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
                         }
-                        return response.blob();
+                        if (contentType && contentType.includes("application/zip")) {
+                            return response.blob();
+                        }
+                        throw new Error(`Unexpected content-type: ${contentType}`);
                     })
                     .then(blob => {
                         // Create a link and download the file
