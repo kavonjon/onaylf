@@ -1263,8 +1263,8 @@ class FairDownloadView(APIView):
                 for i, header in enumerate(headers):
                     sheet.cell(row=2, column=i+1, value=header)
                 # add data to the sheet, starting at the third row. the data are non material performances with the current category
-                performances = Performance.objects.filter(fair=fair, category__name=category, poster=False)
-                for i, performance in enumerate(performances):
+                performances_in_category = performances.filter(category__name=category)
+                for i, performance in enumerate(performances_in_category):
                     row = i + 3
                     sheet.cell(row=row, column=1, value=performance.title)
                     sheet.cell(row=row, column=2, value=performance.user.organization)
