@@ -168,7 +168,7 @@
                 fetch(`/api/fair/${fair_pk}/download/`)
                     .then(response => {
                         if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
+                            return response.json().then(err => { throw new Error(`HTTP error! status: ${response.status}, message: ${err.message}`); });
                         }
                         return response.blob();
                     })
