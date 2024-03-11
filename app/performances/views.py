@@ -1165,6 +1165,17 @@ def fair_detail(request, fair_pk=None):
             "all": performances_approved_non_material.filter(students__tshirt_size=tshirt_size).values("students").distinct().count() + performances_submitted_non_material.filter(students__tshirt_size=tshirt_size).values("students").distinct().count()
         }
 
+    # filter performances_approved and performances_submitted to only include performances with a category that is a material submission
+    performances_approved_material = performances_approved.filter(category__material_submission=True)
+    performances_submitted_material = performances_submitted.filter(category__material_submission=True)
+    
+    # find number of students in material submissions for bag counts
+    bag_count = {
+            "approved": performances_approved_material.values("students").distinct().count(),
+            "submitted": performances_submitted_material.values("students").distinct().count(),
+            "all": performances_approved_material.values("students").distinct().count() + performances_submitted_material.values("students").distinct().count()
+        }
+
     # filter PerformanceAccessory instances to only include those related to performances that are approved or submitted
     performance_accessories_approved = PerformanceAccessory.objects.filter(performance__in=performances_approved)
     performance_accessories_submitted = PerformanceAccessory.objects.filter(performance__in=performances_submitted)
@@ -1195,6 +1206,7 @@ def fair_detail(request, fair_pk=None):
         'performances_by_language': performances_by_language,
         'performances_by_grade_range': performances_by_grade_range,
         'tshirt_sizes_summary': tshirt_sizes_summary,
+        'bag_count': bag_count,
         'accessories_summary': accessories_summary
 
     }
@@ -1218,10 +1230,12 @@ class FairDownloadView(APIView):
 
             ## Make xlsx for performances (non material)
 
-            # filter performances to only include those that are submitted or approved
+            # filter performances to only include those that are approved
             performances = performances.filter(status__in=["approved"])
 
             non_material_submission_categories = list(Category.objects.filter(fair=fair, material_submission=False).values_list('name', flat=True))
+            categories = list(Category.objects.filter(fair=fair).values_list('name', flat=True))
+
 
             performance_workbook = Workbook()
 
@@ -1236,7 +1250,7 @@ class FairDownloadView(APIView):
 
 
 
-            for category in non_material_submission_categories:
+            for category in categories:
                 # sanitize the category name to remove any characters that are not allowed in a sheet name
                 category_name = re.sub(r'[\\/*?[\]:]', '_', category)
                 # create a new sheet
