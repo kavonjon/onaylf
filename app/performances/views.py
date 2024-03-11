@@ -1168,12 +1168,33 @@ def fair_detail(request, fair_pk=None):
     # filter performances_approved and performances_submitted to only include performances with a category that is a material submission
     performances_approved_material = performances_approved.filter(category__material_submission=True)
     performances_submitted_material = performances_submitted.filter(category__material_submission=True)
-    
+
+
+    ## find the number of students that are in an approved performance that is a material submission, but are not in a non-material submission
+    # Get all students in approved performances that are material submissions
+    students_in_approved_material_submissions = performances_approved_material.values("students").distinct()
+
+    # Get all students in approved performances that are non-material submissions
+    students_in_approved_non_material_submissions = performances_approved_non_material.values("students").distinct()
+
+    # Find students that are in an approved performance that is a material submission, but are not in a non-material submission
+    students_in_approved_material_not_in_non_material = students_in_approved_material_submissions.exclude(id__in=students_in_approved_non_material_submissions)
+
+    ## find the number of students that are in a submitted performance that is a material submission, but are not in a non-material submission
+    # Get all students in submitted performances that are material submissions
+    students_in_submitted_material_submissions = performances_submitted_material.values("students").distinct()
+
+    # Get all students in submitted performances that are non-material submissions
+    students_in_submitted_non_material_submissions = performances_submitted_non_material.values("students").distinct()
+
+    # Find students that are in a submitted performance that is a material submission, but are not in a non-material submission
+    students_in_submitted_material_not_in_non_material = students_in_submitted_material_submissions.exclude(id__in=students_in_submitted_non_material_submissions)
+
     # find number of students in material submissions for bag counts
     bag_count = {
-            "approved": performances_approved_material.values("students").distinct().count(),
-            "submitted": performances_submitted_material.values("students").distinct().count(),
-            "all": performances_approved_material.values("students").distinct().count() + performances_submitted_material.values("students").distinct().count()
+            "approved": students_in_approved_material_not_in_non_material.count(),
+            "submitted": students_in_submitted_material_not_in_non_material.count(),
+            "all": students_in_approved_material_not_in_non_material.count() + students_in_submitted_material_not_in_non_material.count()
         }
 
     # filter PerformanceAccessory instances to only include those related to performances that are approved or submitted
