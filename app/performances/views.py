@@ -304,6 +304,10 @@ class PerformanceAccessoryViewSet(LoginRequiredMixin, viewsets.ModelViewSet):
 @login_required
 def edit_fair(request, pk):
 
+    currentUserEmail = request.user.get_username()
+
+    currentUser = User.objects.get(email=currentUserEmail)
+
     is_moderator = currentUser.groups.filter(name='moderator').exists()
 
     currentFair = CurrentFair.objects.first()
@@ -1172,13 +1176,55 @@ def fair_detail(request, fair_pk=None):
 
     ## find the number of students that are in an approved performance that is a material submission, but are not in a non-material submission
     # Get all students in approved performances that are material submissions
-    students_in_approved_material_submissions = performances_approved_material.values("students").distinct()
+    # students_in_approved_material_submissions = performances_approved_material.values("students").distinct()
+    students_in_approved_material_submissions = Student.objects.filter(performance_student__in=performances_approved_material).distinct()
+
+    # # print a list of students in approved material submissions
+    # print('students_in_approved_material_submissions')
+    # students_list = students_in_approved_material_submissions.values_list('id', 'firstname', 'lastname')
+    # # Get the list of students sorted by id
+    # sorted_students_list = sorted(students_list, key=lambda x: x[0])
+
+    # # Pretty print the sorted list of students
+    # for id, firstname, lastname in sorted_students_list:
+    #     print(f"ID: {id}, First Name: {firstname}, Last Name: {lastname}")
+    # print("length of sorted_students_list")
+    # print(len(sorted_students_list))
+    # print(students_in_approved_material_submissions.count())
 
     # Get all students in approved performances that are non-material submissions
-    students_in_approved_non_material_submissions = performances_approved_non_material.values("students").distinct()
+    # students_in_approved_non_material_submissions = performances_approved_non_material.values("students").distinct()
+    students_in_approved_non_material_submissions = Student.objects.filter(performance_student__in=performances_approved_non_material).distinct()
+
+
+    # students_list = students_in_approved_non_material_submissions.values_list('id', 'firstname', 'lastname')
+    # # Get the list of students sorted by id
+    # sorted_students_list = sorted(students_list, key=lambda x: x[0])
+
+    # # Pretty print the sorted list of students
+    # for id, firstname, lastname in sorted_students_list:
+    #     print(f"ID: {id}, First Name: {firstname}, Last Name: {lastname}")
+    # print("length of non material sorted_students_list")
+    # print(len(sorted_students_list))
+
+    # print(students_in_approved_non_material_submissions.count())
 
     # Find students that are in an approved performance that is a material submission, but are not in a non-material submission
-    students_in_approved_material_not_in_non_material = students_in_approved_material_submissions.exclude(id__in=students_in_approved_non_material_submissions)
+    students_in_approved_material_not_in_non_material = students_in_approved_material_submissions.exclude(id__in=students_in_approved_non_material_submissions).distinct()
+
+    # print('students_in_approved_material_not_in_non_material')
+    # print(students_in_approved_material_not_in_non_material.count())
+    # print("students in both")
+    # print(students_in_approved_material_submissions.filter(id__in=students_in_approved_non_material_submissions).count())
+
+    # # find the intersection of the two sets
+    # print("intersection")
+    # print(students_in_approved_material_submissions.filter(id__in=students_in_approved_non_material_submissions).count())
+
+    # # find the difference of the two sets
+    # print("difference")
+    # print(students_in_approved_material_submissions.difference(students_in_approved_non_material_submissions).count())
+
 
     ## find the number of students that are in a submitted performance that is a material submission, but are not in a non-material submission
     # Get all students in submitted performances that are material submissions
@@ -1297,18 +1343,24 @@ class FairDownloadView(APIView):
                 # set the values of the second row to the column headers
                 for i, header in enumerate(headers):
                     sheet.cell(row=2, column=i+1, value=header)
-                # add data to the sheet, starting at the third row. the data are non material performances with the current category
+                ## add data to the sheet, starting at the third row. the data are non material performances with the current category
+                # Iterate over the performances in the category
                 performances_in_category = performances.filter(category__name=category)
-                for i, performance in enumerate(performances_in_category):
-                    row = i + 3
-                    sheet.cell(row=row, column=1, value=performance.title)
-                    sheet.cell(row=row, column=2, value=performance.user.organization)
-                    sheet.cell(row=row, column=3, value=performance.group)
-                    sheet.cell(row=row, column=4, value=", ".join([languoid.name for languoid in performance.languoids.all()]))
-                    sheet.cell(row=row, column=5, value=performance.get_grade_range_display())
-                    sheet.cell(row=row, column=6, value=performance.get_performance_type_display())
-                    sheet.cell(row=row, column=7, value=performance.students.count())
+                for performance in performances_in_category:
+                    # Create a list for the current row
+                    row = [
+                        performance.title,
+                        performance.user.organization,
+                        performance.group,
+                        ", ".join([languoid.name for languoid in performance.languoids.all()]),
+                        performance.get_grade_range_display(),
+                        performance.get_performance_type_display(),
+                        performance.students.count()
+                    ]
+                    # Add the row to the data list
+                    sheet.append(row)
 
+                ## Adjust width of columns
                 # Iterate over the columns
                 for column in range(1, 8):
                     max_length = 0
@@ -1408,3 +1460,22 @@ class FairDownloadView(APIView):
 #         except ValueError:
 #             pass  # JSON parsing failed, use the raw text
 #         return JsonResponse({"error": "Failed to fetch data", "details": error_message}, status=response.status_code)
+
+
+
+
+
+
+# performances_all = Performance.objects.filter(status__in=["approved", "submitted"])
+
+# performances_non = performances_all.filter(Q(category__name="Master Performer") | Q(category__name="Modern Song") | Q(category__name="Skit/Short Play") | Q(category__name="Spoken Language") | Q(category__name="Spoken Poetry") | Q(category__name="Spoken Prayer") | Q(category__name="Traditional Song"))
+
+# students_non = Student.objects.filter(performance_student__in=performances_non).distinct()
+
+
+# performances_material = performances_all.filter(Q(category__name="Books") | Q(category__name="Comics and Cartoons") | Q(category__name="Film and Video") | Q(category__name="Mobile Video") | Q(category__name="Poster") | Q(category__name="Puppet Show"))
+
+# students_material = Student.objects.filter(performance_student__in=performances_material).distinct()
+
+# # find the students that are in both performances and performances_material
+# students_both = students_non.filter(id__in=students_material)
