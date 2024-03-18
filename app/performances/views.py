@@ -7,7 +7,9 @@ from openpyxl.utils import get_column_letter
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.colors import blue, white, black, Color
-from reportlab.platypus import Image    
+from reportlab.platypus import Image
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from django.db.models import Min, Max, Sum
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -1443,11 +1445,23 @@ class JudgeSheetsDownloadView(APIView):
         # filter performances to only include those that are approved
         performances = performances.filter(status__in=["approved"])
 
+        # filter performances by category, exluding the categories "Poster", "Comics and Cartoons", "Mobile Video"
+        performances = performances.exclude(category__name__in=["Poster", "Comics and Cartoons", "Mobile Video"])
+
+        # sort performances by category, then by organization, then by grade range, then by group, then by title
+        performances = performances.order_by('category__name', 'user__organization', 'grade_range', 'group', 'title')
+
         response = HttpResponse(content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="fair_{fair.name}_judging_sheets.pdf"'
         
         p = canvas.Canvas(response, pagesize=letter)
         width, height = letter
+
+        # Register the DejaVuSans font
+        font_path = os.path.join(settings.STATIC_ROOT, 'DejaVuSans.ttf')
+        # font_bold_path = os.path.join(settings.STATIC_ROOT, 'DejaVuSans-Bold.ttf')
+        pdfmetrics.registerFont(TTFont('DejaVuSans', font_path))
+        # pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', font_bold_path))
 
         def draw_static_elements():
             # Title banner image
@@ -1520,7 +1534,7 @@ class JudgeSheetsDownloadView(APIView):
             draw_static_elements()
 
             # Dynamic text drawing goes here
-            p.setFont("Helvetica", 10)
+            p.setFont("DejaVuSans", 10)
             p.drawString(30, height-155, "Program/School: ")
             p.drawString(150, height-155, f"{performance.user.organization}")
             p.drawString(30, height-175, "Grade: ")
