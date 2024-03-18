@@ -4,6 +4,10 @@ import zipfile
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Color, PatternFill, Font, Border
 from openpyxl.utils import get_column_letter
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.colors import blue, white, black, Color
+from reportlab.platypus import Image    
 from django.db.models import Min, Max, Sum
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -13,7 +17,7 @@ from django.core.mail import send_mail
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.conf import settings
-from django.http import Http404, StreamingHttpResponse
+from django.http import Http404, HttpResponse, StreamingHttpResponse
 from rest_framework import generics, viewsets, status
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
@@ -1426,6 +1430,117 @@ class FairDownloadView(APIView):
 
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# and API view that returns JSON for all the performances for the fair given by the fair_pk, with all the metadata for each performance. This is sent to the browser as a download when the user clicks the "Download All Performance data" button on the fair detail page.
+class JudgeSheetsDownloadView(APIView):
+    def get(self, request, fair_pk):
+        fair = Fair.objects.get(pk=fair_pk)
+        performances = Performance.objects.filter(fair=fair)
+
+        ## Make xlsx for performances (non material)
+
+        # filter performances to only include those that are approved
+        performances = performances.filter(status__in=["approved"])
+
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="fair_{fair.name}_judging_sheets.pdf"'
+        
+        p = canvas.Canvas(response, pagesize=letter)
+        width, height = letter
+
+        def draw_static_elements():
+            # Title banner image
+            # Get image
+            image_path = os.path.join(settings.STATIC_ROOT, 'onaylf.png')
+            # Create an Image object
+            image = Image(image_path)
+            # Draw the image
+            image.drawOn(p, 30, height-100)
+            # p.drawString(30, height-30, "SAM NOBLE MUSEUM DEPARTMENT OF NATIVE AMERICAN LANGUAGES")
+            # Subtitle with Blue Background
+            sky_blue = Color(0.429, 0.708, 0.982)  # RGB values for light blue
+            p.setFillColor(sky_blue)
+            rectangle_width = width * 0.8  # 80% of the page width
+            rectangle_x = (width - rectangle_width) / 2  # Calculate the x-coordinate to center the rectangle
+
+            p.rect(rectangle_x, height-140, rectangle_width, 30, fill=True, stroke=False)
+            p.setFillColor(white)
+            p.setFont("Helvetica", 14)
+            p.drawString(130, height-130, "Oklahoma Native American Youth Language Fair 2024")
+
+            p.setFillColor(black)
+            # Horizontal Rule after Dynamic Text
+            p.line(30, height-300, width-30, height-300)
+
+            p.setFont("Helvetica", 9)
+            p.drawString(35, height-315, f"Please rate the {performance.category.name}")
+            p.drawString(35, height-325, "using a scale of 1 to 5.")
+            p.drawString(435, height-315, "Circle score for each")
+            p.drawString(435, height-325, "critera:")
+            p.setFont("Helvetica-Bold", 9)
+            p.drawString(35, height-345, "1 = Poor")
+            p.drawString(35, height-355, "2 = Below Average")
+            p.drawString(35, height-365, "3 = Average")
+            p.drawString(35, height-375, "4 = Above Average")
+            p.drawString(35, height-385, "5 = Excellent")
+
+            # Likert-style Ratings
+            ratings = ["                                                   Use of Language:",
+                       "Originality & Creativity in Illustration & Content:",
+                       "                                                                       Effort:"]
+            y_position = height - 345  # Subtract 100 from the y-coordinate
+            for rating in ratings:
+                p.drawString(220, y_position, rating)
+                for i in range(1, 6):
+                    p.drawString(420 + 15*i, y_position, str(i))
+                y_position -= 20
+
+            # Horizontal Rule after Likerts
+            p.line(30, y_position-10, width-30, y_position-10)
+
+            # Total Score Box, Comments Box, Judge Name and Signature
+            p.drawString(350, y_position-20, "Total Score:")
+            p.rect(420, y_position-40, 100, 30)
+            p.drawString(50, y_position-60, "Comments:")
+            p.rect(48, y_position-225, width-100, 150)
+            p.drawString(130, y_position-280, "Judge Name:")
+            p.line(200, y_position-280, width-130, y_position-280)
+            p.drawString(130, y_position-320, "Signature:")
+            p.line(200, y_position-320, width-130, y_position-320)
+            
+
+            # Horizontal Rule before footer
+            p.line(30, 40, width-30, 40)
+            # Footer
+            p.setFont("Helvetica", 8)
+            p.drawString(30, 30, f"Oklahoma Native American Youth Language Fair {fair.name} Judging Sheet - {performance.category.name}")
+
+        for performance in performances:
+            draw_static_elements()
+
+            # Dynamic text drawing goes here
+            p.setFont("Helvetica", 10)
+            p.drawString(30, height-155, "Program/School: ")
+            p.drawString(150, height-155, f"{performance.user.organization}")
+            p.drawString(30, height-175, "Grade: ")
+            p.drawString(150, height-175, f"{performance.get_grade_range_display()}")
+            p.drawString(30, height-195, "Presenting Group: ")
+            p.drawString(150, height-195, f"{performance.group}")
+            p.drawString(30, height-215, "Title: ")
+            p.drawString(150, height-215, f"{performance.title}")
+            p.drawString(30, height-235, "Language: ")
+            p.drawString(150, height-235, f"{', '.join([languoid.name for languoid in performance.languoids.all()])}")
+            p.drawString(30, height-255, "Category: ")
+            p.drawString(150, height-255, f"{performance.category.name}")
+            p.drawString(30, height-275, "Type: ")
+            p.drawString(150, height-275, f"{performance.get_performance_type_display()}")
+
+            p.showPage()
+
+        p.save()
+        return response
+
 
 # def query_inveniordm(request):
 #     # The URL to the InvenioRDM records API endpoint
