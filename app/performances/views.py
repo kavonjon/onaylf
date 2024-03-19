@@ -32,6 +32,9 @@ from .forms import PerformanceForm, PerformanceCommentsForm, InstructorForm, Stu
 
 import requests
 from django.http import JsonResponse
+import logging
+
+logger = logging.getLogger(__name__)
 
 def is_moderator(user):
     return user.groups.filter(name='moderator').exists()
@@ -1531,8 +1534,8 @@ class JudgeSheetsDownloadView(APIView):
             p.drawString(30, 30, f"Oklahoma Native American Youth Language Fair {fair.name} Judging Sheet - {performance.category.name}")
 
         for performance in performances:
-            print(performance.id)
-            print(performance.title)
+            logger.info(performance.id)
+            logger.info(performance.title)
             draw_static_elements()
 
             # Dynamic text drawing goes here
@@ -1555,7 +1558,7 @@ class JudgeSheetsDownloadView(APIView):
             p.showPage()
 
         p.save()
-        print("server finished")
+        logger.info("server finished")
         return response
 
 
