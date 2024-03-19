@@ -1533,6 +1533,7 @@ class JudgeSheetsDownloadView(APIView):
         response['Content-Disposition'] = f'attachment; filename="fair{fair.name}-Judging sheets.pdf"'
         
         p = canvas.Canvas(response, pagesize=letter)
+        p.setTitle(f'Fair {fair.name} - Judging Sheets')
         width, height = letter
 
         # Register the DejaVuSans font
