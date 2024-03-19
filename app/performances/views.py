@@ -1531,6 +1531,8 @@ class JudgeSheetsDownloadView(APIView):
             p.drawString(30, 30, f"Oklahoma Native American Youth Language Fair {fair.name} Judging Sheet - {performance.category.name}")
 
         for performance in performances:
+            print(performance.id)
+            print(performance.title)
             draw_static_elements()
 
             # Dynamic text drawing goes here
