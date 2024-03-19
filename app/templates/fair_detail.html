@@ -260,7 +260,7 @@
                             if (contentType && contentType.includes("application/json")) {
                                 return response.json().then(err => { throw new Error(`HTTP error! status: ${response.status}, message: ${err.error}`); });
                             } else {
-                                throw new Error(`HTTP error! status: ${response.status}, message: ${err.error}`);
+                                throw new Error(`HTTP error! status: ${response.status}, response: ${response}`);
                             }
                         }
                         if (contentType && contentType.includes("application/pdf")) {

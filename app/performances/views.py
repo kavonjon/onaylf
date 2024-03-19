@@ -1555,6 +1555,7 @@ class JudgeSheetsDownloadView(APIView):
             p.showPage()
 
         p.save()
+        print("server finished")
         return response
 
 
