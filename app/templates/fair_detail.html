@@ -260,6 +260,7 @@
                             if (contentType && contentType.includes("application/json")) {
                                 return response.json().then(err => { throw new Error(`HTTP error! status: ${response.status}, message: ${err.error}`); });
                             } else {
+                                console.log(response);
                                 throw new Error(`HTTP error! status: ${response.status}, response: ${response}`);
                             }
                         }
