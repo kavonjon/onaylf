@@ -255,12 +255,12 @@
                 spinnerJudge.classList.remove('d-none');
                 fetch(`/api/fair/${fair_pk}/download-judge-sheets/`)
                     .then(response => {
+                        console.log(response);
                         const contentType = response.headers.get("content-type");
                         if (!response.ok) {
                             if (contentType && contentType.includes("application/json")) {
                                 return response.json().then(err => { throw new Error(`HTTP error! status: ${response.status}, message: ${err.error}`); });
                             } else {
-                                console.log(response);
                                 throw new Error(`HTTP error! status: ${response.status}, response: ${response}`);
                             }
                         }
