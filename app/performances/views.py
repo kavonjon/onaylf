@@ -1300,9 +1300,31 @@ class FairDownloadView(APIView):
 
             # Convert the serialized data to JSON and save it to a file
             data = json.dumps(serializer.data)
-            json_file_name = f'fair_{fair.name}_data.json'
+            json_file_name = f'fair-{fair.name}-data.json'
             json_file = default_storage.save(json_file_name, ContentFile(data))
 
+
+            ## Adjust width of columns
+            def adjust_width(sheet):
+                limit_to_max_length = 40
+                # Iterate over the columns
+                for column in range(1, 8):
+                    max_length = 0
+                    column = get_column_letter(column)
+                    for cell in sheet[column]:
+                        try: 
+                            if len(str(cell.value)) > max_length:
+                                max_length = len(cell.value)
+                                if max_length > limit_to_max_length:
+                                    break
+                        except:
+                            pass
+                        if max_length > limit_to_max_length:
+                            break
+                    adjusted_width = (max_length + 1)
+                    if adjusted_width > limit_to_max_length:
+                        adjusted_width = limit_to_max_length
+                    sheet.column_dimensions[column].width = adjusted_width
 
             ## Make xlsx for performances (non material)
 
@@ -1369,19 +1391,7 @@ class FairDownloadView(APIView):
                     # Add the row to the data list
                     sheet.append(row)
 
-                ## Adjust width of columns
-                # Iterate over the columns
-                for column in range(1, 8):
-                    max_length = 0
-                    column = get_column_letter(column)
-                    for cell in sheet[column]:
-                        try: 
-                            if len(str(cell.value)) > max_length:
-                                max_length = len(cell.value)
-                        except:
-                            pass
-                    adjusted_width = (max_length + 1)
-                    sheet.column_dimensions[column].width = adjusted_width
+                adjust_width(sheet)
 
             # remove the default sheet
             performance_workbook.remove(performance_workbook['Sheet'])
@@ -1394,14 +1404,75 @@ class FairDownloadView(APIView):
             xlsx_file_io.seek(0)
 
             # Save the BytesIO object to a file in default storage
-            xlsx_file_name = f'Fair{fair.name}-PerformanceCounts.xlsx'
-            xlsx_file = default_storage.save(xlsx_file_name, ContentFile(xlsx_file_io.read()))
+            performance_xlsx_file_name = f'Fair{fair.name}-Performance counts.xlsx'
+            performance_xlsx_file = default_storage.save(performance_xlsx_file_name, ContentFile(xlsx_file_io.read()))
+
+
+            # get all students in performances for the current fair that are approved
+            students = Student.objects.filter(performance_student__fair=fair).filter(performance_student__status="approved").distinct()
+
+            student_workbook = Workbook()
+
+            student_sorting_tabs = ["Sorted by name", "Sorted by age"]
+
+            for tab in student_sorting_tabs:
+
+                student_workbook.create_sheet(title=tab)
+                student_workbook.active = student_workbook[tab]
+                sheet = student_workbook.active
+
+                # set the background color of the first 7 columns of the first row to blue, and the text color to white
+                for cell in sheet['A1:G1']:
+                    for c in cell:
+                        c.fill = PatternFill(start_color="007bff", end_color="007bff", fill_type="solid")
+                        c.font = Font(color="FFFFFF")
+                # list of column headers
+                headers = ["First name", "Last name", "Tribe", "Hometown", "State", "Grade", "Group name"]
+                # set the values of the second row to the column headers
+                for i, header in enumerate(headers):
+                    sheet.cell(row=1, column=i+1, value=header)
+                ## add data to the sheet, starting at the second row. the data are students in performances for the current fair that are approved
+                # Iterate over the students
+                if tab == "Sorted by name":
+                    students = students.order_by('lastname', 'firstname', 'grade')
+                elif tab == "Sorted by age":
+                    students = students.order_by('grade', 'lastname', 'firstname')
+                for student in students:
+                    # Create a list for the current row
+                    row = [
+                        student.firstname,
+                        student.lastname,
+                        ", ".join([tribe.name for tribe in student.tribe.all()]),
+                        student.hometown,
+                        student.state,
+                        student.get_grade_display(),
+                        student.user.organization
+                    ]
+                    # Add the row to the data list
+                    sheet.append(row)
+
+                adjust_width(sheet)
+
+            # remove the default sheet
+            student_workbook.remove(student_workbook['Sheet'])
+
+            # Create a BytesIO object and save the workbook to it
+            xlsx_file_io = BytesIO()
+            student_workbook.save(xlsx_file_io)
+
+            # Go back to the start of the BytesIO object
+            xlsx_file_io.seek(0)
+
+            # Save the BytesIO object to a file in default storage
+            student_xlsx_file_name = f'Fair{fair.name}-Student details.xlsx'
+            student_xlsx_file = default_storage.save(student_xlsx_file_name, ContentFile(xlsx_file_io.read()))
+
+
 
             # Get the full path of the files
             json_file_path = default_storage.path(json_file)
-            print(json_file_path)
-            xlsx_file_path = default_storage.path(xlsx_file)
-            print(xlsx_file_path)
+            performance_xlsx_file_path = default_storage.path(performance_xlsx_file)
+            student_xlsx_file_path = default_storage.path(student_xlsx_file)
 
             zip_folder_name = f'fair_{fair.name}_data/'
 
@@ -1411,8 +1482,11 @@ class FairDownloadView(APIView):
                 # Add the json file to the zip file
                 zip_file.write(json_file_path, arcname=zip_folder_name+json_file_name)
 
-                # Add the xlsx file to the zip file
-                zip_file.write(xlsx_file_path, arcname=zip_folder_name+xlsx_file_name)
+                # Add the performance xlsx file to the zip file
+                zip_file.write(performance_xlsx_file_path, arcname=zip_folder_name+performance_xlsx_file_name)
+
+                # Add the student xlsx file to the zip file
+                zip_file.write(student_xlsx_file_path, arcname=zip_folder_name+student_xlsx_file_name)
 
             # Create a generator that reads the file and yields the data
             def file_iterator():
@@ -1429,7 +1503,8 @@ class FairDownloadView(APIView):
 
             # Delete the files from the default storage
             default_storage.delete(json_file)
-            default_storage.delete(xlsx_file)
+            default_storage.delete(performance_xlsx_file)
+            default_storage.delete(student_xlsx_file)
 
             return response
 
@@ -1455,7 +1530,7 @@ class JudgeSheetsDownloadView(APIView):
         performances = performances.order_by('category__name', 'user__organization', 'grade_range', 'group', 'title')
 
         response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="fair_{fair.name}_judging_sheets.pdf"'
+        response['Content-Disposition'] = f'attachment; filename="fair{fair.name}-Judging sheets.pdf"'
         
         p = canvas.Canvas(response, pagesize=letter)
         width, height = letter
@@ -1534,8 +1609,6 @@ class JudgeSheetsDownloadView(APIView):
             p.drawString(30, 30, f"Oklahoma Native American Youth Language Fair {fair.name} Judging Sheet - {performance.category.name}")
 
         for performance in performances:
-            logger.info(performance.id)
-            logger.info(performance.title)
             draw_static_elements()
 
             # Dynamic text drawing goes here
@@ -1558,7 +1631,6 @@ class JudgeSheetsDownloadView(APIView):
             p.showPage()
 
         p.save()
-        logger.info("server finished")
         return response
 
 
