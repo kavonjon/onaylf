@@ -10,7 +10,7 @@ from reportlab.lib.colors import blue, white, black, Color
 from reportlab.platypus import Image
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from django.db.models import Min, Max, Sum
+from django.db.models import Min, Max, Sum, Q
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -1130,7 +1130,18 @@ def fair_detail(request, fair_pk=None):
     performances_submitted = Performance.objects.filter(fair=fair).filter(status="submitted")
     performances_submitted_count = performances_submitted.count()
 
+    # find the number of performances that are approved or submitted
     performances_total_count = performances_approved_count + performances_submitted_count
+
+    # find the number of students in performances that are approved
+    students_approved = Student.objects.filter(performance_student__in=performances_approved).distinct().count()
+
+    # find the number of students in performances that are submitted
+    students_submitted = Student.objects.filter(performance_student__in=performances_submitted).distinct().count()
+
+    # find the number of students in performances that are approved or submitted
+    performances_both = performances_approved | performances_submitted
+    students_total = Student.objects.filter(performance_student__in=performances_both).distinct().count()
 
     # find the number of approved performances in each category
     performances_by_category = {}
@@ -1278,6 +1289,9 @@ def fair_detail(request, fair_pk=None):
         'performances_submitted_count': performances_submitted_count,
         'performances_approved_count': performances_approved_count,
         'performances_total_count': performances_total_count,
+        'students_approved': students_approved,
+        'students_submitted': students_submitted,
+        'students_total': students_total,
         'performances_by_category': performances_by_category,
         'performances_by_language': performances_by_language,
         'performances_by_grade_range': performances_by_grade_range,
