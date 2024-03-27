@@ -21,6 +21,24 @@
 
     <div class="d-flex mt-3 mb-2">
         <div>
+            <button class="btn btn-primary me-1" id="downloadPerformanceSheetsButton">Download Performance Sheets</button>
+        </div>
+        <div class="spinner-border text-primary d-none" id="spinner-performance-sheets" role="status">
+            <span class="sr-only"></span>
+        </div>
+    </div>
+
+    <div class="d-flex mt-3 mb-2">
+        <div>
+            <button class="btn btn-primary me-1" id="downloadPerformanceCardsButton">Download Performance Cards</button>
+        </div>
+        <div class="spinner-border text-primary d-none" id="spinner-performance-cards" role="status">
+            <span class="sr-only"></span>
+        </div>
+    </div>
+
+    <div class="d-flex mt-3 mb-2">
+        <div>
             <button class="btn btn-primary me-1" id="downloadJudgeSheetsButton">Download Judge Sheets</button>
         </div>
         <div class="spinner-border text-primary d-none" id="spinner-judge" role="status">
@@ -177,6 +195,10 @@
     <script>
         const downloadButton = document.getElementById('downloadButton');
         const spinner = document.getElementById('spinner');
+        const downloadPerformanceSheetsButton = document.getElementById('downloadPerformanceSheetsButton');
+        const spinnerPerformanceSheets = document.getElementById('spinner-performance-sheets');
+        const downloadPerformanceCardsButton = document.getElementById('downloadPerformanceCardsButton');
+        const spinnerPerformanceCards = document.getElementById('spinner-performance-cards');
         const downloadJudgeSheetsButton = document.getElementById('downloadJudgeSheetsButton');
         const spinnerJudge = document.getElementById('spinner-judge');
 
@@ -188,6 +210,8 @@
     
             constructor() {
                 downloadButton.addEventListener('click', this._downloadMetadata.bind(this));
+                downloadPerformanceSheetsButton.addEventListener('click', this._downloadPerformanceSheets.bind(this));
+                downloadPerformanceCardsButton.addEventListener('click', this._downloadPerformanceCards.bind(this));
                 downloadJudgeSheetsButton.addEventListener('click', this._downloadJudgeSheets.bind(this));
             }
 
@@ -252,6 +276,102 @@
                         spinner.classList.add('d-none');
                     });
             }
+
+            _downloadPerformanceSheets(){
+                const fair_pk = "{{ fair.pk }}"
+                const currentFair = "{{ currentFair }}"
+                downloadPerformanceSheetsButton.disabled = true;
+                downloadPerformanceSheetsButton.classList.remove('btn-primary');
+                downloadPerformanceSheetsButton.classList.add('btn-secondary');
+                spinnerPerformanceSheets.classList.remove('d-none');
+                fetch(`/api/fair/${fair_pk}/download-performance-sheets/`)
+                    .then(response => {
+                        console.log(response);
+                        const contentType = response.headers.get("content-type");
+                        if (!response.ok) {
+                            if (contentType && contentType.includes("application/json")) {
+                                return response.json().then(err => { throw new Error(`HTTP error! status: ${response.status}, message: ${err.error}`); });
+                            } else {
+                                throw new Error(`HTTP error! status: ${response.status}, response: ${response}`);
+                            }
+                        }
+                        if (contentType && contentType.includes("application/pdf")) {
+                            return response.blob();
+                        }
+                        throw new Error(`Unexpected content-type: ${contentType}`);
+                    })
+                    .then(blob => {
+                        // Create a link and download the file
+                        const url = window.URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = sanitizeFilename(`fair${currentFair}-performance_sheets.pdf`);
+                        document.body.appendChild(link); // Append the link to the body
+                        link.click();
+                        document.body.removeChild(link); // Remove the link from the body
+                        window.URL.revokeObjectURL(url); // Revoke the object URL
+                        downloadPerformanceSheetsButton.disabled = false;
+                        downloadPerformanceSheetsButton.classList.remove('btn-secondary');
+                        downloadPerformanceSheetsButton.classList.add('btn-primary');
+                        spinnerPerformanceSheets.classList.add('d-none');
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        downloadPerformanceSheetsButton.disabled = false;
+                        downloadPerformanceSheetsButton.classList.remove('btn-secondary');
+                        downloadPerformanceSheetsButton.classList.add('btn-primary');
+                        spinnerPerformanceSheets.classList.add('d-none');
+                    });
+            }
+
+            _downloadPerformanceCards(){
+                const fair_pk = "{{ fair.pk }}"
+                const currentFair = "{{ currentFair }}"
+                downloadPerformanceCardsButton.disabled = true;
+                downloadPerformanceCardsButton.classList.remove('btn-primary');
+                downloadPerformanceCardsButton.classList.add('btn-secondary');
+                spinnerPerformanceCards.classList.remove('d-none');
+                fetch(`/api/fair/${fair_pk}/download-performance-cards/`)
+                    .then(response => {
+                        console.log(response);
+                        const contentType = response.headers.get("content-type");
+                        if (!response.ok) {
+                            if (contentType && contentType.includes("application/json")) {
+                                return response.json().then(err => { throw new Error(`HTTP error! status: ${response.status}, message: ${err.error}`); });
+                            } else {
+                                throw new Error(`HTTP error! status: ${response.status}, response: ${response}`);
+                            }
+                        }
+                        if (contentType && contentType.includes("application/pdf")) {
+                            return response.blob();
+                        }
+                        throw new Error(`Unexpected content-type: ${contentType}`);
+                    })
+                    .then(blob => {
+                        // Create a link and download the file
+                        const url = window.URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = sanitizeFilename(`fair${currentFair}-performance_cards.pdf`);
+                        document.body.appendChild(link); // Append the link to the body
+                        link.click();
+                        document.body.removeChild(link); // Remove the link from the body
+                        window.URL.revokeObjectURL(url); // Revoke the object URL
+                        downloadPerformanceCardsButton.disabled = false;
+                        downloadPerformanceCardsButton.classList.remove('btn-secondary');
+                        downloadPerformanceCardsButton.classList.add('btn-primary');
+                        spinnerPerformanceCards.classList.add('d-none');
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        downloadPerformanceCardsButton.disabled = false;
+                        downloadPerformanceCardsButton.classList.remove('btn-secondary');
+                        downloadPerformanceCardsButton.classList.add('btn-primary');
+                        spinnerPerformanceCards.classList.add('d-none');
+                    });
+            }
+
+
 
             _downloadJudgeSheets(){
                 const fair_pk = "{{ fair.pk }}"

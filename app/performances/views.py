@@ -4,12 +4,16 @@ import zipfile
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Color, PatternFill, Font, Border
 from openpyxl.utils import get_column_letter
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.colors import blue, white, black, Color
-from reportlab.platypus import Image
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfgen import canvas as reportlab_canvas
+from reportlab.lib.pagesizes import letter as reportlab_letter
+from reportlab.lib.colors import white as reportlab_white, black as reportlab_black, Color as reportlab_Color
+from reportlab.platypus import Image as reportlab_Image
+from reportlab.pdfbase import pdfmetrics as reportlab_pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont as reportlab_TTFont
+from reportlab.lib import colors as reportlab_colors
+from reportlab.platypus import SimpleDocTemplate as reportlab_SimpleDocTemplate, BaseDocTemplate as reportlab_BaseDocTemplate, PageTemplate as reportlab_PageTemplate, Frame as reportlab_Frame, Table as reportlab_Table, TableStyle as reportlab_TableStyle, Paragraph as reportlab_Paragraph, Spacer as reportlab_Spacer, PageBreak as reportlab_PageBreak, HRFlowable as reportlab_HRFlowable, Flowable as reportlab_Flowable
+from reportlab.lib.styles import getSampleStyleSheet as reportlab_getSampleStyleSheet, ParagraphStyle as reportlab_ParagraphStyle
+
 from django.db.models import Min, Max, Sum, Q
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -1546,37 +1550,37 @@ class JudgeSheetsDownloadView(APIView):
         response = HttpResponse(content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="fair{fair.name}-Judging sheets.pdf"'
         
-        p = canvas.Canvas(response, pagesize=letter)
+        p = reportlab_canvas.Canvas(response, pagesize=reportlab_letter)
         p.setTitle(f'Fair {fair.name} - Judging Sheets')
-        width, height = letter
+        width, height = reportlab_letter
 
         # Register the DejaVuSans font
         font_path = os.path.join(settings.STATIC_ROOT, 'DejaVuSans.ttf')
         # font_bold_path = os.path.join(settings.STATIC_ROOT, 'DejaVuSans-Bold.ttf')
-        pdfmetrics.registerFont(TTFont('DejaVuSans', font_path))
-        # pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', font_bold_path))
+        reportlab_pdfmetrics.registerFont(reportlab_TTFont('DejaVuSans', font_path))
+        # reportlab_pdfmetrics.registerFont(reportlab_TTFont('DejaVuSans-Bold', font_bold_path))
 
         def draw_static_elements():
             # Title banner image
             # Get image
             image_path = os.path.join(settings.STATIC_ROOT, 'onaylf.png')
             # Create an Image object
-            image = Image(image_path)
+            image = reportlab_Image(image_path)
             # Draw the image
             image.drawOn(p, 30, height-100)
             # p.drawString(30, height-30, "SAM NOBLE MUSEUM DEPARTMENT OF NATIVE AMERICAN LANGUAGES")
             # Subtitle with Blue Background
-            sky_blue = Color(0.429, 0.708, 0.982)  # RGB values for light blue
+            sky_blue = reportlab_Color(0.429, 0.708, 0.982)  # RGB values for light blue
             p.setFillColor(sky_blue)
             rectangle_width = width * 0.8  # 80% of the page width
             rectangle_x = (width - rectangle_width) / 2  # Calculate the x-coordinate to center the rectangle
 
             p.rect(rectangle_x, height-140, rectangle_width, 30, fill=True, stroke=False)
-            p.setFillColor(white)
+            p.setFillColor(reportlab_white)
             p.setFont("Helvetica", 14)
-            p.drawString(130, height-130, "Oklahoma Native American Youth Language Fair 2024")
+            p.drawString(130, height-130, f"Oklahoma Native American Youth Language Fair {fair.name}")
 
-            p.setFillColor(black)
+            p.setFillColor(reportlab_black)
             # Horizontal Rule after Dynamic Text
             p.line(30, height-300, width-30, height-300)
 
@@ -1644,6 +1648,312 @@ class JudgeSheetsDownloadView(APIView):
             p.drawString(150, height-275, f"{performance.get_performance_type_display()}")
 
             p.showPage()
+
+        p.save()
+        return response
+
+# and API view that returns JSON for all the performances for the fair given by the fair_pk, with all the metadata for each performance. This is sent to the browser as a download when the user clicks the "Download All Performance data" button on the fair detail page.
+class PerformanceSheetsDownloadView(APIView):
+    def get(self, request, fair_pk):
+        fair = Fair.objects.get(pk=fair_pk)
+        performances = Performance.objects.filter(fair=fair)
+
+        # filter performances to only include those that are approved
+        performances = performances.filter(status__in=["approved"])
+
+        # # filter performances by category, exluding the categories "Poster", "Comics and Cartoons", "Mobile Video"
+        # performances = performances.exclude(category__name__in=["Poster", "Comics and Cartoons", "Mobile Video"])
+
+        # sort performances by category, then by organization, then by grade range, then by group, then by title
+        performances = performances.order_by('category__name', 'user__organization', 'grade_range', 'group', 'title')
+        
+        # Define an onPage function that draws the footer
+        def footer(canvas, doc):
+            canvas.saveState()
+            pageNumber = canvas.getPageNumber()
+            total_pages = doc.page
+            canvas.setFont('DejaVuSans', 10)
+            canvas.drawCentredString(page_width / 2, 20, f"Page {pageNumber}")
+            canvas.restoreState()
+
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="fair{fair.name}-Performance sheets.pdf"'
+        doc = reportlab_SimpleDocTemplate(response, pagesize=reportlab_letter, onPage=footer)
+
+        styles = reportlab_getSampleStyleSheet()
+        styles['Normal'].fontName = 'DejaVuSans'
+        styles['Heading2'].fontName = 'DejaVuSans'
+
+        # Create a new style based on 'Normal'
+        font_bigger_bold = reportlab_ParagraphStyle('font_bigger_bold', parent=styles['Normal'], fontSize=13, bold=True, italic=False)
+        # Add the new style to the stylesheet
+        styles.add(font_bigger_bold)
+
+        # # Define a Frame for the main content
+        # frame_main = reportlab_Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id='main')
+
+        # # Define a PageTemplate that uses this Frame
+        # template = reportlab_PageTemplate(id='test', frames=[frame_main])
+
+        # # Apply this PageTemplate to the document
+        # doc.addPageTemplates([template])
+
+        elements = []
+        page_width, page_height = reportlab_letter
+
+        # Register the DejaVuSans font
+        font_path = os.path.join(settings.STATIC_ROOT, 'DejaVuSans.ttf')
+        font_bold_path = os.path.join(settings.STATIC_ROOT, 'DejaVuSans-Bold.ttf')
+        reportlab_pdfmetrics.registerFont(reportlab_TTFont('DejaVuSans', font_path))
+        reportlab_pdfmetrics.registerFont(reportlab_TTFont('DejaVuSans-Bold', font_bold_path))
+
+        for performance in performances:
+            # add the header image onaylf.png
+            image_path = os.path.join(settings.STATIC_ROOT, 'onaylf.png')
+            image_width = page_width - 200
+            image = reportlab_Image(image_path, width=image_width, height=60)
+            elements.append(image)
+
+            # Add performance details
+            elements.append(reportlab_Paragraph(f"<b>Title of Presentation:</b> {performance.title}", styles['Heading2']))
+            elements.append(reportlab_Paragraph(f"<b>Presenting Group Name:</b> {performance.group}", styles['Normal']))
+            # add some horizontal space
+            elements.append(reportlab_Spacer(1, 2))
+            elements.append(reportlab_Paragraph(f"<b>School/Program:</b> {performance.user.organization}", styles['Normal']))
+            data = [[
+                reportlab_Paragraph(f"<b>Performance Type:</b> {performance.performance_type}", styles['Normal']),
+                reportlab_Paragraph(f"<b>Category:</b> {performance.category}", styles['Normal'])
+            ]]
+            table = reportlab_Table(data)
+            table.setStyle(reportlab_TableStyle([
+                ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+                ('GRID', (0,0), (-1,-1), 1, (0,0,0,0)),  # Set table border color to transparent
+                ('LEFTPADDING', (0,0), (-1,-1), 0),  # Remove left padding
+            ]))
+            elements.append(table)
+            # add a text line that is the count of the unique students in the performance
+            elements.append(reportlab_Paragraph(f"<b>Student count:</b> {performance.students.count()}", styles['Normal']))
+
+            # add some horizontal space
+            elements.append(reportlab_Spacer(1, 12))
+            # add a horizontal line break
+            elements.append(reportlab_HRFlowable(width="100%", thickness=1, lineCap='round', color=reportlab_Color(0, 0, 0)))
+            # add some horizontal space
+            elements.append(reportlab_Spacer(1, 10))
+
+            total_width = page_width - 150  # Total width of the table
+            # Calculate the widths of the columns as percentages of the total width
+            year_width = total_width * 0.2
+            grade_width = total_width * 0.3 
+            language_width = total_width * 0.5
+
+            data = [[
+                reportlab_Paragraph(f"<b>Year:</b> {fair.name}", styles['font_bigger_bold']),
+                reportlab_Paragraph(f"<b>Grade:</b> {performance.get_grade_range_display()}", styles['font_bigger_bold']),
+                reportlab_Paragraph(f"<b>Language(s):</b> {', '.join([languoid.name for languoid in performance.languoids.all()])}", styles['font_bigger_bold'])  # New element
+            ]]
+            table = reportlab_Table(data)
+            table = reportlab_Table(data, colWidths=[year_width, grade_width, language_width])
+            table.setStyle(reportlab_TableStyle([
+                ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+                ('GRID', (0,0), (-1,-1), 1, (0,0,0,0)),  # Set table border color to transparent
+                ('LEFTPADDING', (0,0), (-1,-1), 0),  # Remove left padding
+            ]))
+            elements.append(table)
+
+            # add some horizontal space
+            elements.append(reportlab_Spacer(1, 10))
+            # add a horizontal line break
+            elements.append(reportlab_HRFlowable(width="100%", thickness=1, lineCap='round', color=reportlab_Color(0, 0, 0)))
+            # add some horizontal space
+            elements.append(reportlab_Spacer(1, 12))
+
+            # Dynamic table for instructors
+            instructor_data = [["First Name", "Last Name"]]  # Table header
+            instructors = Instructor.objects.filter(performance_instructor=performance)
+            for instructor in instructors:
+                instructor_data.append([instructor.firstname, instructor.lastname])
+            instructor_table = reportlab_Table(instructor_data, colWidths=[150, 150])
+            instructor_table.setStyle(reportlab_TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), reportlab_colors.grey),
+                ('GRID', (0, 0), (-1, -1), 1, reportlab_colors.black),
+            ]))
+
+            # Add title
+            elements.append(reportlab_Paragraph("<b>Instructors</b>", styles['Heading2']))
+            elements.append(instructor_table)
+
+            # Dynamic table for students
+            student_data = [["First Name", "Last Name"]]  # Table header
+            students = Student.objects.filter(performance_student=performance)
+            for student in students:
+                student_data.append([student.firstname, student.lastname])
+            student_table = reportlab_Table(student_data, colWidths=[150, 150])
+            student_table.setStyle(reportlab_TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), reportlab_colors.grey),
+                ('GRID', (0, 0), (-1, -1), 1, reportlab_colors.black),
+            ]))
+            elements.append(reportlab_Spacer(1, 12))  # Add some space between tables
+            elements.append(reportlab_Paragraph("<b>Students</b>", styles['Heading2']))
+            elements.append(student_table)
+            elements.append(reportlab_PageBreak())  # Ensure each performance starts on a new page
+
+        doc.build(elements, onFirstPage=footer, onLaterPages=footer)
+
+        # p = reportlab_canvas.Canvas(response, pagesize=reportlab_letter)
+        # p.setTitle(f'Fair {fair.name} - Performance Sheets')
+        # width, height = reportlab_letter
+
+        # # Register the DejaVuSans font
+        # font_path = os.path.join(settings.STATIC_ROOT, 'DejaVuSans.ttf')
+        # font_bold_path = os.path.join(settings.STATIC_ROOT, 'DejaVuSans-Bold.ttf')
+        # reportlab_pdfmetrics.registerFont(reportlab_TTFont('DejaVuSans', font_path))
+        # reportlab_pdfmetrics.registerFont(reportlab_TTFont('DejaVuSans-Bold', font_bold_path))
+
+        # def draw_static_elements():
+        #     # Title banner image
+        #     # Get image
+        #     image_path = os.path.join(settings.STATIC_ROOT, 'onaylf.png')
+        #     # Create an Image object
+        #     image = reportlab_Image(image_path)
+        #     # Draw the image
+        #     image.drawOn(p, 30, height-100)
+        #     # Subtitle with Blue Background
+        #     sky_blue = reportlab_Color(0.429, 0.708, 0.982)  # RGB values for light blue
+
+        #     # Horizontal Rule before footer
+        #     p.line(30, 40, width-30, 40)
+        #     # Footer
+        #     p.setFont("Helvetica", 8)
+        #     p.drawString(30, 30, f"Oklahoma Native American Youth Language Fair {fair.name} Judging Sheet - {performance.category.name}")
+
+        # for performance in performances:
+        #     draw_static_elements()
+
+        #     # Dynamic text drawing goes here
+        #     p.setFont("DejaVuSans-Bold", 14)
+        #     p.drawString(30, height-130, "Title of Presentation: ")
+        #     p.setFont("DejaVuSans", 14)
+        #     p.drawString(205, height-130, f"{performance.title}")
+
+        #     p.setFont("DejaVuSans", 10)
+        #     p.drawString(30, height-150, "Presenting Group: ")
+        #     p.drawString(150, height-150, f"{performance.group}")
+        #     p.drawString(30, height-170, "Program/School: ")
+        #     p.drawString(150, height-170, f"{performance.user.organization}")
+        #     p.drawString(30, height-190, "Type: ")
+        #     p.drawString(150, height-190, f"{performance.get_performance_type_display()}")
+        #     p.drawString(280, height-190, "Category: ")
+        #     p.drawString(350, height-190, f"{performance.category.name}")
+        #     p.drawString(30, height-210, "Student count: ")
+        #     # xxx calculate student total
+        #     p.drawString(150, height-210, f"{1}")
+
+        #     p.line(30, height-225, width-30, height-225)
+
+        #     p.setFont("DejaVuSans", 12)
+        #     p.drawString(30, height-243, "Year: ")
+        #     p.drawString(65, height-243, f"{fair.name}")
+        #     p.drawString(130, height-243, "Grade: ")
+        #     p.drawString(175, height-243, f"{performance.get_grade_range_display()}")
+        #     p.drawString(255, height-243, "Language: ")
+        #     p.drawString(325, height-243, f"{', '.join([languoid.name for languoid in performance.languoids.all()])}")
+
+        #     p.line(30, height-255, width-30, height-255)
+
+        #     p.setFont("DejaVuSans", 10)
+        #     p.drawString(30, height-270, "Notes: ")
+        #     # xxx put notes in a wrapped box
+        #     p.drawString(175, height-270, f"{performance.comments}")
+
+        #     p.showPage()
+
+        # p.save()
+        return response
+
+
+# and API view that returns JSON for all the performances for the fair given by the fair_pk, with all the metadata for each performance. This is sent to the browser as a download when the user clicks the "Download All Performance data" button on the fair detail page.
+class PerformanceCardsDownloadView(APIView):
+    def get(self, request, fair_pk):
+        fair = Fair.objects.get(pk=fair_pk)
+        performances = Performance.objects.filter(fair=fair)
+
+        # filter performances to only include those that are approved
+        performances = performances.filter(status__in=["approved"])
+
+        # # filter performances by category, exluding the categories "Poster", "Comics and Cartoons", "Mobile Video"
+        # performances = performances.exclude(category__name__in=["Poster", "Comics and Cartoons", "Mobile Video"])
+
+        # sort performances by category, then by organization, then by grade range, then by group, then by title
+        performances = performances.order_by('category__name', 'user__organization', 'grade_range', 'group', 'title')
+
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="fair{fair.name}-Performance cards.pdf"'
+        
+        p = reportlab_canvas.Canvas(response, pagesize=reportlab_letter)
+        p.setTitle(f'Fair {fair.name} - Performance Cards')
+        width, height = reportlab_letter
+
+        # Register the DejaVuSans font
+        font_path = os.path.join(settings.STATIC_ROOT, 'DejaVuSans.ttf')
+        font_bold_path = os.path.join(settings.STATIC_ROOT, 'DejaVuSans-Bold.ttf')
+        reportlab_pdfmetrics.registerFont(reportlab_TTFont('DejaVuSans', font_path))
+        reportlab_pdfmetrics.registerFont(reportlab_TTFont('DejaVuSans-Bold', font_bold_path))
+
+        # Title banner image
+        # Get image
+        image_path = os.path.join(settings.STATIC_ROOT, 'onaylf.png')
+        # Create an Image object
+        image = reportlab_Image(image_path)
+        # Set the size of the image
+        image.drawWidth = 330
+        image.drawHeight = 50
+
+        def draw_static_elements():
+            p.line(30, height-398, width-30, height-398)
+
+        def draw_dynamic_elements(y_position, performance):
+            image.drawOn(p, 30, y_position+30)
+            p.setFont("DejaVuSans-Bold", 14)
+            p.drawString(380, y_position+60, "Performance card")
+
+            # Dynamic text drawing goes here
+            p.setFont("DejaVuSans", 10)
+            p.drawString(50, y_position, "Presenting Group: ")
+            p.drawString(80, y_position-20, f"{performance.group}")
+            p.drawString(350, y_position, "Category: ")
+            p.drawString(380, y_position-20, f"{performance.category.name}")
+            p.drawString(50, y_position-60, "Program/School: ")
+            p.drawString(80, y_position-80, f"{(performance.user.organization or '')[:50]}")
+            p.drawString(350, y_position-60, "Grade: ")
+            p.drawString(380, y_position-80, f"{performance.get_grade_range_display()}")
+            p.drawString(50, y_position-120, "Title of Presentation: ")
+            p.drawString(80, y_position-140, f"{(performance.title or '')[:50]}")
+            p.drawString(350, y_position-120, "Type: ")
+            p.drawString(380, y_position-140, f"{performance.get_performance_type_display()}")
+            p.drawString(50, y_position-180, "Language(s): ")
+            p.drawString(80, y_position-200, f"{', '.join([languoid.name for languoid in performance.languoids.all()])}")
+            p.drawString(350, y_position-180, "Instructor(s): ")
+            p.drawString(380, y_position-200, f"{', '.join([instructor.lastname for instructor in performance.instructors.all()])}")
+
+
+        for i, performance in enumerate(performances):
+            if i % 2:
+                pass
+            else:
+                try:
+                    second_performance = performances[i+1]
+                except:
+                    second_performance = None
+
+                draw_static_elements()
+                y_position = height-130
+                draw_dynamic_elements(y_position, performance)
+                y_position = height-530
+                if second_performance:
+                    draw_dynamic_elements(y_position, second_performance)
+
+                p.showPage()
 
         p.save()
         return response

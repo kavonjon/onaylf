@@ -46,6 +46,8 @@ urlpatterns = [
     path('api/student/update/<int:stud_pk>/', views.StudentUpdateView.as_view(), name='student-update'),
     path('api/fair/<int:fair_pk>/download/', views.FairDownloadView.as_view(), name='fair-download'),
     path('api/fair/<int:fair_pk>/download-judge-sheets/', views.JudgeSheetsDownloadView.as_view(), name='fair-download-judge-sheets'),
+    path('api/fair/<int:fair_pk>/download-performance-sheets/', views.PerformanceSheetsDownloadView.as_view(), name='fair-download-performance-sheets'),
+    path('api/fair/<int:fair_pk>/download-performance-cards/', views.PerformanceCardsDownloadView.as_view(), name='fair-download-performance-cards'),
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),
     path('accounts/signup/', SignUpView.as_view(), name='signup'),
