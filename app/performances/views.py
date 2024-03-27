@@ -1715,7 +1715,7 @@ class PerformanceSheetsDownloadView(APIView):
             elements.append(image)
 
             # Add performance details
-            clean_title = re.sub('<.*?>', '', performance.title)
+            clean_title = re.sub('<[^<]+?>', '', performance.title)
             elements.append(reportlab_Paragraph(f"<b>Title of Presentation:</b> {clean_title}", styles['Heading2']))
             elements.append(reportlab_Paragraph(f"<b>Presenting Group Name:</b> {performance.group}", styles['Normal']))
             # add some horizontal space
