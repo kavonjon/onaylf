@@ -24,6 +24,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.conf import settings
 from django.http import Http404, HttpResponse, StreamingHttpResponse
+from django.utils.html import escape
 from rest_framework import generics, viewsets, status
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
@@ -1715,7 +1716,7 @@ class PerformanceSheetsDownloadView(APIView):
             elements.append(image)
 
             # Add performance details
-            clean_title = re.sub('<[^<]+?>', '', performance.title)
+            clean_title = escape(performance.title)
             elements.append(reportlab_Paragraph(f"<b>Title of Presentation:</b> {clean_title}", styles['Heading2']))
             elements.append(reportlab_Paragraph(f"<b>Presenting Group Name:</b> {performance.group}", styles['Normal']))
             # add some horizontal space
