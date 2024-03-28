@@ -1560,7 +1560,7 @@ class FairDownloadView(APIView):
                     count = PerformanceAccessory.objects.filter(performance_id=performance['id'], accessory=accessory).aggregate(count=Sum('count'))['count']
 
                     # Add the count to the performance dictionary
-                    performance[f'accessory_{accessory.id}'] = count if count else 0
+                    performance[f'accessory_{accessory.id}'] = count if count else ""
 
             accessory_workbook = Workbook()
 
@@ -1841,6 +1841,8 @@ class FairDownloadView(APIView):
             default_storage.delete(performance_xlsx_file)
             default_storage.delete(student_xlsx_file)
             default_storage.delete(group_contact_xlsx_file)
+            default_storage.delete(accessory_xlsx_file)
+            default_storage.delete(program_labels_xlsx_file)
 
             return response
 
