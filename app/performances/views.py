@@ -1,8 +1,10 @@
-import json, os, re
+import json, os, re, copy
 from io import BytesIO
 import zipfile
+from collections import Counter
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Color, PatternFill, Font, Border
+from openpyxl.styles.borders import Side
 from openpyxl.utils import get_column_letter
 from reportlab.pdfgen import canvas as reportlab_canvas
 from reportlab.lib.pagesizes import letter as reportlab_letter
@@ -14,7 +16,7 @@ from reportlab.lib import colors as reportlab_colors
 from reportlab.platypus import SimpleDocTemplate as reportlab_SimpleDocTemplate, BaseDocTemplate as reportlab_BaseDocTemplate, PageTemplate as reportlab_PageTemplate, Frame as reportlab_Frame, Table as reportlab_Table, TableStyle as reportlab_TableStyle, Paragraph as reportlab_Paragraph, Spacer as reportlab_Spacer, PageBreak as reportlab_PageBreak, HRFlowable as reportlab_HRFlowable, Flowable as reportlab_Flowable
 from reportlab.lib.styles import getSampleStyleSheet as reportlab_getSampleStyleSheet, ParagraphStyle as reportlab_ParagraphStyle
 
-from django.db.models import Min, Max, Sum, Q
+from django.db.models import Min, Max, Sum, Count, Q
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -346,17 +348,13 @@ def home(request):
 
     # Check if the user is a moderator
     is_moderator = currentUser.groups.filter(name='moderator').exists()
-    print(is_moderator)
 
     currentFair = CurrentFair.objects.first()
 
     performances = Performance.objects.prefetch_related("user", "category").filter(fair=currentFair.fair)
 
     if not is_moderator:
-        print("this is working")
-        print(performances)
         performances = performances.filter(user=currentUser)
-        print(performances)
 
     template = 'home.html'
     context = {
@@ -1487,11 +1485,320 @@ class FairDownloadView(APIView):
             student_xlsx_file = default_storage.save(student_xlsx_file_name, ContentFile(xlsx_file_io.read()))
 
 
+            # get all users that are not moderators
+            users = User.objects.exclude(groups__name='moderator')
+
+            group_contact_workbook = Workbook()
+
+            group_contact_workbook.create_sheet(title="GroupContactDetails")
+            group_contact_workbook.active = group_contact_workbook["GroupContactDetails"]
+            sheet = group_contact_workbook.active
+
+            # set the background color of the first 7 columns of the first row to blue, and the text color to white
+            for cell in sheet['A1:G1']:
+                for c in cell:
+                    c.fill = PatternFill(start_color="007bff", end_color="007bff", fill_type="solid")
+                    c.font = Font(color="FFFFFF")
+            # list of column headers
+            headers = ["Group name", "Contact name", "Address", "City, State ZIP", "Phone number", "Fax number", "Email"]
+            # set the values of the second row to the column headers
+            for i, header in enumerate(headers):
+                sheet.cell(row=1, column=i+1, value=header)
+            for user in users:
+                # Create a list for the current row
+                row = [
+                    user.organization or '',
+                    " ".join(filter(None, [user.first_name, user.last_name])),
+                    user.address or '',
+                    ", ".join(filter(None, [user.city, " ".join(filter(None, [user.state, user.zip]))])),
+                    ", ".join(filter(None, [user.phone, user.alt_phone])),
+                    user.fax or '',
+                    user.email or ''
+                ]
+                # Add the row to the data list
+                sheet.append(row)
+
+            adjust_width(sheet)
+
+            # remove the default sheet
+            group_contact_workbook.remove(group_contact_workbook['Sheet'])
+
+            # Create a BytesIO object and save the workbook to it
+            xlsx_file_io = BytesIO()
+            group_contact_workbook.save(xlsx_file_io)
+
+            # Go back to the start of the BytesIO object
+            xlsx_file_io.seek(0)
+
+            # Save the BytesIO object to a file in default storage
+            group_contact_xlsx_file_name = f'Fair{fair.name}-Group contact details.xlsx'
+            group_contact_xlsx_file = default_storage.save(group_contact_xlsx_file_name, ContentFile(xlsx_file_io.read()))
+
+
+
+            # get a list of all the accessories for the fair
+            accessories = Accessory.objects.filter(fair=fair)
+
+            # Get all performances
+            performances = Performance.objects.filter(fair=fair, status__in=["approved"]).values('id', 'title', 'user__organization', 'grade_range', 'category__name')
+            
+            # Convert GRADE_RANGES to a dictionary
+            grade_ranges_dict = dict(Performance.GRADE_RANGES)
+
+            # Replace the grade range with the display version
+            for performance in performances:
+                performance['grade_range'] = grade_ranges_dict.get(performance['grade_range'])
+
+            # Convert QuerySet to list of dictionaries
+            performances = list(performances)
+
+            # Loop over each performance
+            for performance in performances:
+                # Loop over each accessory
+                for accessory in accessories:
+                    # Get the count of the current accessory for the current performance
+                    count = PerformanceAccessory.objects.filter(performance_id=performance['id'], accessory=accessory).aggregate(count=Sum('count'))['count']
+
+                    # Add the count to the performance dictionary
+                    performance[f'accessory_{accessory.id}'] = count if count else 0
+
+            accessory_workbook = Workbook()
+
+            accessory_workbook.create_sheet(title="AccessoryCounts")
+            accessory_workbook.active = accessory_workbook["AccessoryCounts"]
+            sheet = accessory_workbook.active
+
+            # list of column headers
+            headers = ["Performance title", "Organization", "Grade range", "Category"]
+            # add the accessory names to the headers list
+            headers.extend([accessory.name for accessory in accessories])
+
+            # set the background color of the first row to blue, for the number of columnes equal to the length of the headers list
+            for cell in sheet['A1':get_column_letter(len(headers))+'1']:
+                for c in cell:
+                    c.fill = PatternFill(start_color="007bff", end_color="007bff", fill_type="solid")
+                    c.font = Font(color="FFFFFF")
+
+            # set the values of the second row to the column headers
+            for i, header in enumerate(headers):
+                sheet.cell(row=1, column=i+1, value=header)
+            for performance in performances:
+                # Create a list for the current row
+                row = [
+                    performance['title'],
+                    performance['user__organization'],
+                    performance['grade_range'],
+                    performance['category__name']
+                ]
+                # add the accessory counts to the row
+                row.extend([performance[f'accessory_{accessory.id}'] for accessory in accessories])
+                
+                # Add the row to the data list
+                sheet.append(row)
+
+            adjust_width(sheet)
+
+            # remove the default sheet
+            accessory_workbook.remove(accessory_workbook['Sheet'])
+
+            # Create a BytesIO object and save the workbook to it
+            xlsx_file_io = BytesIO()
+            accessory_workbook.save(xlsx_file_io)
+
+            # Go back to the start of the BytesIO object
+            xlsx_file_io.seek(0)
+
+            # Save the BytesIO object to a file in default storage
+            accessory_xlsx_file_name = f'Fair{fair.name}-Accessory counts.xlsx'
+            accessory_xlsx_file = default_storage.save(accessory_xlsx_file_name, ContentFile(xlsx_file_io.read()))
+
+
+            # get a list of unique all instructors that are in the performances of the fair
+            # distinct_names = Instructor.objects.filter(performance_instructor__fair=fair).order_by('user__organization', 'lastname', 'firstname').values_list('lastname', 'firstname', 'user__organization').distinct()
+            # instructors = [Instructor.objects.filter(lastname=lastname, firstname=firstname, user__organization=user__organization).first() for lastname, firstname, user__organization in distinct_names]
+            instructors = Instructor.objects.filter(performance_instructor__fair=fair).order_by('user__organization', 'lastname', 'firstname').distinct()
+
+            # Convert GRADES to a dictionary
+            grades_dict = dict(Student.GRADES)
+            grades_keys = list(grades_dict.keys())
+            
+            # make a list of dictionaries for each instructor, with the organization of the their user, city and state of their user, and a comma separated string of every grade that students are in that are in performances that they are in
+            instructors_list = []
+            for instructor in instructors:
+                # get the performances that any instructor with the same first and last name and organization is in
+                performances = Performance.objects.filter(instructors__firstname__in=[instructor.firstname], instructors__lastname__in=[instructor.lastname], instructors__user__organization__in=[instructor.user.organization])
+
+                # get the students that are in the performances
+                students = Student.objects.filter(performance_student__in=performances).distinct()
+
+                # get the grades of the students
+                grades = sorted(list(set(students.values_list('grade', flat=True))))
+
+                # get the user of the instructor
+                user = instructor.user
+
+                # set day to "Day 1" if any of the grades are in grades_dict[0:6]
+                # set day to "Day 2" if any of the grades are in grades_dict[7:13]
+                # set day to "Day 1 + Day 2" if any of the grades are in grades_dict
+                day1 = "Day 1" if any(grade in grades_keys[0:7] for grade in grades) else ""
+                day2 = "Day 2" if any(grade in grades_keys[7:14] for grade in grades) else ""
+                day = " + ".join(filter(None, [day1, day2]))
+
+                # for each value in grades, replace with the display value from grades_dict
+                grades = [grades_dict[grade] for grade in grades]
+
+                # create a dictionary for the instructor
+                instructor_dict = {
+                    'name': f"{instructor.firstname} {instructor.lastname}",
+                    'organization': user.organization,
+                    'city': user.city,
+                    'state': user.state,
+                    'grades': ", ".join([str(grade) for grade in grades]),
+                    'day': day,
+                    'day1': day1,
+                    'day2': day2
+                }
+                # add a copy of the dictionary to the list of instructors
+                instructors_list.append(copy.deepcopy(instructor_dict))
+
+            # Sort the list of instructors by the organization name, ignoring None values
+            # instructors_list = sorted(instructors_list, key=lambda x: (x['organization'] is None, x['organization']))
+
+            program_labels_workbook = Workbook()
+
+            program_labels_workbook.create_sheet(title="Program Labels")
+            program_labels_workbook.active = program_labels_workbook["Program Labels"]
+            sheet = program_labels_workbook.active
+
+            # list of column headers
+            headers = ["Group name", "Instructor", "Day", "Grades", "Address"]
+
+            # set the background color of the first row to blue, for the number of columnes equal to the length of the headers list
+            for cell in sheet['A1':'E1']:
+                for c in cell:
+                    c.fill = PatternFill(start_color="007bff", end_color="007bff", fill_type="solid")
+                    c.font = Font(color="FFFFFF")
+
+            # set the values of the second row to the column headers
+            for i, header in enumerate(headers):
+                sheet.cell(row=1, column=i+1, value=header)
+            for instructor in instructors_list:
+                # Create a list for the current row
+                row = [
+                    instructor['organization'],
+                    instructor['name'],
+                    instructor['day'],
+                    instructor['grades'],
+                    f"{instructor['city']}, {instructor['state']}"
+                ]
+                
+                # Add the row to the data list
+                sheet.append(row)
+
+            adjust_width(sheet)
+
+
+            program_labels_workbook.create_sheet(title="Sign In Day 1")
+            program_labels_workbook.active = program_labels_workbook["Sign In Day 1"]
+            sheet = program_labels_workbook.active
+
+            # list of column headers
+            headers = ["Group name", "Instructor", "Location", "Registration Packet", "T-shirts/Bags", "Posters"]
+
+            # set the background color of the first row to blue, for the number of columnes equal to the length of the headers list
+            for cell in sheet['A1':'F1']:
+                for c in cell:
+                    c.font = Font(bold=True)
+
+            # set the values of the second row to the column headers
+            for i, header in enumerate(headers):
+                sheet.cell(row=1, column=i+1, value=header)
+
+            # filter the instructors_list to only include instructors that are in performances that are on day 1
+            instructors_list_day1 = [instructor for instructor in instructors_list if instructor.get('day1') == "Day 1"]
+            for instructor in instructors_list_day1:
+                # Create a list for the current row
+                row = [
+                    instructor['organization'],
+                    instructor['name'],
+                    f"{instructor['city']}, {instructor['state']}",
+                    "",
+                    "",
+                    ""
+                ]
+                
+                # Add the row to the data list
+                sheet.append(row)
+
+            for row in sheet['A1':'F'+ str(len(instructors_list)+1)]:
+                for cell in row:
+                    cell.border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+
+            adjust_width(sheet)
+
+
+            program_labels_workbook.create_sheet(title="Sign In Day 2")
+            program_labels_workbook.active = program_labels_workbook["Sign In Day 2"]
+            sheet = program_labels_workbook.active
+
+            # list of column headers
+            headers = ["Group name", "Instructor", "Location", "Registration Packet", "T-shirts/Bags", "Posters"]
+
+            # set the background color of the first row to blue, for the number of columnes equal to the length of the headers list
+            for cell in sheet['A1':'F1']:
+                for c in cell:
+                    c.font = Font(bold=True)
+
+            # set the values of the second row to the column headers
+            for i, header in enumerate(headers):
+                sheet.cell(row=1, column=i+1, value=header)
+
+            # filter the instructors_list to only include instructors that are in performances that are on day 1
+            instructors_list_day2 = [instructor for instructor in instructors_list if instructor.get('day2') == "Day 2"]
+            for instructor in instructors_list_day2:
+                # Create a list for the current row
+                row = [
+                    instructor['organization'],
+                    instructor['name'],
+                    f"{instructor['city']}, {instructor['state']}",
+                    "",
+                    "",
+                    ""
+                ]
+                
+                # Add the row to the data list
+                sheet.append(row)
+
+            for row in sheet['A1':'F'+ str(len(instructors_list)+1)]:
+                for cell in row:
+                    cell.border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+
+            adjust_width(sheet)
+
+
+            # remove the default sheet
+            program_labels_workbook.remove(program_labels_workbook['Sheet'])
+
+            # Create a BytesIO object and save the workbook to it
+            xlsx_file_io = BytesIO()
+            program_labels_workbook.save(xlsx_file_io)
+
+            # Go back to the start of the BytesIO object
+            xlsx_file_io.seek(0)
+
+            # Save the BytesIO object to a file in default storage
+            program_labels_xlsx_file_name = f'Fair{fair.name}-Program labels.xlsx'
+            program_labels_xlsx_file = default_storage.save(program_labels_xlsx_file_name, ContentFile(xlsx_file_io.read()))
+
+
 
             # Get the full path of the files
             json_file_path = default_storage.path(json_file)
             performance_xlsx_file_path = default_storage.path(performance_xlsx_file)
             student_xlsx_file_path = default_storage.path(student_xlsx_file)
+            group_contact_xlsx_path = default_storage.path(group_contact_xlsx_file)
+            accessory_xlsx_file_path = default_storage.path(accessory_xlsx_file)
+            program_labels_file_path = default_storage.path(program_labels_xlsx_file)
 
             zip_folder_name = f'fair_{fair.name}_data/'
 
@@ -1506,6 +1813,15 @@ class FairDownloadView(APIView):
 
                 # Add the student xlsx file to the zip file
                 zip_file.write(student_xlsx_file_path, arcname=zip_folder_name+student_xlsx_file_name)
+
+                # Add the group contact xlsx file to the zip file
+                zip_file.write(group_contact_xlsx_path, arcname=zip_folder_name+group_contact_xlsx_file_name)
+
+                # Add the accessory xlsx file to the zip file
+                zip_file.write(accessory_xlsx_file_path, arcname=zip_folder_name+accessory_xlsx_file_name)
+
+                # Add the program labels xlsx file to the zip file
+                zip_file.write(program_labels_file_path, arcname=zip_folder_name+program_labels_xlsx_file_name)
 
             # Create a generator that reads the file and yields the data
             def file_iterator():
@@ -1524,6 +1840,7 @@ class FairDownloadView(APIView):
             default_storage.delete(json_file)
             default_storage.delete(performance_xlsx_file)
             default_storage.delete(student_xlsx_file)
+            default_storage.delete(group_contact_xlsx_file)
 
             return response
 
@@ -1679,7 +1996,7 @@ class PerformanceSheetsDownloadView(APIView):
 
         response = HttpResponse(content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="fair{fair.name}-Performance sheets.pdf"'
-        doc = reportlab_SimpleDocTemplate(response, pagesize=reportlab_letter, onPage=footer)
+        doc = reportlab_SimpleDocTemplate(response, pagesize=reportlab_letter, onPage=footer, title=f'Fair {fair.name} - Performance Sheets')
 
         styles = reportlab_getSampleStyleSheet()
         styles['Normal'].fontName = 'DejaVuSans'
@@ -1777,7 +2094,7 @@ class PerformanceSheetsDownloadView(APIView):
                 instructor_data.append([instructor.firstname, instructor.lastname])
             instructor_table = reportlab_Table(instructor_data, colWidths=[150, 150])
             instructor_table.setStyle(reportlab_TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), reportlab_colors.grey),
+                ('BACKGROUND', (0, 0), (-1, 0), reportlab_colors.lightgrey),
                 ('GRID', (0, 0), (-1, -1), 1, reportlab_colors.black),
             ]))
 
@@ -1792,7 +2109,7 @@ class PerformanceSheetsDownloadView(APIView):
                 student_data.append([student.firstname, student.lastname])
             student_table = reportlab_Table(student_data, colWidths=[150, 150])
             student_table.setStyle(reportlab_TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), reportlab_colors.grey),
+                ('BACKGROUND', (0, 0), (-1, 0), reportlab_colors.lightgrey),
                 ('GRID', (0, 0), (-1, -1), 1, reportlab_colors.black),
             ]))
             elements.append(reportlab_Spacer(1, 12))  # Add some space between tables
@@ -1802,77 +2119,313 @@ class PerformanceSheetsDownloadView(APIView):
 
         doc.build(elements, onFirstPage=footer, onLaterPages=footer)
 
-        # p = reportlab_canvas.Canvas(response, pagesize=reportlab_letter)
-        # p.setTitle(f'Fair {fair.name} - Performance Sheets')
-        # width, height = reportlab_letter
-
-        # # Register the DejaVuSans font
-        # font_path = os.path.join(settings.STATIC_ROOT, 'DejaVuSans.ttf')
-        # font_bold_path = os.path.join(settings.STATIC_ROOT, 'DejaVuSans-Bold.ttf')
-        # reportlab_pdfmetrics.registerFont(reportlab_TTFont('DejaVuSans', font_path))
-        # reportlab_pdfmetrics.registerFont(reportlab_TTFont('DejaVuSans-Bold', font_bold_path))
-
-        # def draw_static_elements():
-        #     # Title banner image
-        #     # Get image
-        #     image_path = os.path.join(settings.STATIC_ROOT, 'onaylf.png')
-        #     # Create an Image object
-        #     image = reportlab_Image(image_path)
-        #     # Draw the image
-        #     image.drawOn(p, 30, height-100)
-        #     # Subtitle with Blue Background
-        #     sky_blue = reportlab_Color(0.429, 0.708, 0.982)  # RGB values for light blue
-
-        #     # Horizontal Rule before footer
-        #     p.line(30, 40, width-30, 40)
-        #     # Footer
-        #     p.setFont("Helvetica", 8)
-        #     p.drawString(30, 30, f"Oklahoma Native American Youth Language Fair {fair.name} Judging Sheet - {performance.category.name}")
-
-        # for performance in performances:
-        #     draw_static_elements()
-
-        #     # Dynamic text drawing goes here
-        #     p.setFont("DejaVuSans-Bold", 14)
-        #     p.drawString(30, height-130, "Title of Presentation: ")
-        #     p.setFont("DejaVuSans", 14)
-        #     p.drawString(205, height-130, f"{performance.title}")
-
-        #     p.setFont("DejaVuSans", 10)
-        #     p.drawString(30, height-150, "Presenting Group: ")
-        #     p.drawString(150, height-150, f"{performance.group}")
-        #     p.drawString(30, height-170, "Program/School: ")
-        #     p.drawString(150, height-170, f"{performance.user.organization}")
-        #     p.drawString(30, height-190, "Type: ")
-        #     p.drawString(150, height-190, f"{performance.get_performance_type_display()}")
-        #     p.drawString(280, height-190, "Category: ")
-        #     p.drawString(350, height-190, f"{performance.category.name}")
-        #     p.drawString(30, height-210, "Student count: ")
-        #     # xxx calculate student total
-        #     p.drawString(150, height-210, f"{1}")
-
-        #     p.line(30, height-225, width-30, height-225)
-
-        #     p.setFont("DejaVuSans", 12)
-        #     p.drawString(30, height-243, "Year: ")
-        #     p.drawString(65, height-243, f"{fair.name}")
-        #     p.drawString(130, height-243, "Grade: ")
-        #     p.drawString(175, height-243, f"{performance.get_grade_range_display()}")
-        #     p.drawString(255, height-243, "Language: ")
-        #     p.drawString(325, height-243, f"{', '.join([languoid.name for languoid in performance.languoids.all()])}")
-
-        #     p.line(30, height-255, width-30, height-255)
-
-        #     p.setFont("DejaVuSans", 10)
-        #     p.drawString(30, height-270, "Notes: ")
-        #     # xxx put notes in a wrapped box
-        #     p.drawString(175, height-270, f"{performance.comments}")
-
-        #     p.showPage()
-
-        # p.save()
         return response
 
+# and API view that returns pdf for organizations with summary info
+class RegistrationCoverSheetsDownloadView(APIView):
+    def get(self, request, fair_pk):
+        fair = Fair.objects.get(pk=fair_pk)
+
+        # get a list of cateogries that are not material
+        non_material_submission_categories = list(Category.objects.filter(fair=fair, material_submission=False).values_list('name', flat=True))
+
+        # get a list of all the approved performances for the fair
+        performances = Performance.objects.filter(fair=fair, status__in=["approved"])
+
+        # get a list of all the users that have students that are in the performances of the fair
+        users = User.objects.filter(student_user__performance_student__in=performances).distinct()
+
+        # Convert GRADES to a dictionary
+        grades_dict = dict(Student.GRADES)
+
+        # create a mapping from display values to sorted non-display values (this should have been done in models)
+        tshirt_size_mapping = {
+            'Youth Small (YS)': '1_ys',
+            'Youth Medium (YM)': '2_ym',
+            'Youth Large (YL)': '3_yl',
+            'Adult Small (S)': '4_s',
+            'Adult Medium (M)': '5_m',
+            'Adult Large (L)': '6_l',
+            'Adult Extra Large (XL)': '7_xl',
+            'Adult Extra Extra Large (XXL)': '8_xxl',
+            'Adult Extra Extra Extra Large (XXXL)': '9_xxxl'
+        }
+
+        # make a list of dictionaries for each user, with the organization of the user, address, city and state of the user, phone, fax and email of the user
+        users_list = []
+        for user in users:
+
+            # make a clean organization name, that strips the characters that are escaped from the beginning of the organization name
+            if user.organization is not None:
+                clean_organization = re.sub(r'^\W+', '', user.organization)
+            else:
+                clean_organization = ""
+
+            # get the performances that the user is in
+            performances = Performance.objects.filter(user=user, fair=fair)
+
+            # get the students that are in the performances, sorted by last name and then first name
+            students = Student.objects.filter(performance_student__in=performances).order_by('lastname', 'firstname').distinct()
+
+            # make a list of dictionaries for each student, with the first name, last name, grade, and tshirt size of the student (only if the student is in a non-material performance)
+            students_list = []
+            for student in students:
+                # get the performances that the student is in
+                student_performances = student.performance_student.filter(fair=fair)
+
+                # check if the student is in a non-material performance
+                if student_performances.filter(category__name__in=non_material_submission_categories).exists():
+                    # get the tshirt size of the student
+                    tshirt_size = student.tshirt_size if student.tshirt_size else ""
+                else:
+                    tshirt_size = ""
+
+                # create a dictionary for the student
+                student_dict = {
+                    'firstname': student.firstname,
+                    'lastname': student.lastname,
+                    'grade': student.get_grade_display(),
+                    'tshirt_size': student.get_tshirt_size_display() 
+                }
+                # add a copy of the dictionary to the list of students
+                students_list.append(copy.deepcopy(student_dict))
+
+            # get the count of the unique students in the performances
+            student_count = students.count()
+
+            # using students_list, get a count of the tshirts of each size as a dictionary
+            tshirt_sizes = Counter([student['tshirt_size'] for student in students_list])
+
+            # remove the count for blank t-shirt sizes and set it to bag_count
+            bag_count = tshirt_sizes.pop('', 0)
+
+
+            # sort tshirt_sizes based on the non-display value of the vocabulary
+            tshirt_sizes = {k: v for k, v in sorted(tshirt_sizes.items(), key=lambda item: tshirt_size_mapping[item[0]])}
+
+            # get the instructors that are in the performances
+            instructors = Instructor.objects.filter(performance_instructor__in=performances).distinct()
+
+            # get the count of the unique instructors in the performances
+            instructor_count = instructors.count()
+
+            # get the grades of the students
+            grades = sorted(list(set(students.values_list('grade', flat=True))))
+
+            # for each value in grades, replace with the display value from grades_dict
+            grades = [grades_dict[grade] for grade in grades]
+
+            # create a dictionary for the user
+            user_dict = {
+                'organization': clean_organization,
+                'address': user.address,
+                'city_state_zip': ", ".join(filter(None, [user.city, " ".join(filter(None, [user.state, user.zip]))])),
+                'phone': ", ".join(filter(None, [user.phone, user.alt_phone])),
+                'fax': user.fax or '',
+                'email': user.email or '',
+                'grades': ", ".join([str(grade) for grade in grades]),
+                'students': students_list,
+                'student_count': student_count,
+                'tshirt_sizes': tshirt_sizes,
+                'bag_count': bag_count,
+                'instructors': instructors,
+                'instructor_count': instructor_count
+            }
+            # add a copy of the dictionary to the list of users
+            users_list.append(copy.deepcopy(user_dict))
+
+        # sort the list of users by the organization name, ignoring None values
+        users_list = sorted(users_list, key=lambda x: (x['organization'] is None, x['organization'].lower() if x['organization'] else ''))
+
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="fair{fair.name}-Registration cover sheets.pdf"'
+        doc = reportlab_SimpleDocTemplate(response, pagesize=reportlab_letter, title=f'Fair {fair.name} - Registration Cover Sheets')
+
+        # Register the DejaVuSans font
+        font_path = os.path.join(settings.STATIC_ROOT, 'DejaVuSans.ttf')
+        font_bold_path = os.path.join(settings.STATIC_ROOT, 'DejaVuSans-Bold.ttf')
+        reportlab_pdfmetrics.registerFont(reportlab_TTFont('DejaVuSans', font_path))
+        reportlab_pdfmetrics.registerFont(reportlab_TTFont('DejaVuSans-Bold', font_bold_path))
+
+        styles = reportlab_getSampleStyleSheet()
+        styles['Normal'].fontName = 'DejaVuSans'
+        styles['Heading2'].fontName = 'DejaVuSans'
+
+        # Create a new style based on 'Normal'
+        font_bold = reportlab_ParagraphStyle('font_bold', parent=styles['Normal'], bold=True, italic=False)
+        # Add the new style to the stylesheet
+        styles.add(font_bold)
+
+        # Create a new style based on 'Normal'
+        font_bigger_bold = reportlab_ParagraphStyle('font_bigger_bold', parent=styles['Normal'], fontSize=13, bold=True, italic=False)
+        # Add the new style to the stylesheet
+        styles.add(font_bigger_bold)
+
+        elements = []
+        page_width, page_height = reportlab_letter
+
+        for user in users_list:
+            # Add organization details
+            
+            total_width = page_width - 155  # Total width of the table
+            # Calculate the widths of the columns as percentages of the total width
+            name_width = total_width * 0.9
+            letter_width = total_width * 0.1
+
+            data = [[
+                reportlab_Paragraph(f"{user['organization']}", styles['Heading1']),
+                reportlab_Paragraph(f"{user['organization'][0] if user['organization'] else ''}", styles['Heading1']),
+            ]]
+            table = reportlab_Table(data)
+            table = reportlab_Table(data, colWidths=[name_width, letter_width])
+            table.setStyle(reportlab_TableStyle([
+                ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+                ('GRID', (0,0), (-1,-1), 1, (0,0,0,0)),  # Set table border color to transparent
+                ('LEFTPADDING', (0,0), (-1,-1), 0),  # Remove left padding
+            ]))
+            elements.append(table)
+
+            # add a horizontal line break
+            elements.append(reportlab_HRFlowable(width="100%", thickness=1, lineCap='round', color=reportlab_Color(0, 0, 0)))
+            # add some horizontal space
+            elements.append(reportlab_Spacer(1, 4))
+
+            elements.append(reportlab_Paragraph(f"Registration Cover Sheet - {fair.name}", styles['Normal']))
+            # add some horizontal space
+            elements.append(reportlab_Spacer(1, 2))
+
+            total_width = page_width - 155  # Total width of the table
+            # Calculate the widths of the columns as percentages of the total width
+            label_width = total_width * 0.2
+            value_width = total_width * 0.8
+
+            data = [[
+                reportlab_Paragraph("Instructor(s)", styles['Normal']),
+                reportlab_Paragraph(", ".join([f'{instructor.firstname} {instructor.lastname}' for instructor in user['instructors']]), styles['Normal'])
+            ]]
+            table = reportlab_Table(data)
+            table = reportlab_Table(data, colWidths=[label_width, value_width])
+            table.setStyle(reportlab_TableStyle([
+                ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+                ('GRID', (0,0), (-1,-1), 1, (0,0,0,0)),  # Set table border color to transparent
+                ('LEFTPADDING', (0,0), (-1,-1), 0),  # Remove left padding
+            ]))
+            elements.append(table)
+
+            data = [[
+                reportlab_Paragraph("Address", styles['Normal']),
+                reportlab_Paragraph(f"{user['address']}<br />{user['city_state_zip']}", styles['Normal'])
+            ]]
+            table = reportlab_Table(data)
+            table = reportlab_Table(data, colWidths=[label_width, value_width])
+            table.setStyle(reportlab_TableStyle([
+                ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+                ('GRID', (0,0), (-1,-1), 1, (0,0,0,0)),  # Set table border color to transparent
+                ('LEFTPADDING', (0,0), (-1,-1), 0),  # Remove left padding
+            ]))
+            elements.append(table)
+
+            data = [[
+                reportlab_Paragraph("Phone", styles['Normal']),
+                reportlab_Paragraph(f"{user['phone']}", styles['Normal'])
+            ]]
+            table = reportlab_Table(data)
+            table = reportlab_Table(data, colWidths=[label_width, value_width])
+            table.setStyle(reportlab_TableStyle([
+                ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+                ('GRID', (0,0), (-1,-1), 1, (0,0,0,0)),  # Set table border color to transparent
+                ('LEFTPADDING', (0,0), (-1,-1), 0),  # Remove left padding
+            ]))
+            elements.append(table)
+
+            data = [[
+                reportlab_Paragraph("Fax", styles['Normal']),
+                reportlab_Paragraph(f"{user['fax']}", styles['Normal'])
+            ]]
+            table = reportlab_Table(data)
+            table = reportlab_Table(data, colWidths=[label_width, value_width])
+            table.setStyle(reportlab_TableStyle([
+                ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+                ('GRID', (0,0), (-1,-1), 1, (0,0,0,0)),  # Set table border color to transparent
+                ('LEFTPADDING', (0,0), (-1,-1), 0),  # Remove left padding
+            ]))
+            elements.append(table)
+
+            data = [[
+                reportlab_Paragraph("Email", styles['Normal']),
+                reportlab_Paragraph(f"{user['email']}", styles['Normal'])
+            ]]
+            table = reportlab_Table(data)
+            table = reportlab_Table(data, colWidths=[label_width, value_width])
+            table.setStyle(reportlab_TableStyle([
+                ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+                ('GRID', (0,0), (-1,-1), 1, (0,0,0,0)),  # Set table border color to transparent
+                ('LEFTPADDING', (0,0), (-1,-1), 0),  # Remove left padding
+            ]))
+            elements.append(table)
+
+            # add some horizontal space
+            elements.append(reportlab_Spacer(1, 4))
+            # add a horizontal line break
+            elements.append(reportlab_HRFlowable(width="100%", thickness=1, lineCap='round', color=reportlab_Color(0, 0, 0)))
+            # add some horizontal space
+            elements.append(reportlab_Spacer(1, 4))
+
+            elements.append(reportlab_Paragraph("Total Attendees", styles['font_bigger_bold']))
+            # add some horizontal space
+            elements.append(reportlab_Spacer(1, 8))
+            elements.append(reportlab_Paragraph(f"Students:   {user['student_count']}", styles['Normal']))
+            elements.append(reportlab_Paragraph(f"Instructors: {user['instructor_count']}", styles['Normal']))
+
+            # add some horizontal space
+            elements.append(reportlab_Spacer(1, 12))
+
+            elements.append(reportlab_Paragraph("Grades in Group", styles['font_bigger_bold']))
+            # add some horizontal space
+            elements.append(reportlab_Spacer(1, 8))
+            elements.append(reportlab_Paragraph(f"{user['grades']}", styles['Normal']))
+
+            # add some horizontal space
+            elements.append(reportlab_Spacer(1, 12))
+
+            elements.append(reportlab_Paragraph("Number of Bags", styles['font_bigger_bold']))
+            # add some horizontal space
+            elements.append(reportlab_Spacer(1, 8))
+            elements.append(reportlab_Paragraph(f"{user['bag_count']}", styles['Normal']))
+
+            # make a table of tshirt sizes, showing the size and the count of each size
+            tshirt_data = [["T-Shirt Size", "Count"]]
+            for size, count in user['tshirt_sizes'].items():
+                tshirt_data.append([size, count])
+            tshirt_table = reportlab_Table(tshirt_data, colWidths=[175, 100])
+            tshirt_table.setStyle(reportlab_TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), reportlab_colors.lightgrey),
+                ('GRID', (0, 0), (-1, -1), 1, reportlab_colors.black),
+            ]))
+            elements.append(reportlab_Spacer(1, 12))  # Add some space between tables
+            elements.append(reportlab_Paragraph("T-Shirt Sizes", styles['font_bigger_bold']))
+            elements.append(tshirt_table)
+
+            # add some horizontal space
+            elements.append(reportlab_Spacer(1, 12))
+
+            # Dynamic table for students
+            student_data = [["First Name", "Last Name", "Grade", "T-shirt Size", "Flag"]]  # Table header
+            for student in user['students']:
+                student_data.append([student['firstname'], student['lastname'], student['grade'], student['tshirt_size'], ""])
+            student_table = reportlab_Table(student_data, colWidths=[110, 110, 80, 150, 50])
+            student_table.setStyle(reportlab_TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), reportlab_colors.lightgrey),
+                ('GRID', (0, 0), (-1, -1), 1, reportlab_colors.black),
+            ]))
+            elements.append(reportlab_Spacer(1, 12))  # Add some space between tables
+            elements.append(reportlab_Paragraph("<b>Students</b>", styles['Heading2']))
+            elements.append(student_table)
+            elements.append(reportlab_PageBreak())  # Ensure each performance starts on a new page
+
+        doc.build(elements)
+
+        return response
 
 # and API view that returns JSON for all the performances for the fair given by the fair_pk, with all the metadata for each performance. This is sent to the browser as a download when the user clicks the "Download All Performance data" button on the fair detail page.
 class PerformanceCardsDownloadView(APIView):

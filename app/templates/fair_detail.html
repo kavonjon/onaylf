@@ -21,6 +21,15 @@
 
     <div class="d-flex mt-3 mb-2">
         <div>
+            <button class="btn btn-primary me-1" id="downloadRegistrationCoverSheetsButton">Download Registration Cover Sheets</button>
+        </div>
+        <div class="spinner-border text-primary d-none" id="spinner-registration-cover-sheets" role="status">
+            <span class="sr-only"></span>
+        </div>
+    </div>
+
+    <div class="d-flex mt-3 mb-2">
+        <div>
             <button class="btn btn-primary me-1" id="downloadPerformanceSheetsButton">Download Performance Sheets</button>
         </div>
         <div class="spinner-border text-primary d-none" id="spinner-performance-sheets" role="status">
@@ -195,6 +204,8 @@
     <script>
         const downloadButton = document.getElementById('downloadButton');
         const spinner = document.getElementById('spinner');
+        const downloadRegistrationCoverSheetsButton = document.getElementById('downloadRegistrationCoverSheetsButton');
+        const spinnerRegistrationCoverSheets = document.getElementById('spinner-registration-cover-sheets');
         const downloadPerformanceSheetsButton = document.getElementById('downloadPerformanceSheetsButton');
         const spinnerPerformanceSheets = document.getElementById('spinner-performance-sheets');
         const downloadPerformanceCardsButton = document.getElementById('downloadPerformanceCardsButton');
@@ -210,6 +221,7 @@
     
             constructor() {
                 downloadButton.addEventListener('click', this._downloadMetadata.bind(this));
+                downloadRegistrationCoverSheetsButton.addEventListener('click', this._downloadRegistrationCoverSheets.bind(this));
                 downloadPerformanceSheetsButton.addEventListener('click', this._downloadPerformanceSheets.bind(this));
                 downloadPerformanceCardsButton.addEventListener('click', this._downloadPerformanceCards.bind(this));
                 downloadJudgeSheetsButton.addEventListener('click', this._downloadJudgeSheets.bind(this));
@@ -274,6 +286,53 @@
                         downloadButton.classList.remove('btn-secondary');
                         downloadButton.classList.add('btn-primary');
                         spinner.classList.add('d-none');
+                    });
+            }
+
+            _downloadRegistrationCoverSheets(){
+                const fair_pk = "{{ fair.pk }}"
+                const currentFair = "{{ currentFair }}"
+                downloadRegistrationCoverSheetsButton.disabled = true;
+                downloadRegistrationCoverSheetsButton.classList.remove('btn-primary');
+                downloadRegistrationCoverSheetsButton.classList.add('btn-secondary');
+                spinnerRegistrationCoverSheets.classList.remove('d-none');
+                fetch(`/api/fair/${fair_pk}/download-registration-cover-sheets/`)
+                    .then(response => {
+                        console.log(response);
+                        const contentType = response.headers.get("content-type");
+                        if (!response.ok) {
+                            if (contentType && contentType.includes("application/json")) {
+                                return response.json().then(err => { throw new Error(`HTTP error! status: ${response.status}, message: ${err.error}`); });
+                            } else {
+                                throw new Error(`HTTP error! status: ${response.status}, response: ${response}`);
+                            }
+                        }
+                        if (contentType && contentType.includes("application/pdf")) {
+                            return response.blob();
+                        }
+                        throw new Error(`Unexpected content-type: ${contentType}`);
+                    })
+                    .then(blob => {
+                        // Create a link and download the file
+                        const url = window.URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = sanitizeFilename(`fair${currentFair}-registration_cover_sheets.pdf`);
+                        document.body.appendChild(link); // Append the link to the body
+                        link.click();
+                        document.body.removeChild(link); // Remove the link from the body
+                        window.URL.revokeObjectURL(url); // Revoke the object URL
+                        downloadRegistrationCoverSheetsButton.disabled = false;
+                        downloadRegistrationCoverSheetsButton.classList.remove('btn-secondary');
+                        downloadRegistrationCoverSheetsButton.classList.add('btn-primary');
+                        spinnerRegistrationCoverSheets.classList.add('d-none');
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        downloadRegistrationCoverSheetsButton.disabled = false;
+                        downloadRegistrationCoverSheetsButton.classList.remove('btn-secondary');
+                        downloadRegistrationCoverSheetsButton.classList.add('btn-primary');
+                        spinnerRegistrationCoverSheets.classList.add('d-none');
                     });
             }
 
