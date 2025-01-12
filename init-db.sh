@@ -28,6 +28,11 @@ DB_EXISTS=$(psql -U postgres -p "$DB_PORT" -tAc "SELECT 1 FROM pg_database WHERE
 if [[ "$DB_EXISTS" != "1" ]]; then
   echo "Database $DB_NAME does not exist. Initializing..."
 
+  # Create postgres user if it doesn't exist
+  psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+    CREATE USER postgres WITH SUPERUSER PASSWORD '$POSTGRES_PASSWORD';
+  EOSQL
+
   # Create user if it doesn't exist
   echo "Creating user $DB_USER..."
   psql -U postgres -p "$DB_PORT" -tAc "DO \$\$
