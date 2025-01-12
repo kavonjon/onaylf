@@ -1,9 +1,9 @@
 services:
-  web:
+  onaylf_web:
     build: .
-    container_name: onaylf_gunicorn
+    container_name: onaylf_django
     restart: unless-stopped
-    command: bash -c "./wait-for-postgres.sh db && python manage.py migrate && python manage.py collectstatic --no-input && python manage.py runserver 0.0.0.0:8100"
+    command: bash -c "./wait-for-postgres.sh onaylf_db && python manage.py migrate && python manage.py collectstatic --no-input && python manage.py runserver 0.0.0.0:8100"
     volumes:
       - static:/app/static
       - ./wait-for-postgres.sh:/app/wait-for-postgres.sh
@@ -12,12 +12,12 @@ services:
     env_file:
       - .env
     depends_on:
-      db:
+      onaylf_db:
         condition: service_healthy
 
-  db:
+  onaylf_db:
     image: postgres
-    container_name: postgres_onaylf
+    container_name: onaylf_postgres
     restart: unless-stopped
     volumes:
       - postgres_data:/var/lib/postgresql/data/
@@ -32,7 +32,7 @@ services:
       retries: 10
       start_period: 30s
 
-  nginx:
+  onaylf_nginx:
     build: ./nginx
     container_name: onaylf_nginx
     restart: unless-stopped
@@ -41,7 +41,7 @@ services:
     expose:
       - 8181
     depends_on:
-      - web
+      - onaylf_web
 
 volumes:
   postgres_data:
