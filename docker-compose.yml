@@ -1,7 +1,7 @@
 services:
   web:
     build: .
-    container_name: django_gunicorn
+    container_name: onaylf_gunicorn
     restart: unless-stopped
     command: bash -c "python manage.py collectstatic --no-input && python manage.py runserver 0.0.0.0:8100"
     volumes:
@@ -15,7 +15,7 @@ services:
 
   db:
     image: postgres
-    container_name: postgres_django
+    container_name: postgres_onaylf
     restart: unless-stopped
     volumes:
       - postgres_data:/var/lib/postgresql/data/
@@ -31,7 +31,7 @@ services:
 
   nginx:
     build: ./nginx
-    container_name: test_deploy_nginx
+    container_name: onaylf_nginx
     restart: unless-stopped
     volumes:
       - static:/static/
