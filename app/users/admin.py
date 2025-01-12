@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from users.models import User
+from users.models import User, Organization
 
 
 class UserCreationForm(forms.ModelForm):
@@ -37,7 +37,7 @@ class UserAdmin(BaseUserAdmin):
     # Fields to include in the add/edit forms
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
-        ('Personal info', {'fields': ('first_name', 'last_name', 'organization')}),
+        ('Personal info', {'fields': ('first_name', 'last_name', 'organization', 'phone', 'alt_phone', 'fax', 'alt_email', 'address', 'city', 'state', 'zip')}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
@@ -54,3 +54,4 @@ class UserAdmin(BaseUserAdmin):
 # Re-register UserAdmin
 # admin.site.unregister(User)
 admin.site.register(User, UserAdmin)
+admin.site.register(Organization)

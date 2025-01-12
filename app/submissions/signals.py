@@ -1,0 +1,115 @@
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.core.mail import send_mail
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.db import transaction
+from .models import CurrentFair, Submission
+import logging
+
+logger = logging.getLogger(__name__)
+
+@receiver(post_save, sender=get_user_model())
+def update_submissions_organization(sender, instance, created, raw, update_fields, **kwargs):
+    if created or raw:
+        # Skip if this is a new user being created or raw save
+        return
+
+    try:
+        with transaction.atomic():
+            # Get the original state from the database
+            if hasattr(instance, '_loaded_values'):
+                old_organization = instance._loaded_values.get('organization')
+            else:
+                # Fallback if _loaded_values not available
+                old_organization = sender.objects.get(pk=instance.pk).organization
+            
+            # Log the values for debugging
+            logger.info(f"Old organization: {old_organization}")
+            logger.info(f"New organization: {instance.organization}")
+            
+            if old_organization != instance.organization:
+                logger.info("Organization changed - updating submissions")
+                
+                # Get current fair
+                current_fair = CurrentFair.objects.first()
+                
+                if current_fair:
+                    # Update all submissions for this user in the current fair
+                    updated_count = Submission.objects.filter(
+                        user=instance,
+                        fair=current_fair.fair
+                    ).update(organization=instance.organization)
+                    
+                    logger.info(f"Updated {updated_count} submissions")
+                else:
+                    logger.warning("No current fair found")
+            else:
+                logger.info("Organization unchanged - no updates needed")
+                
+    except Exception as e:
+        logger.error(f"Error updating submissions: {str(e)}")
+
+@receiver(post_save, sender=Submission)
+def mark_submission_submitted(sender, instance, **kwargs):
+
+    if instance.status == 'submitted' and instance.submitted_email_sent == False:
+        instance.submitted_email_sent = True
+        instance.save(update_fields=['submitted_email_sent'])
+        currentFair = CurrentFair.objects.first()
+        year = currentFair.name
+        submission_title = instance.title
+        if len(submission_title) > 40:
+            short_title = submission_title[:40].strip() + "..."
+        else:
+            short_title = submission_title
+        template_subject = "[ONAYLF {year}] Submission submitted: {short_title}"
+        template_email = """Submission title: {title}
+
+Thank you for registering your student's submission for the {year} ONAYLF.
+
+Please remember that your students' material submissions (Books, Comics & Cartoons, Film & Video, Mobile Video, Poster Art, and Puppet Shows) must be postmarked or submitted on or before March 8, {year}.
+
+You will receive an email when this submission is approved by ONAYLF staff.
+
+You can contact us at onaylf.samnoblemuseum@ou.edu with any questions.
+
+Thank you,
+ONAYLF Team"""
+        send_mail(
+            template_subject.format(year=year, short_title=short_title),
+            template_email.format(title=submission_title, year=year),
+            settings.EMAIL_HOST_USER,
+            [instance.user.email, 'onaylf.samnoblemuseum@ou.edu'],  # the email address to send to
+            fail_silently=True,
+        )
+
+@receiver(post_save, sender=Submission)
+def at_submission_approved(sender, instance, **kwargs):
+    if instance.status == 'approved' and instance.approved_email_sent == False:
+        instance.approved_email_sent = True
+        instance.save(update_fields=['approved_email_sent'])
+        currentFair = CurrentFair.objects.first()
+        year = currentFair.name
+        submission_title = instance.title
+        if len(submission_title) > 40:
+            short_title = submission_title[:40].strip() + "..."
+        else:
+            short_title = submission_title
+        template_subject = "[ONAYLF {year}] Submission approved: {short_title}"
+        template_email = """Submission title: {title}
+
+Your students' submission has been approved by the ONAYLF Team.  We look forward to seeing you and your students at the Fair.
+
+You can contact us at onaylf.samnoblemuseum@ou.edu with any questions.
+
+Thank you,
+ONAYLF Team"""
+        send_mail(
+            template_subject.format(year=year, short_title=short_title),
+            template_email.format(title=submission_title, year=year),
+            settings.EMAIL_HOST_USER,
+            [instance.user.email, 'onaylf.samnoblemuseum@ou.edu'],  # the email address to send to
+            fail_silently=True,
+        )
+

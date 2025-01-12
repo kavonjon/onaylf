@@ -1,0 +1,317 @@
+{% extends 'base.html' %}
+{% load migration_tags %}
+
+{% block page_content %}
+<div class="container mt-4">
+    <h2>Data Migration</h2>
+
+    {% if not preview %}
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="json_file" class="form-label">Select JSON File</label>
+            <input type="file" class="form-control" id="json_file" name="json_file" accept=".json">
+        </div>
+        <button type="submit" name="preview" class="btn btn-primary">Preview Data</button>
+    </form>
+    {% else %}
+    <div class="preview-container">
+        <!-- Nav tabs -->
+        <ul class="nav nav-tabs mb-3" id="migrationTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab">
+                    Users ({{ preview.users|length }})
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="submissions-tab" data-bs-toggle="tab" data-bs-target="#submissions" type="button" role="tab">
+                    Submissions ({{ preview.submissions|length }})
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="students-tab" data-bs-toggle="tab" data-bs-target="#students" type="button" role="tab">
+                    Students ({{ preview.students|length }})
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="instructors-tab" data-bs-toggle="tab" data-bs-target="#instructors" type="button" role="tab">
+                    Instructors ({{ preview.instructors|length }})
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tab content -->
+        <div class="tab-content" id="migrationTabContent">
+            <!-- Users Tab -->
+            <div class="tab-pane fade show active" id="users" role="tabpanel">
+                {% for user in preview.users %}
+                <div class="preview-item">
+                    <div class="preview-header" data-bs-toggle="collapse" data-bs-target="#user-{{ forloop.counter }}">
+                        <i class="bi bi-caret-right-fill"></i>
+                        {{ user.email }} ({{ user.first_name }} {{ user.last_name }})
+                        {% if user.exists %}<span class="badge bg-warning">Exists</span>{% endif %}
+                    </div>
+                    <div class="collapse" id="user-{{ forloop.counter }}">
+                        <div class="preview-details">
+                            <h6 class="mb-3">Fields from JSON:</h6>
+                            <div class="row mb-3">
+                                {% for field in user.from_json %}
+                                <div class="col-3">{{ field }}:</div>
+                                <div class="col-9">{{ user|get_item:field }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <h6 class="mb-3">Default Values:</h6>
+                            <div class="row mb-3">
+                                {% for field in user.defaulted %}
+                                <div class="col-3">{{ field }}:</div>
+                                <div class="col-9">
+                                    <span class="text-muted">Will default to: </span>
+                                    {{ user|get_item:field }}
+                                </div>
+                                {% endfor %}
+                            </div>
+
+                            <h6 class="mb-3">Missing Fields (will be null):</h6>
+                            <div class="row">
+                                {% for field in user.missing %}
+                                <div class="col-3">{{ field }}:</div>
+                                <div class="col-9">
+                                    <span class="text-muted">Not present in import data</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Submissions Tab -->
+            <div class="tab-pane fade" id="submissions" role="tabpanel">
+                {% for submission in preview.submissions %}
+                <div class="preview-item">
+                    <div class="preview-header" data-bs-toggle="collapse" data-bs-target="#submission-{{ forloop.counter }}">
+                        <i class="bi bi-caret-right-fill"></i>
+                        {{ submission.title }}
+                    </div>
+                    <div class="collapse" id="submission-{{ forloop.counter }}">
+                        <div class="preview-details">
+                            <div class="row">
+                                <div class="col-3">ID:</div>
+                                <div class="col-9">{{ submission.id }}</div>
+                                <div class="col-3">Title:</div>
+                                <div class="col-9">{{ submission.title }}</div>
+                                <div class="col-3">Is Poster:</div>
+                                <div class="col-9">{{ submission.poster|yesno:"Yes,No" }}</div>
+                                <div class="col-3">Program/School (Organization):</div>
+                                <div class="col-9">{{ submission.organization }}</div>
+                                <div class="col-3">Presenting Group:</div>
+                                <div class="col-9">{{ submission.group }}</div>
+                                <div class="col-3">Category:</div>
+                                <div class="col-9">{{ submission.category.name }}</div>
+                                <div class="col-3">Grade Range:</div>
+                                <div class="col-9">{{ submission.grade_range_display }}</div>
+                                <div class="col-3">Type:</div>
+                                <div class="col-9">{{ submission.submission_type }}</div>
+                                <div class="col-3">Status:</div>
+                                <div class="col-9">{{ submission.status_display }}</div>
+                                <div class="col-3">Created By:</div>
+                                <div class="col-9">{{ submission.user.email }}</div>
+                                <div class="col-3">Modified By:</div>
+                                <div class="col-9">{{ submission.modified_by }}</div>
+                                <div class="col-3">Updated:</div>
+                                <div class="col-9">{{ submission.updated }}</div>
+                                <div class="col-3">Statuses:</div>
+                                <div class="col-9">
+                                    Instructors: {{ submission.instructors_status }}<br>
+                                    Students: {{ submission.students_status }}<br>
+                                    Accessories: {{ submission.accessories_status }}<br>
+                                    Review: {{ submission.review_status }}
+                                </div>
+                                <div class="col-3">Languages:</div>
+                                <div class="col-9">
+                                    {% if submission.languoid %}
+                                        <ul class="list-unstyled mb-0">
+                                        {% for language in submission.languoid %}
+                                            <li>{{ language }}</li>
+                                        {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        <span class="text-muted">No languages specified</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <h6>Associated Students:</h6>
+                            <ul>
+                            {% for student_id in submission.student_ids %}
+                                {% with student=preview.students|find_by_id:student_id %}
+                                    <li>{{ student.firstname }} {{ student.lastname }}</li>
+                                {% endwith %}
+                            {% endfor %}
+                            </ul>
+
+                            <h6>Associated Instructors:</h6>
+                            <ul>
+                            {% for instructor_id in submission.instructor_ids %}
+                                {% with instructor=preview.instructors|find_by_id:instructor_id %}
+                                    <li>{{ instructor.firstname }} {{ instructor.lastname }}</li>
+                                {% endwith %}
+                            {% endfor %}
+                            </ul>
+
+                            <h6>Associated Accessories:</h6>
+                            <ul>
+                            {% for acc_data in submission.accessory_data %}
+                                <li>
+                                    {{ acc_data.name }} (Count: {{ acc_data.count }})
+                                </li>
+                            {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Students Tab -->
+            <div class="tab-pane fade" id="students" role="tabpanel">
+                {% for student in preview.students %}
+                <div class="preview-item">
+                    <div class="preview-header" data-bs-toggle="collapse" data-bs-target="#student-{{ forloop.counter }}">
+                        <i class="bi bi-caret-right-fill"></i>
+                        {{ student.firstname }} {{ student.lastname }}
+                    </div>
+                    <div class="collapse" id="student-{{ forloop.counter }}">
+                        <div class="preview-details">
+                            <div class="row">
+                                <div class="col-3">ID:</div>
+                                <div class="col-9">{{ student.id }}</div>
+                                <div class="col-3">First Name:</div>
+                                <div class="col-9">{{ student.firstname }}</div>
+                                <div class="col-3">Last Name:</div>
+                                <div class="col-9">{{ student.lastname }}</div>
+                                <div class="col-3">Grade:</div>
+                                <div class="col-9">{{ student.grade_display }}</div>
+                                <div class="col-3">Hometown:</div>
+                                <div class="col-9">{{ student.hometown }}</div>
+                                <div class="col-3">State:</div>
+                                <div class="col-9">{{ student.state }}</div>
+                                <div class="col-3">T-Shirt Size:</div>
+                                <div class="col-9">{{ student.tshirt_size }}</div>
+                                <div class="col-3">Created By:</div>
+                                <div class="col-9">{{ student.user.email }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Instructors Tab -->
+            <div class="tab-pane fade" id="instructors" role="tabpanel">
+                {% for instructor in preview.instructors %}
+                <div class="preview-item">
+                    <div class="preview-header" data-bs-toggle="collapse" data-bs-target="#instructor-{{ forloop.counter }}">
+                        <i class="bi bi-caret-right-fill"></i>
+                        {{ instructor.firstname }} {{ instructor.lastname }}
+                    </div>
+                    <div class="collapse" id="instructor-{{ forloop.counter }}">
+                        <div class="preview-details">
+                            <div class="row">
+                                <div class="col-3">ID:</div>
+                                <div class="col-9">{{ instructor.id }}</div>
+                                <div class="col-3">First Name:</div>
+                                <div class="col-9">{{ instructor.firstname }}</div>
+                                <div class="col-3">Last Name:</div>
+                                <div class="col-9">{{ instructor.lastname }}</div>
+                                <div class="col-3">Created By:</div>
+                                <div class="col-9">{{ instructor.user.email }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="fair" class="form-label">Select Fair for Import</label>
+                    <select class="form-select" id="fair" name="fair" required>
+                        <option value="">Choose a fair...</option>
+                        {% for fair in fairs %}
+                            <option value="{{ fair.id }}">{{ fair.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text">All imported submissions will be associated with the selected fair.</div>
+                </div>
+                <button type="submit" name="confirm" class="btn btn-success">Confirm Import</button>
+                <a href="{% url 'migrate_data' %}" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.preview-item {
+    border: 1px solid #dee2e6;
+    margin-bottom: 0.5rem;
+}
+
+.preview-header {
+    padding: 0.75rem;
+    background-color: #f8f9fa;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.preview-header:hover {
+    background-color: #e9ecef;
+}
+
+.preview-header i {
+    margin-right: 0.5rem;
+    transition: transform 0.2s;
+}
+
+.preview-header[aria-expanded="true"] i {
+    transform: rotate(90deg);
+}
+
+.preview-details {
+    padding: 1rem;
+    background-color: #fff;
+}
+
+.preview-details .row > div {
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+}
+
+.preview-details .col-3 {
+    font-weight: bold;
+}
+
+.preview-details h6 {
+    color: #666;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 0.5rem;
+}
+
+.text-muted {
+    font-style: italic;
+    font-size: 0.9em;
+}
+
+.preview-details .row {
+    margin-left: 1rem;
+}
+</style>
+
+{% endblock %}

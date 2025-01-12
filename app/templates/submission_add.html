@@ -1,0 +1,1504 @@
+{% extends "base.html" %}
+{% load bootstrap5 %}
+{% bootstrap_css %}
+{% bootstrap_javascript %}
+{% load bootstrap_icons %}
+{% load static %}
+
+{% block title %}{% if submission %}Edit submission{% else %}Add a submission{% endif %}{% endblock %}
+
+
+{% block page_content %}
+<div class="container py-4">
+    <div class="card shadow mb-4">
+        <div class="card-header bg-primary text-white">
+            <h2 class="card-title mb-0">
+                {% if submission %}
+                    <i class="bi bi-pencil-square"></i> Edit submission
+                {% else %}
+                    <i class="bi bi-plus-circle"></i> Add a submission
+                {% endif %}
+            </h2>
+        </div>
+        <div class="card-body">
+            {% if error_message %}
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i> {{ error_message }}
+                </div>
+            {% endif %}
+
+            <form method="post" id="submission_add_form" action="" enctype='multipart/form-data'>
+                {% csrf_token %}
+                
+                <!-- Basic Details Section -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h4 class="card-title mb-0">
+                            <i class="bi bi-card-text"></i> Basic Details
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="p-2">
+                            {% bootstrap_field form.category %}
+                            {% bootstrap_field form.title %}
+                            <div class="text-danger title-incomplete" style="display: none;">
+                                <i class="bi bi-exclamation-circle"></i> A title is required for this submission.
+                            </div>
+                            <div class="alert alert-info poster-title-info" style="display: none;">
+                                <i class="bi bi-info-circle"></i> A title is not required for posters.
+                            </div>
+
+                            <!-- Add organization display -->
+                            <div class="mb-3">
+                                <label class="form-label"><strong>Program/School</strong></label>
+                                <div class="form-control-plaintext">{{ organization_preview|default:"No program/school set" }}</div>
+                            </div>
+
+                            {% bootstrap_field form.group %}
+
+                            <div class="mb-3">
+                                {% bootstrap_field form.languoids %}
+                                <small class="text-muted">(Select multiple by clicking while holding the ctrl/cmd key)</small>
+                                <div class="text-danger submit-incomplete-language" style="display: none;">
+                                    <i class="bi bi-exclamation-circle"></i> Please select at least one language.
+                                </div>
+                            </div>
+
+                            <div class="mb-3 other_languoid" style="display: none;">
+                                {% bootstrap_field form.other_languoid %}
+                            </div>
+
+                            {% if submission %}{% if moderator %}
+                            <div class="mb-3">
+                                <label class="form-label"><strong>Submission type</strong></label>
+                                <div id="submission-type-text">{{ submission.get_submission_type_display }}</div>
+                                <div id="submission-type-field">{% bootstrap_field form.submission_type show_label=False %}</div>
+                                <div class="form-check" id="submission-type-overrride">
+                                    <label class="form-check-label">
+                                        <strong>Override submission type?</strong> {{form.override_submission_type}}
+                                    </label>
+                                </div>
+                            </div>
+                            {% endif %}{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Instructors Section -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h4 class="card-title mb-0">
+                            <i class="bi bi-person-video3"></i> Instructors
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Click on a check mark to select one or more instructors for this submission.</p>
+                        <div class="p-1 text-danger submit-incomplete-instructor" style="display: none;">
+                            <i class="bi bi-exclamation-circle"></i> Please select at least one instructor.
+                        </div>
+                        
+                        <div class="table-responsive mb-3">
+                            <table class="table table-hover instructor-table w-100">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Selected</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+
+                        <div class="row align-items-end mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">First Name</label>
+                                <input type="text" class="form-control" id="instructor_firstname" name="instructor_firstname" placeholder="First Name">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Last Name</label>
+                                <input type="text" class="form-control" id="instructor_lastname" name="instructor_lastname" placeholder="Last Name">
+                            </div>
+                            <div class="col-md-4">
+                                <a href="javascript:void(0)" class="btn btn-secondary new-instructor-add">
+                                    <i class="bi bi-plus-circle"></i> New Instructor
+                                </a>
+                            </div>
+                        </div>
+                        <div class="instructor-incomplete-text text-danger" style="display:none;">
+                            <i class="bi bi-exclamation-circle"></i> Please fill in the first and last name of the instructor
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Students Section -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h4 class="card-title mb-0">
+                            <i class="bi bi-people"></i> Students
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Click on a check mark to select one or more students for this submission.</p>
+                        
+                        <div class="alert alert-info student-max poster-student-rules" style="display: none;">
+                            <i class="bi bi-info-circle"></i>
+                            <span>Most posters are individual submissions. </span>
+                            <span>The maximum number of students for this category is </span>
+                            <span class="student-max-value"></span>.
+                        </div>
+
+                        <div class="p-1 text-danger submit-incomplete-student" style="display: none;">
+                            <i class="bi bi-exclamation-circle"></i> Please select at least one student.
+                        </div>
+
+                        <div class="table-responsive my-3">
+                            <table class="table table-hover student-table w-100">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Grade</th>
+                                        <th>Hometown</th>
+                                        <th>Selected</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+
+                        <div class="mb-3">
+                            <a href="javascript:void(0)" class="btn btn-secondary btn-student-add-modal">
+                                <i class="bi bi-plus-circle"></i> New Student
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Accessories Section -->
+                <div class="section-accessories card mb-4">
+                    <div class="card-header bg-light">
+                        <h4 class="card-title mb-0">
+                            <i class="bi bi-box-seam"></i> Accessories
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover accessory-table">
+                                <thead>
+                                    <tr>
+                                        <th class="col-md-4">Accessory</th>
+                                        <th class="col-md-1">Quantity</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for accessory in accessories %}
+                                    <tr class="accessory-row" data-id="{{ accessory.id }}" data-name="{{ accessory.name }}" data-count="{% if accessory.count %}{{ accessory.count }}{% else %}0{% endif %}">
+                                        <td>{{ accessory.name }}</td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <a class="submission-accessory-decrement me-2" href="javascript:void(0)">
+                                                    <i class="bi bi-dash-square-fill text-secondary"></i>
+                                                </a>
+                                                <span class="submission-accessory-count">
+                                                    {% if accessory.count %}{{ accessory.count }}{% else %}0{% endif %}
+                                                </span>
+                                                <a class="submission-accessory-increment ms-2" href="javascript:void(0)">
+                                                    <i class="bi bi-plus-square-fill text-secondary"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comments Section -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h4 class="card-title mb-0">
+                            <i class="bi bi-chat-text"></i> Comments
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">If you have anything you would like to communicate to us about this submission, please put it in the notes field below.</p>
+                        {{form.comments}}
+                    </div>
+                </div>
+
+                <!-- Submit Section -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h4 class="card-title mb-0">
+                            <i class="bi bi-check-circle"></i> Submit
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-3">
+                            Please review the information above. Select "Submit" if you are ready to submit this submission for approval by ONAYLF staff. 
+                            If you see an error message below, please complete the section indicated in the message and then press submit again.
+                        </p>
+
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="submit" name="submit-only" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Submit
+                            </button>
+                            <button type="submit" name="submit-and-add" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> Submit and add another
+                            </button>
+                            <a href="/" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                            <div class="p-1 text-danger submit-incomplete" style="display: none;">
+                                <i class="bi bi-exclamation-circle"></i> Please correct issues with the submission (noted in red) and resubmit.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="newStudentModal" tabindex="-1" aria-labelledby="newStudentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="newStudentModalLabel">New Student</h5>
+          <button type="button" class="btn-close btn-close-student-modal" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="newStudentModalBody" data-id="">
+            <div class="row">
+              <div class="col">
+                <label for="studentFirstname">First Name*</label><span class="ps-1 studentFirstNameRequired text-danger" style="display:none;">Required</span>
+                <input type="text" id="studentFirstname" placeholder="First name" class="form-control">
+              </div>
+              <div class="col">
+                <label for="studentLastname">Last Name*</label><span class="ps-1 studentLastNameRequired text-danger" style="display:none;">Required</span>
+                <input type="text" id="studentLastname" placeholder="Last name" class="form-control">
+              </div>
+            </div>
+            <div class="row">
+              <div class="col">
+                <label for="studentGrade">Grade*</label><span class="ps-1 studentGradeRequired text-danger" style="display:none;">Required</span>
+                <select id="studentGrade" class="form-control">
+                  <option value="">Select a grade...</option>
+                  {% for value, display in grades %}
+                      <option value="{{ value }}">{{ display }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col">
+                <label for="studentTribes">Tribe</label>
+                <span class="small">(Select multiple by clicking while holding the ctrl/cmd key)</span>
+                <select id="studentTribes" multiple class="form-control">
+                  {% for tribe in tribes %}
+                      <option value="{{ tribe.id }}">{{ tribe.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col">
+                <label for="studentHometown">Hometown*</label><span class="ps-1 studentHometownRequired text-danger" style="display:none;">Required</span>
+                <input type="text" id="studentHometown" placeholder="Hometown" class="form-control">
+              </div>
+              <div class="col">
+                <label for="studentState">State*</label><span class="ps-1 studentStateRequired text-danger" style="display:none;">Required</span>
+                <select id="studentState" class="form-control">
+                  <option value="">Select a state...</option>
+                  {% for value, display in states %}
+                      <option value="{{ value }}">{{ display }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="row studentTshirtSizeDiv">
+              <div class="col">
+                <label for="studentTshirtSize">T-shirt Size</label>
+                <select id="studentTshirtSize" class="form-control">
+                  <option value="">Select a T-shirt size...</option>
+                  {% for value, display in tshirt_sizes %}
+                      <option value="{{ value }}">{{ display }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="row student-tshirt-text new-student-needs-tshirt-text" style="display: none;">
+              <div class="col small">
+                Please select a t-shirt size.
+              </div>
+            </div>
+            <div class="row student-tshirt-text edit-student-yes-tshirt-text" style="display: none;">
+                <div class="col small">
+                    Please select a t-shirt size.
+                </div>
+            </div>
+            <div class="row student-tshirt-text edit-student-no-tshirt-text" style="display: none;">
+                <div class="col small">
+                    T-shirt size not needed.
+                </div>
+            </div>
+            <div class="row student-tshirt-text edit-student-will-tshirt-text" style="display: none;">
+                <div class="col small">
+                    Please select a t-shirt size.
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+          <span class="studentModalIncomplete text-danger" style="display:none;">Please fill in required fields</span>
+          <button type="button" class="btn btn-secondary btn-close-student-modal" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" id="addStudent">Save Student</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+    let instructorsTable = document.querySelector('.instructor-table');
+    let studentsTable = document.querySelector('.student-table');
+    const titleRequired = document.querySelector('.title-required');
+    const formFieldTitle = document.querySelector('input[name="title"]');
+    const submitIncompleteTitleDiv = document.querySelector('.title-incomplete');
+    const languoidsSelect = document.querySelector('#id_languoids');
+    const otherLanguoidDiv = document.querySelector('.other_languoid');
+    const submissionTypeText = document.querySelector('#submission-type-text');
+    const submissionTypeField = document.querySelector('#submission-type-field');
+    const submissionTypeOverride = document.querySelector('#submission-type-overrride input');
+
+    const submitIncompleteDiv = document.querySelector('.submit-incomplete');
+    const submitIncompleteStudentDiv = document.querySelector('.submit-incomplete-student');
+    const submitIncompleteInstructorDiv = document.querySelector('.submit-incomplete-instructor');
+    const submitIncompleteLanguageDiv = document.querySelector('.submit-incomplete-language');
+
+    // Define a list of categories that are material submissions
+    const materialSubmissions = JSON.parse( "{{ material_submission_categories|escapejs }}" );
+    // Define a list of categories that are non material submissions
+    const nonMaterialSubmissions = JSON.parse( "{{ non_material_submission_categories|escapejs }}" );
+
+    const newInstructorAddButton = document.querySelector('.new-instructor-add');
+    const newInstructorFirstNameInput = document.querySelector('#instructor_firstname');
+    const newInstructorLastNameInput = document.querySelector('#instructor_lastname');
+    const instructorIncompleteText = document.querySelector('.instructor-incomplete-text');
+    const instructorEditFirstnames = document.querySelectorAll('.instructor-firstname-edit');
+    const instructorEditLastnames = document.querySelectorAll('.instructor-lastname-edit');
+
+    const posterStudentRulesDiv = document.querySelector('.poster-student-rules');
+    const posterTitleInfoDiv = document.querySelector('.poster-title-info');
+    const maxStudentsDiv = document.querySelector('.student-max');
+    const maxStudentsValue = document.querySelector('.student-max-value');
+    const categoryStudentMax = JSON.parse("{{ category_student_max|escapejs }}");
+    const formFieldCategory = document.querySelector('select[name="category"]');
+    console.log(formFieldCategory)
+
+    const studentAddModalButton = document.querySelector('.btn-student-add-modal');
+    const studentAddModalElement = document.getElementById('newStudentModal');
+    const studentAddModalBody = document.getElementById('newStudentModalBody');
+    const studentAddModalTitle = document.getElementById('newStudentModalLabel');
+    const studentAddModalCloseButtons = document.querySelectorAll('.btn-close-student-modal');
+
+    const studentAddButton = document.getElementById('addStudent');
+    const newStudentFirstNameInput = document.getElementById('studentFirstname');
+    const studentFirstNameRequired = document.querySelector('.studentFirstNameRequired');
+    const newStudentLastNameInput = document.getElementById('studentLastname');
+    const studentLastNameRequired = document.querySelector('.studentLastNameRequired');
+    const studentGrade = document.getElementById('studentGrade');
+    const studentGradeRequired = document.querySelector('.studentGradeRequired');
+    const studentTribes = document.getElementById('studentTribes');
+    const studentHometown = document.getElementById('studentHometown');
+    const studentHometownRequired = document.querySelector('.studentHometownRequired');
+    const studentState = document.getElementById('studentState');
+    const studentStateRequired = document.querySelector('.studentStateRequired');
+    const studentTshirtSize = document.getElementById('studentTshirtSize');
+    const studentModalIncomplete = document.querySelector('.studentModalIncomplete');
+
+    const studentTshirtSizeDiv = document.querySelector('.studentTshirtSizeDiv');
+    const studentTshirtTexts = document.querySelectorAll('.student-tshirt-text');
+    const newStudentNeedsTshirtText = document.querySelector('.new-student-needs-tshirt-text');
+    const editStudentYesTshirtText = document.querySelector('.edit-student-yes-tshirt-text');
+    const editStudentNoTshirtText = document.querySelector('.edit-student-no-tshirt-text');
+    const editStudentWillTshirtText = document.querySelector('.edit-student-will-tshirt-text');
+
+
+    const sectionAccessories = document.querySelector('.section-accessories');
+
+    class App {
+        instructorsTableObjects
+        studentsTableObjects
+        instructorsTableHeader = `
+    <thead>
+        <tr class="small">
+            <th class="col-md-3 overflow-hidden">Name</th>
+            <th class="col-md-1 overflow-hidden">Selected</th>
+        </tr>
+    </thead>
+    <tbody>
+    </tbody>
+    `
+        studentsTableHeader = `
+    <thead>
+        <tr class="small">
+            <th class="col-md-3 overflow-hidden">Name</th>
+            <th class="col-md-1 overflow-hidden">Grade</th>
+            <th class="col-md-3 overflow-hidden">Hometown</th>
+            <th class="col-md-3 overflow-hidden">Selected</th>
+        </tr>
+    </thead>
+    <tbody>
+    </tbody>
+    `
+        instructorsTableBody
+        studentsTableBody
+        studentsMax
+        instructors
+        instructorsFirstLoaded
+        students
+        studentsFirstLoaded
+        newStudentModal
+        newStudentModalIsEditing
+        sendAccessories
+        form
+    
+        constructor() {
+        
+            document.addEventListener('DOMContentLoaded', this._toggleAccessoriesSection.bind(this));
+            formFieldCategory.addEventListener('change', this._toggleAccessoriesSection.bind(this));
+
+            document.addEventListener('DOMContentLoaded', this._toggleOtherLanguoid.bind(this));
+            languoidsSelect.addEventListener('change', this._toggleOtherLanguoid.bind(this));
+
+            // if the submission type override box exists in the DOM, add an event listener for the change event
+            if (submissionTypeOverride) {
+                document.addEventListener('DOMContentLoaded', this._toggleSubmissionType.bind(this));
+                submissionTypeOverride.addEventListener('change', this._toggleSubmissionType.bind(this));
+            }
+
+            document.addEventListener('DOMContentLoaded', this._setStudentsMax.bind(this));
+            formFieldCategory.addEventListener('change', this._setStudentsMax.bind(this));
+
+            document.addEventListener('DOMContentLoaded', this._loadInstructorsTable.bind(this));
+
+            this._clickInstructorSubmission = this._clickInstructorSubmission.bind(this);
+            document.addEventListener('DOMContentLoaded', () => {
+                document.body.addEventListener('click', (e) => {
+                    // console.log(e.target)
+                    if(e.target.closest('.include-submission-instructor')) {
+                        this._clickInstructorSubmission(e);
+                    }
+                });
+            });
+
+            // Add an event listener for the click event on the edit instructor buttons
+            this._clickEditInstructor = this._clickEditInstructor.bind(this);
+            document.addEventListener('DOMContentLoaded', () => {
+                document.body.addEventListener('click', (e) => {
+                    if(e.target.closest('.edit-submission-instructor')) {
+                        this._clickEditInstructor(e);
+                    }
+                });
+            });
+
+            // Add an event listener for the keydown event on edit instructor name inputs
+            this._submitEditInstructor = this._submitEditInstructor.bind(this);
+            this._closeEditInstructor = this._closeEditInstructor.bind(this);
+
+            document.addEventListener('DOMContentLoaded', () => {
+                document.body.addEventListener('keydown', (e) => {
+                    if(e.target.classList.contains('instructor-name-edit') ) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            this._submitEditInstructor(e);
+                        } else if (e.key === 'Escape') {
+                            e.preventDefault();
+                            this._closeEditInstructor(e);
+                        }
+                    }
+                });
+            });
+
+            document.getElementById('instructor_firstname').addEventListener('keypress', this._enterOnNewInstructor.bind(this));
+            document.getElementById('instructor_lastname').addEventListener('keypress', this._enterOnNewInstructor.bind(this));
+
+            newInstructorAddButton.addEventListener('click', this._clickNewInstructor.bind(this));
+
+            document.addEventListener('DOMContentLoaded', this._loadStudentsTable.bind(this));
+
+            this._clickStudentSubmission = this._clickStudentSubmission.bind(this);
+            document.addEventListener('DOMContentLoaded', () => {
+                document.body.addEventListener('click', (e) => {
+                    if(e.target.closest('.include-submission-student')) {
+                        this._clickStudentSubmission(e);
+                    }
+                });
+            });
+
+            this.newStudentModal = new bootstrap.Modal(document.getElementById('newStudentModal'));
+
+            // Add an event listener for the keydown event on new student modal
+            studentAddModalElement.addEventListener('keydown', async (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    await this._clickNewStudent(e);
+                }
+            });
+
+            studentAddModalButton.addEventListener('click', (event) => {
+                this._openStudentModal(null);
+            });
+
+            this._clickStudentEdit = this._clickStudentEdit.bind(this);
+                document.addEventListener('DOMContentLoaded', () => {
+                    document.body.addEventListener('click', (e) => {
+                        if(e.target.closest('.edit-submission-student')) {
+                            this._clickStudentEdit(e);
+                        }
+                    });
+                });
+
+            studentAddButton.addEventListener('click', this._clickNewStudent.bind(this));
+
+            studentAddModalCloseButtons.forEach((button) => {
+                button.addEventListener('click', this._clearStudentModal.bind(this));
+            });
+
+            // Listen for the click event on the modal backdrop
+            window.onclick = (event) => {
+                if (event.target == studentAddModalElement && studentAddModalElement.style.display != 'none') {
+                    this._clearStudentModal();
+                }
+            };
+
+            // Listen for the keydown event on the window
+            window.addEventListener('keydown', (event) => {
+                // Check if the escape key was pressed and the modal is visible
+                if (event.key === 'Escape' && studentAddModalElement.style.display != 'none') {
+                    this._clearStudentModal();
+                }
+            });
+
+            this._clickAccessoryIncrementSubmission = this._clickAccessoryIncrementSubmission.bind(this);
+                document.addEventListener('DOMContentLoaded', () => {
+                    document.body.addEventListener('click', (e) => {
+                        // console.log(e.target)
+                        if(e.target.closest('.submission-accessory-increment')) {
+                            this._clickAccessoryIncrementSubmission(e);
+                        }
+                    });
+                });
+
+            this._clickAccessoryDecrementSubmission = this._clickAccessoryDecrementSubmission.bind(this);
+            document.addEventListener('DOMContentLoaded', () => {
+                document.body.addEventListener('click', (e) => {
+                    // console.log(e.target)
+                    if(e.target.closest('.submission-accessory-decrement')) {
+                        this._clickAccessoryDecrementSubmission(e);
+                    }
+                });
+            });
+
+
+            this.form = document.getElementById('submission_add_form');
+            this.form.addEventListener('submit', (e) => this._modifySubmitButton(e));
+
+
+        }
+
+        _getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    
+        _toggleOtherLanguoid(){
+            const selectedOptions = Array.from(languoidsSelect.selectedOptions);
+            const otherIsSelected = selectedOptions.some(function(option) {
+                return option.text === 'Other';
+            });
+
+            if (otherIsSelected) {
+                // Show the other_languoid div when "Other" is selected
+                otherLanguoidDiv.style.display = 'block';
+            } else {
+                // Hide the other_languoid div when "Other" is not selected
+                otherLanguoidDiv.style.display = 'none';
+            }
+        }
+
+        _toggleSubmissionType() {
+            // if the submission type override is checked, enable the submission type field
+            if (submissionTypeOverride.checked) {
+                submissionTypeText.style.display = 'none';
+                submissionTypeField.style.display = 'block';
+            } else {
+                submissionTypeText.style.display = 'block';
+                submissionTypeField.style.display = 'none';
+            }
+        }
+
+        _getInstructors(){
+    
+            const user_id = "{{ owning_user.id }}";
+            const headers = { 'Content-Type': 'application/json' };
+            return fetch(`/api/instructors/?user_id=${user_id}`, { headers, })
+                .then(res => res.json())
+                .then(data => {
+                    // console.log("User's instructors", data);
+                    this.instructorsTableObjects = data
+                });
+    
+        }
+    
+        _getInstructorsOnSubmissionList(){
+            
+            const submission_id = "{{ submission.id }}";
+            if (!submission_id) {
+                this.instructors = [];
+                return;
+            }
+            const headers = { 'Content-Type': 'application/json' };
+            return fetch(`/api/instructors/?submission_id=${submission_id}`, { headers, })
+                .then(res => res.json())
+                .then(data => {
+                    this.instructors = data.map(instructor => Number(instructor.id)); // Convert id to a number
+                    console.log('instructors on submission', this.instructors)
+                });
+
+        }
+    
+        _getStudents(){
+        
+            const user_id = "{{ owning_user.id }}";
+            const headers = { 'Content-Type': 'application/json' };
+            return fetch(`/api/students/?user_id=${user_id}`, { headers, })
+                .then(res => res.json())
+                .then(data => {
+                console.log("User's students", data);
+                this.studentsTableObjects = data
+                });
+        }
+
+        _getStudentsOnSubmissionList(){
+            
+            const submission_id = "{{ submission.id }}";
+            if (!submission_id) {
+                this.students = [];
+                return;
+            }
+            const headers = { 'Content-Type': 'application/json' };
+            return fetch(`/api/students/?submission_id=${submission_id}`, { headers, })
+                .then(res => res.json())
+                .then(data => {
+                    this.students = data.map(student => Number(student.id)); // Convert id to a number
+                    console.log('students on submission', this.students)
+                });
+
+        }
+
+        async _loadInstructorsTable(sort=null) {
+            if (!this.instructorsFirstLoaded) {
+                await this._getInstructorsOnSubmissionList();
+            }
+            await this._getInstructors()
+            instructorsTable.innerHTML = this.instructorsTableHeader
+            this.instructorsTableBody = document.querySelector('.instructor-table tbody');
+            this.instructorsTableObjects.forEach((tableObject) => {
+                const html = `
+                <tr class="small instructor-row${this.instructors.includes(tableObject.id) ? ' highlight-yellow' : ''}" data-id="${tableObject.id}">
+                    <td class="col-md-3 overflow-hidden">
+                        <span class="instructor-names">
+                            ${tableObject.firstname} ${tableObject.lastname}
+                        </span>
+                        <span>
+                            <input type="text" class="form-control instructor-name-edit" id="instructor-firstname-edit" name="instructor-firstname-edit" placeholder="First Name" style="display:none;">
+                        </span>
+                        <span>
+                            <input type="text" class="form-control instructor-name-edit" id="instructor-lastname-edit" name="instructor-lastname-edit" placeholder="Last Name" style="display:none;">
+                        </span
+                    </td>
+                    <td class="col-md-1 overflow-hidden">
+                        <span>
+                            <a class="stealth rounded edit include-submission-instructor${ this.instructors.includes(tableObject.id) ? ' include-submission-instructor-selected' : '' }" href="javascript:void(0)">
+                                <i class="bi bi-check-square-fill instructor-check ${this.instructors.includes(tableObject.id) ? 'check-checked' : 'check-unchecked' }"></i>
+                            </a>
+                        </span>
+                        <span class="edit edit-submission-instructor">
+                            <a class="stealth" href="javascript:void(0)">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </span>
+                    </td>
+                    <td class="col"></td>
+                </tr>
+        `;
+                this.instructorsTableBody.insertAdjacentHTML('beforeend', html);
+            });
+
+            this.instructorsFirstLoaded = true;
+        }
+
+        async _loadStudentsTable(sort=null) {
+            const categoryName = formFieldCategory.options[formFieldCategory.selectedIndex].text;
+            if (!this.studentsFirstLoaded) {
+                await this._getStudentsOnSubmissionList();
+            }
+            // console.log('students', this.students)
+            await this._getStudents()
+            studentsTable.innerHTML = this.studentsTableHeader
+            this.studentsTableBody = document.querySelector('.student-table tbody');
+            this.studentsTableObjects.forEach((tableObject) => {
+                // if the student is selected...
+                let studentSubmissionCategories = tableObject.submission_categories.map(obj => ({...obj})); // make a copy of the array
+                if ( this.students.includes(parseInt(tableObject.id)) ) {
+                    // Add the current category to the student's submission categories, if it's not already in the list
+                    if ( !studentSubmissionCategories.includes(categoryName) ) {
+                        studentSubmissionCategories.push(categoryName);
+                    }
+                }
+                let tshirtRequired = tableObject.tshirt_size ? false : true;
+                if (tshirtRequired) {
+                    tshirtRequired = studentSubmissionCategories.some(category => nonMaterialSubmissions.includes(category)) ? true : false;
+                }
+
+                // const tshirtRequired = !studentSubmissionCategories.some(category => nonMaterialSubmissions.includes(category));
+                const html = `
+                <tr class="small student-row${this.students.includes(tableObject.id) ? ' highlight-yellow' : ''}" data-id="${tableObject.id}">
+                    <td class="col-md-3 overflow-hidden">
+                        ${tableObject.firstname} ${tableObject.lastname}    
+                    </td>
+                    <td class="col-md-1 overflow-hidden">
+                        ${tableObject.grade_display} 
+                    </td>
+                    <td class="col-md-3 overflow-hidden">
+                        ${tableObject.hometown}, ${tableObject.state}    
+                    </td>
+                    <td class="col-md-3">
+                        <span>
+                            <a class="stealth rounded edit include-submission-student ${ this.students.includes(tableObject.id) ? ' include-submission-student-selected' : '' }" href="javascript:void(0)">
+                                <i class="bi bi-check-square-fill student-check ${this.students.includes(tableObject.id) ? 'check-checked' : 'check-unchecked' }"></i>
+                            </a>
+                        </span>
+                        <span class="edit edit-submission-student">
+                            <a class="stealth" href="javascript:void(0)">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </span>
+                        <span class="ps-1 studentTableTshirtRequired text-danger${tshirtRequired ? ' studentTableTshirtRequired-active' : ''}"${tshirtRequired ? '' : ' style="display:none;"'}>
+                            T-shirt size is needed for this student.
+                        </span>
+                    </td>
+                    <td class="col"></td>
+                </tr>
+        `;
+                this.studentsTableBody.insertAdjacentHTML('beforeend', html);
+            });
+
+            this.studentsFirstLoaded = true;
+        }
+
+        async _setStudentsMax(e) {
+            // Get the selected category name
+            const categoryName = formFieldCategory.options[formFieldCategory.selectedIndex].text;
+            console.log('categoryName', categoryName)
+            // Get the max students value from the lookup object
+            this.studentsMax = categoryStudentMax[categoryName];
+
+            // Set the max students value in the DOM
+            maxStudentsValue.textContent = this.studentsMax;
+
+            // Show or hide the poster student rules div based on the selected category
+            if ( categoryName == 'Poster' ) {
+                posterStudentRulesDiv.style.display = 'inline';
+                posterTitleInfoDiv.style.display = 'block';
+            } else {
+                posterStudentRulesDiv.style.display = 'none';
+                posterTitleInfoDiv.style.display = 'none';
+            }
+
+            // console.log('studentsMax', this.studentsMax)
+            // Show or hide the max students div based on the selected category
+            if (this.studentsMax) {
+                maxStudentsDiv.style.display = 'inline';
+            } else {
+                maxStudentsDiv.style.display = 'none';
+            }
+
+            await this._loadStudentsTable();
+
+        }
+
+        _clickInstructorSubmission(e) {
+            const buttons = document.querySelectorAll('.include-submission-instructor')
+            const clickedButton = e.target.closest('.include-submission-instructor');
+            const clickedIcon = clickedButton.querySelector('.instructor-check');
+            const row = e.target.closest('.instructor-row');
+            const id = Number(row.dataset.id);
+            if (!clickedButton.classList.contains('include-submission-instructor-selected')) {
+                clickedButton.classList.add('include-submission-instructor-selected');
+                clickedIcon.classList.remove('check-unchecked');
+                clickedIcon.classList.add('check-checked');
+                row.classList.add('highlight-yellow');
+                this.instructors.push(id); // Add the id to this.instructors
+            } else {
+                clickedButton.classList.remove('include-submission-instructor-selected');
+                clickedIcon.classList.remove('check-checked');
+                clickedIcon.classList.add('check-unchecked');
+                row.classList.remove('highlight-yellow');
+                this.instructors = this.instructors.filter(instructorId => instructorId !== id); // Remove the id from this.instructors
+            }
+        }
+
+        _clickEditInstructor(e) {
+            const row = e.target.closest('.instructor-row');
+            const id = Number(row.dataset.id);
+            const instructor = this.instructorsTableObjects.find(instructor => parseInt(instructor.id) === parseInt(id));
+            const instructorFirstnameEditInput = row.querySelector('#instructor-firstname-edit');
+            const instructorLastnameEditInput = row.querySelector('#instructor-lastname-edit');
+            const instructorNames = row.querySelector('.instructor-names');
+            instructorFirstnameEditInput.value = instructor.firstname;
+            instructorLastnameEditInput.value = instructor.lastname;
+            instructorFirstnameEditInput.style.display = '';
+            instructorLastnameEditInput.style.display = '';
+            instructorNames.style.display = 'none';
+            instructorFirstnameEditInput.focus();
+        }
+
+        async _submitEditInstructor(e) {
+            const row = e.target.closest('.instructor-row');
+            const id = Number(row.dataset.id);
+            const instructorFirstnameEditInput = row.querySelector('#instructor-firstname-edit');
+            const instructorLastnameEditInput = row.querySelector('#instructor-lastname-edit');
+            const instructorNames = row.querySelector('.instructor-names');
+            const instructorSubmitIncomplete = false;
+            if ( !instructorFirstnameEditInput.value ) {
+                instructorSubmitIncomplete = true;
+            }
+            if ( !instructorLastnameEditInput.value ) {
+                instructorSubmitIncomplete = true;
+            }
+            if (instructorSubmitIncomplete) {
+                instructorIncompleteText.style.display = '';
+                return;
+            } else {
+                instructorIncompleteText.style.display = 'none';
+            }
+            const csrftoken = this._getCookie('csrftoken');
+            const headers = { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken, };
+            const body = JSON.stringify({ firstname: instructorFirstnameEditInput.value, lastname: instructorLastnameEditInput.value });
+            return fetch(`/api/instructor/update/${id}/`, { method: 'PUT', headers, body })
+                .then(res => res.json())
+                .then(data => {
+                    console.log('Edited instructor', data);
+                    instructorNames.textContent = `${instructorFirstnameEditInput.value} ${instructorLastnameEditInput.value}`;
+                    instructorFirstnameEditInput.style.display = 'none';
+                    instructorLastnameEditInput.style.display = 'none';
+                    instructorNames.style.display = '';
+                    instructorFirstnameEditInput.value = '';
+                    instructorLastnameEditInput.value = '';
+                    // Remove focus from the input fields
+                    instructorFirstnameEditInput.blur();
+                    instructorLastnameEditInput.blur();
+                    this._loadInstructorsTable();
+                });
+        }
+
+        _closeEditInstructor(e) {
+            const row = e.target.closest('.instructor-row');
+            const id = Number(row.dataset.id);
+            console.log('id', id);
+            const instructor = this.instructorsTableObjects.find(instructor => parseInt(instructor.id) === parseInt(id));
+            console.log('instructor', instructor);
+            const instructorFirstnameEditInput = row.querySelector('#instructor-firstname-edit');
+            const instructorLastnameEditInput = row.querySelector('#instructor-lastname-edit');
+            const instructorNames = row.querySelector('.instructor-names');
+            // instructorNames.textContent = `${instructor.firstname} ${instructor.lastname}`;
+            instructorFirstnameEditInput.style.display = 'none';
+            instructorLastnameEditInput.style.display = 'none';
+            instructorNames.style.display = '';
+            instructorFirstnameEditInput.value = '';
+            instructorLastnameEditInput.value = '';
+            // Remove focus from the input fields
+            instructorFirstnameEditInput.blur();
+            instructorLastnameEditInput.blur();
+        }
+
+        async _clickNewInstructor(e) {
+            e.preventDefault();
+
+            let instructorSubmitIncomplete = false;
+
+            if ( !newInstructorFirstNameInput.value ) {
+                instructorSubmitIncomplete = true;
+            }
+            if ( !newInstructorLastNameInput.value ) {
+                instructorSubmitIncomplete = true;
+            }
+
+            if (instructorSubmitIncomplete) {
+                instructorIncompleteText.style.display = '';
+                return;
+            } else {
+                instructorIncompleteText.style.display = 'none';
+            }
+
+            let instructorId = null; //will use this when editing an instructor
+
+            const createdId = await this._addInstructor();
+            // console.log('createdUserId', createdUserId);
+            if (!instructorId) {
+                // add the instructor to the list, if it's returned from the server
+                if (createdId) {
+                    this.instructors.push(createdId);
+                }
+            }
+            await this._loadInstructorsTable();
+            
+            // // Query for the row in the instructor-table that has the data-id value equal to createdUserId
+            // const row = document.querySelector(`.instructor-table tr[data-id="${createdUserId}"]`);
+            // // console.log('row', row);
+            // if (row) {
+            //     const rowButton = row.querySelector('.include-submission-instructor');
+            //     const rowIcon = rowButton.querySelector('.instructor-check');
+            //     rowButton.classList.add('include-submission-instructor-selected');
+            //     rowIcon.classList.remove('check-unchecked');
+            //     rowIcon.classList.add('check-checked');
+            //     row.classList.add('highlight-yellow');
+            // }
+        }
+
+        _enterOnNewInstructor(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.querySelector('.new-instructor-add').click();
+                // Clear the input fields
+                newInstructorFirstNameInput.value = '';
+                newInstructorLastNameInput.value = '';
+                // Remove focus from the input fields
+                newInstructorFirstNameInput.blur();
+                newInstructorLastNameInput.blur();
+            }
+        }
+
+        _addInstructor() {
+            const firstName = newInstructorFirstNameInput.value;
+            const lastName = newInstructorLastNameInput.value;
+            const user_id = "{{ owning_user.id }}";
+            const csrftoken = this._getCookie('csrftoken');
+            const headers = { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken, };
+            const body = JSON.stringify({ firstname: firstName, lastname: lastName, user_id: user_id});
+            return fetch('/api/instructor/add/', { method: 'POST', headers, body })
+                .then(res => { console.log(res); return res.json(); })
+                .then(data => {
+                    // console.log('New instructor', data);
+                    const createdUserId = data.id;
+                    return createdUserId;
+                });
+        }
+
+        _clickStudentSubmission(e) {
+            const categoryName = formFieldCategory.options[formFieldCategory.selectedIndex].text;
+            const buttons = document.querySelectorAll('.include-submission-student')
+            const clickedButton = e.target.closest('.include-submission-student');
+            const clickedIcon = clickedButton.querySelector('.student-check');
+            const row = e.target.closest('.student-row');
+            const id = Number(row.dataset.id);
+            const student = this.studentsTableObjects.find(student => parseInt(student.id) === parseInt(id));
+            const studentTableTshirtRequiredDiv = row.querySelector('.studentTableTshirtRequired');
+            if (!clickedButton.classList.contains('include-submission-student-selected')) {
+                const selectedButtons = document.querySelectorAll('.include-submission-student-selected');
+                if ( !this.studentsMax ) {
+                    clickedButton.classList.add('include-submission-student-selected');
+                    clickedIcon.classList.remove('check-unchecked');
+                    clickedIcon.classList.add('check-checked');
+                    row.classList.add('highlight-yellow');
+                    this.students.push(id); // Add the id to this.students
+                }
+                else if (selectedButtons.length < this.studentsMax) {
+                    clickedButton.classList.add('include-submission-student-selected');
+                    clickedIcon.classList.remove('check-unchecked');
+                    clickedIcon.classList.add('check-checked');
+                    row.classList.add('highlight-yellow');
+                    this.students.push(id); // Add the id to this.students
+                } else {
+                    maxStudentsDiv.classList.add('text-danger');
+                }
+            } else {
+                clickedButton.classList.remove('include-submission-student-selected');
+                clickedIcon.classList.add('check-unchecked');
+                clickedIcon.classList.remove('check-checked');
+                row.classList.remove('highlight-yellow');
+                this.students = this.students.filter(studentId => studentId !== id); // Remove the id from this.students
+            }
+            console.log('students', this.students)
+
+            // if the student is selected...
+            let studentSubmissionCategories = student.submission_categories.map(obj => ({...obj})); // make a copy of the array
+                if ( this.students.includes(parseInt(student.id)) ) {
+                    // Add the current category to the student's submission categories, if it's not already in the list
+                    if ( !studentSubmissionCategories.includes(categoryName) ) {
+                        studentSubmissionCategories.push(categoryName);
+                    }
+                }
+            let tshirtRequired = student.tshirt_size ? false : true;
+            if (tshirtRequired) {
+                tshirtRequired = studentSubmissionCategories.some(category => nonMaterialSubmissions.includes(category)) ? true : false;
+            }
+            if (tshirtRequired) {
+                studentTableTshirtRequiredDiv.classList.add('studentTableTshirtRequired-active');
+                studentTableTshirtRequiredDiv.style.display = '';
+            } else {
+                studentTableTshirtRequiredDiv.classList.remove('studentTableTshirtRequired-active');
+                studentTableTshirtRequiredDiv.style.display = 'none';
+            }
+        }
+
+        _clickStudentEdit(e) {
+            const id = e.target.closest('.student-row').dataset.id;
+            this._openStudentModal(id);
+        }
+
+        _openStudentModal(id=null) {
+            const categoryName = formFieldCategory.options[formFieldCategory.selectedIndex].text;
+            studentTshirtTexts.forEach(text => text.style.display = 'none');
+
+            if ( id ) {
+                // If the id is not null, then the modal is being opened to edit a student
+                this.newStudentModalIsEditing = true;
+                studentAddModalTitle.textContent = 'Edit Student';
+                studentAddModalBody.dataset.id = id;
+                // Clear the form fields
+                this._clearStudentModal();
+                // Get the student data
+                const student = this.studentsTableObjects.find(student => parseInt(student.id) === parseInt(id));
+                // Set the input values to the student data
+                newStudentFirstNameInput.value = student.firstname;
+                newStudentLastNameInput.value = student.lastname;
+                studentGrade.value = student.grade;
+                // Set the selected options for tribe based on the student data
+                for (let tribeId of student.tribe) {
+                    let option = Array.from(studentTribes.options).find(option => parseInt(option.value) === parseInt(tribeId));
+                    if (option) {
+                        option.selected = true;
+                    }
+                }
+                studentHometown.value = student.hometown;
+                studentState.value = student.state;
+
+                // if the student is selected...
+                let studentSubmissionCategories = student.submission_categories.map(obj => ({...obj})); // make a copy of the array
+                if ( this.students.includes(parseInt(id)) ) {
+                    // Add the current category to the student's submission categories, if it's not already in the list
+                    if ( !studentSubmissionCategories.includes(categoryName) ) {
+                        studentSubmissionCategories.push(categoryName);
+                    }
+                }
+
+                if (materialSubmissions.includes(categoryName)) {
+                    // categoryName is in the list of materialSubmissions
+                    studentTshirtSizeDiv.style.display = 'none';
+
+                    if ( student.tshirt_size ) {
+                        studentTshirtSizeDiv.style.display = 'none';
+                        studentTshirtSize.value = student.tshirt_size;
+
+                        // // Check if any of the students' submission categories are in nonMaterialSubmissions (including the current category if they are selected)
+                        // if ( studentSubmissionCategories.some(category => nonMaterialSubmissions.includes(category)) ) { // if student is in non material submission
+                        //     const studentNonMaterialCategories = studentSubmissionCategories.filter(category => nonMaterialSubmissions.includes(category));
+                        //     editStudentYesTshirtText.style.display = '';
+                        // } else {
+                        //     editStudentNoTshirtText.style.display = '';
+                        // }
+                    }
+                } else {
+                    // categoryName is not in the list of materialSubmissions
+                    studentTshirtSizeDiv.style.display = '';
+                    if ( student.tshirt_size ) {
+                        studentTshirtSize.value = student.tshirt_size;
+                    }
+
+                    // Check if any of the students' submission categories are in nonMaterialSubmissions (including the current category if they are selected)
+                    if ( studentSubmissionCategories.some(category => nonMaterialSubmissions.includes(category)) ) { // if student is in non material submission
+                        const studentNonMaterialCategories = studentSubmissionCategories.filter(category => nonMaterialSubmissions.includes(category)); // now includes the current category if they are selected
+                        editStudentYesTshirtText.style.display = '';
+                    } else {
+                        editStudentWillTshirtText.style.display = '';
+                    }
+                }
+
+            } else {
+                // If the id is null, then the modal is being opened to add a new student
+                this.newStudentModalIsEditing = false;
+                studentAddModalTitle.textContent = 'New Student';
+                studentAddModalBody.dataset.id = '';
+
+                if (materialSubmissions.includes(categoryName)) {
+                    // categoryName is in the list of materialSubmissions
+                    studentTshirtSizeDiv.style.display = 'none';
+                } else {
+                    // categoryName is not in the list of materialSubmissions
+                    studentTshirtSizeDiv.style.display = '';
+                    newStudentNeedsTshirtText.style.display = '';
+                }
+            }
+
+            this.newStudentModal.show();
+        }
+
+        async _clickNewStudent(e) {
+            e.preventDefault();
+
+            let studentId = null;
+            if (this.newStudentModalIsEditing) {
+                studentId = studentAddModalBody.dataset.id;
+            }
+
+            let studentSubmitIncomplete = false;
+
+            if ( !newStudentFirstNameInput.value ) {
+                studentFirstNameRequired.style.display = '';
+                studentSubmitIncomplete = true;
+            } else {
+                studentFirstNameRequired.style.display = 'none';
+            }
+
+            if ( !newStudentLastNameInput.value ) {
+                studentLastNameRequired.style.display = '';
+                studentSubmitIncomplete = true;
+            } else {
+                studentLastNameRequired.style.display = 'none';
+            }
+
+            if ( !studentGrade.value ) {
+                studentGradeRequired.style.display = '';
+                studentSubmitIncomplete = true;
+            } else {
+                studentGradeRequired.style.display = 'none';
+            }
+
+            if ( !studentHometown.value ) {
+                studentHometownRequired.style.display = '';
+                studentSubmitIncomplete = true;
+            } else {
+                studentHometownRequired.style.display = 'none';
+            }
+
+            if ( !studentState.value ) {
+                studentStateRequired.style.display = '';
+                studentSubmitIncomplete = true;
+            } else {
+                studentStateRequired.style.display = 'none';
+            }
+
+            if (studentSubmitIncomplete) {
+                studentModalIncomplete.style.display = '';
+                return;
+            } else {
+                studentModalIncomplete.style.display = 'none';
+            }
+
+            const createdUserId = await this._addStudent(studentId);
+            if (!this.newStudentModalIsEditing) {
+                // add the student to the list, if it's returned from the server
+                if (createdUserId) {
+                    this.students.push(createdUserId);
+                }
+            }
+            await this._loadStudentsTable();
+            
+            // // If the new student modal is not in editing mode, then highlight the new student in the student-table
+            // if (!this.newStudentModalIsEditing) {
+            //     // Query for the row in the student-table that has the data-id value equal to createdUserId
+            //     const row = document.querySelector(`.student-table tr[data-id="${createdUserId}"]`);
+            //     if (row) {
+            //         const rowButton = row.querySelector('.include-submission-student');
+            //         const rowIcon = rowButton.querySelector('.student-check');
+            //         rowButton.classList.add('include-submission-student-selected');
+            //         rowIcon.classList.remove('check-unchecked');
+            //         rowIcon.classList.add('check-checked');
+            //         row.classList.add('highlight-yellow');
+            //     }
+            // }
+
+            this.newStudentModal.hide();
+            this._clearStudentModal();
+        }
+
+        _clearStudentModal() {
+            if (this.newStudentModalIsEditing) {
+                const inputs = studentAddModalElement.querySelectorAll('input, select, textarea');
+                inputs.forEach(input => input.value = '');
+            }
+        }
+
+        _addStudent(studentId = null) {
+            const firstName = newStudentFirstNameInput.value;
+            const lastName = newStudentLastNameInput.value;
+            const grade = studentGrade.value;
+            const tribes = Array.from(studentTribes.selectedOptions).map(option => option.value);
+            const hometown = studentHometown.value;
+            const state = studentState.value;
+            const tshirtSize = studentTshirtSize.value;
+            const user_id = "{{ owning_user.id }}";
+            const csrftoken = this._getCookie('csrftoken');
+            const headers = { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken, };
+            const body = JSON.stringify({ firstname: firstName, lastname: lastName, grade: grade, tribes: tribes, hometown: hometown, state: state, tshirt_size: tshirtSize, user_id: user_id});
+
+            let url = '/api/student/add/';
+            let method = 'POST';
+
+            if (studentId) {
+                // If a student ID is provided, update the existing student
+                url = `/api/student/update/${studentId}/`;
+                method = 'PUT';
+            }
+
+            return fetch(url, { method, headers, body })
+                .then(res => { console.log(res); return res.json(); })
+                .then(data => {
+                    if (method === 'POST') {
+                        // If a new student was created, return the id
+                        const createdUserId = data.id;
+                        return createdUserId;
+                    } else {
+                        // If an existing student was updated, return null
+                        return null;
+                    }
+                });
+        }
+
+        _toggleAccessoriesSection(e) {
+            // Get the form field value
+            const value = formFieldCategory.options[formFieldCategory.selectedIndex].text;
+
+
+            // show or hide the section-accessories div based on the selected value
+            if (materialSubmissions.includes(value)) {
+                sectionAccessories.style.display = 'none';
+                this.sendAccessories = false;
+            } else {
+                sectionAccessories.style.display = 'block';
+                this.sendAccessories = true;
+            }
+        }
+
+        async _clickAccessoryIncrementSubmission(e) {
+            const button = e.target.closest('.submission-accessory-increment');
+            const row = e.target.closest('.accessory-row');
+            const accessory_id = row.dataset.id;
+            const count = row.dataset.count;
+            const countElement = row.querySelector('.submission-accessory-count');
+            const submission_id = "{{ submission.id }}";
+            const newCount = Number(count) + 1;
+            // await this._updateSubmissionAccessory(submission_id, Number(accessory_id), newCount);
+            row.dataset.count = newCount;
+            countElement.textContent = newCount;
+            // if ( "{{ submission.accessories_status }}" != "completed" ) {
+            //     await this._updateSubmissionPartStatus(submission_id, 'accessories_status', 'completed')
+            //     accessoriesStatusIcon.classList.remove("text-warning")
+            //     accessoriesStatusIcon.classList.add("text-success")
+            //     accessoriesStatusDiv.textContent = "Completed"
+            // }
+        }
+
+        async _clickAccessoryDecrementSubmission(e) {
+            const button = e.target.closest('.submission-accessory-decrement');
+            const row = e.target.closest('.accessory-row');
+            const accessory_id = row.dataset.id;
+            const count = row.dataset.count;
+            const countElement = row.querySelector('.submission-accessory-count');
+            const submission_id = "{{ submission.id }}";
+            if (count == 0) {
+                return;
+            }
+            const newCount = Number(count) - 1;
+            // await this._updateSubmissionAccessory(submission_id, Number(accessory_id), newCount);
+            row.dataset.count = newCount;
+            countElement.textContent = newCount;
+            // if ( "{{ submission.accessories_status }}" != "completed" ) {
+            //     await this._updateSubmissionPartStatus(submission_id, 'accessories_status', 'completed')
+            //     accessoriesStatusIcon.classList.remove("text-warning")
+            //     accessoriesStatusIcon.classList.add("text-success")
+            //     accessoriesStatusDiv.textContent = "Completed"
+            // }
+        }
+
+
+
+        _modifySubmitButton(e) {
+            e.preventDefault();
+
+            let submitIncomplete = false;
+            submitIncompleteDiv.style.display = 'none';
+            void submitIncompleteDiv.offsetWidth; // force browser to reflow
+            submitIncompleteDiv.classList.remove('flash-animation');
+
+            // if category is Poster, and title is empty, fill in title with "Student 1 (and optionally Student 2)'s Poster"
+            console.log(formFieldCategory.options[formFieldCategory.selectedIndex].text)
+            if (formFieldCategory.options[formFieldCategory.selectedIndex].text === 'Poster') {
+                if (!formFieldTitle.value) {
+                    // Get the names of the selected students from this.students
+                    const studentNames = this.studentsTableObjects.filter(student => this.students.includes(student.id)).map(student => `${student.firstname} ${student.lastname}`);
+
+                    // join the names with " and "
+                    const studentNamesString = studentNames.join(' and ');
+                    formFieldTitle.value = `${studentNamesString}'s Poster`;
+                }
+            }
+
+            // Perform form validation for title
+            if (!formFieldTitle.value) {
+                submitIncompleteTitleDiv.style.display = 'block';
+                submitIncomplete = true;
+            } else {
+                submitIncompleteTitleDiv.style.display = 'none';
+            }
+
+            // Get all the selected instructor buttons
+            const selectedInstructorButtons = document.querySelectorAll('.include-submission-instructor-selected');
+            if (selectedInstructorButtons.length === 0) {
+                submitIncompleteInstructorDiv.style.display = 'block';
+                submitIncomplete = true;
+            } else {
+                submitIncompleteInstructorDiv.style.display = 'none';
+            }
+
+            // Create a list of the selected instructor IDs
+            const selectedInstructorIds = Array.from(selectedInstructorButtons).map(function(button) {
+                const selectedInstructorRow = button.closest('.instructor-row');
+                return selectedInstructorRow.dataset.id;
+            });
+
+            // Create a hidden input field
+            const instructorHiddenInput = document.createElement('input');
+            instructorHiddenInput.type = 'hidden';
+            instructorHiddenInput.name = 'instructors';
+            instructorHiddenInput.value = JSON.stringify(selectedInstructorIds);
+
+            // Add the hidden input field to the form
+            this.form.appendChild(instructorHiddenInput);
+
+
+            // Get all the selected student buttons
+            const selectedStudentButtons = document.querySelectorAll('.include-submission-student-selected');
+            if (selectedStudentButtons.length === 0) {
+                submitIncompleteStudentDiv.style.display = 'block';
+                submitIncomplete = true;
+            } else {
+                submitIncompleteStudentDiv.style.display = 'none';
+            }
+            console.log('this.studentsMax', this.studentsMax);
+            console.log('selectedStudentButtons.length', selectedStudentButtons.length);
+            console.log(!this.studentsMax === null);
+            console.log(selectedStudentButtons.length > this.studentsMax);
+            console.log( !(this.studentsMax === null) && selectedStudentButtons.length > this.studentsMax );
+            if ( !(this.studentsMax === null) && selectedStudentButtons.length > this.studentsMax ) {
+                maxStudentsDiv.style.display = 'inline';
+                maxStudentsDiv.classList.add('text-danger');
+                submitIncomplete = true;
+            } else {
+                maxStudentsDiv.classList.remove('text-danger');
+            }
+
+            // Create a list of the selected student IDs
+            const selectedStudentIds = Array.from(selectedStudentButtons).map(function(button) {
+                const selectedStudentRow = button.closest('.student-row');
+                return selectedStudentRow.dataset.id;
+            });
+
+            // Check if any of the selected students are missing a t-shirt size
+            const tshirtRequiredDivs = document.querySelectorAll('.studentTableTshirtRequired-active');
+            // console.log('tshirtRequiredDivs', tshirtRequiredDivs);
+            if (tshirtRequiredDivs.length > 0) {
+                    submitIncomplete = true;
+            }
+
+            // Create a hidden input field
+            const studentHiddenInput = document.createElement('input');
+            studentHiddenInput.type = 'hidden';
+            studentHiddenInput.name = 'students';
+            studentHiddenInput.value = JSON.stringify(selectedStudentIds);
+
+            // Add the hidden input field to the form
+            this.form.appendChild(studentHiddenInput);
+
+
+            if (this.sendAccessories) {
+                // Get all the accessory count divs
+                const submissionAccessoryCountDivs = document.querySelectorAll('.submission-accessory-count');
+
+                // Create an object
+                let data = {};
+
+                // For each div
+                submissionAccessoryCountDivs.forEach(function(div) {
+                    // Get the tr element
+                    const tr = div.closest('tr');
+
+                    // Get the data-id attribute of the tr element
+                    const id = tr.dataset.id;
+
+                    // Get the count from the div's text content
+                    const count = parseInt(div.textContent, 10);
+
+                    // Add a key-value pair to the object
+                    data[id] = count;
+                });
+
+                const accessoriesHiddenInput = document.createElement('input');
+                accessoriesHiddenInput.type = 'hidden';
+                accessoriesHiddenInput.name = 'submission_accessory_counts';
+                accessoriesHiddenInput.value = JSON.stringify(data);
+
+                // Append the hidden input field to the form
+                this.form.appendChild(accessoriesHiddenInput);
+            }
+
+            // If the form is incomplete, don't submit it
+            if (submitIncomplete) {
+                submitIncompleteDiv.style.display = 'block';
+                void submitIncompleteDiv.offsetWidth; // force browser to reflow
+                submitIncompleteDiv.classList.add('flash-animation');
+                return;
+            } else {
+                submitIncompleteDiv.style.display = 'none';
+                submitIncompleteDiv.classList.remove('flash-animation');
+            }
+
+            console.log(document.activeElement)
+            // Get the name of the clicked button
+            const buttonName = document.activeElement.name;
+
+            if (buttonName === 'submit-and-add') {
+                // Create a hidden input field
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'submit-and-add';
+
+                // Add the hidden input field to the form
+                this.form.appendChild(hiddenInput);
+            }
+
+
+            // Submit the form
+            this.form.submit();
+        }
+
+
+
+    }
+  const app = new App();
+  </script>
+
+{% endblock %}

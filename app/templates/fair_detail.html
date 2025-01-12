@@ -1,215 +1,446 @@
 {% extends "base.html" %}
 {% load static %}
+{% load bootstrap5 %}
+{% load bootstrap_icons %}
 
-{% block title %}Fair details for {{ currentFair }}{% endblock %}
+{% block title %}Fair info for {{ currentFair }}{% endblock %}
 
 {% block page_content %}
-{% if moderator %}
-    <h2>Fair Information for {{ currentFair }}</h2>
+<div class="container-fluid py-4">
+    {% if moderator %}
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h3 class="card-title mb-0">
+                    <i class="bi bi-info-circle"></i> Fair information for {{ currentFair }}
+                </h3>
+            </div>
+        </div>
+        
+        <div class="card-body">
+            <div class="p-4">
 
-    <div class="d-flex mt-3 mb-2">
-        <div>
-            <button class="btn btn-primary me-1" id="downloadButton">Download</button>
-        </div>
-        <div class="spinner-border text-primary d-none" id="spinner" role="status">
-            <span class="sr-only"></span>
-        </div>
-        <div class="ms-1 d-flex align-items-center">
-            (This can take a minute or two)
+                <div class="row mb-4">
+                    <div class="col">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Download Options</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-grid gap-3">
+                                    <div class="d-flex align-items-center">
+                                        <button class="btn btn-primary me-2" id="downloadButton">
+                                            <i class="bi bi-download"></i> Download All Data
+                                            <span class="spinner-border spinner-border-sm text-white d-none" id="spinner"></span>
+                                        </button>
+                                        <small class="text-muted">(This can take a minute or two)</small>
+                                    </div>
+
+                <div class="d-flex mt-3 mb-2">
+                    <div>
+                        <button class="btn btn-primary me-2" id="downloadRegistrationCoverSheetsButton">
+                            <i class="bi bi-file-text"></i> Download Registration Cover Sheets
+                            <span class="spinner-border spinner-border-sm d-none" id="spinner-registration-cover-sheets"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="d-flex mt-3 mb-2">
+                    <div>
+                        <button class="btn btn-primary me-2" id="downloadSubmissionSheetsButton">
+                            <i class="bi bi-file-text"></i> Download Submission Sheets
+                            <span class="spinner-border spinner-border-sm d-none" id="spinner-submission-sheets"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="d-flex mt-3 mb-2">
+                    <div>
+                        <button class="btn btn-primary me-1" id="downloadSubmissionCardsButton">
+                            <i class="bi bi-file-text"></i> Download Submission Cards
+                            <span class="spinner-border spinner-border-sm d-none" id="spinner-submission-cards"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="d-flex mt-3 mb-2">
+                    <div>
+                        <button class="btn btn-primary me-1" id="downloadJudgeSheetsButton">
+                            <i class="bi bi-file-text"></i> Download Judge Sheets
+                            <span class="spinner-border spinner-border-sm d-none" id="spinner-judge"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats section -->
+                <div class="card">
+                    <div class="card-header">
+                        <ul class="nav nav-tabs card-header-tabs" id="fairStats" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="submissions-tab" data-bs-toggle="tab" data-bs-target="#submissions">
+                                    <i class="bi bi-file-text"></i> Stats for Submissions
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="programs-tab" data-bs-toggle="tab" data-bs-target="#programs">
+                                    <i class="bi bi-building"></i> Stats for Programs
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="languages-tab" data-bs-toggle="tab" data-bs-target="#languages">
+                                    <i class="bi bi-translate"></i> Stats for Languages
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+
+                <!-- Tab content -->
+                <div class="tab-content" id="fairStatsContent">
+                    <!-- Submissions Tab -->
+                    <div class="tab-pane fade show active" id="submissions" role="tabpanel" aria-labelledby="submissions-tab">
+                        <div class="mb-4 p-4">
+                            <h5 class="border-bottom pb-2">Submissions Overview</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <h6 class="card-title">Submission Counts</h6>
+                                            <ul class="list-group list-group-flush">
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    Pending Approval
+                                                    <span class="badge bg-warning rounded-pill">{{ submissions_submitted_count }}</span>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    Approved
+                                                    <span class="badge bg-success rounded-pill">{{ submissions_approved_count }}</span>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    Total
+                                                    <span class="badge bg-primary rounded-pill">{{ submissions_total_count }}</span>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <h6 class="card-title">Student Counts</h6>
+                                            <ul class="list-group list-group-flush">
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    In Pending Submissions
+                                                    <span class="badge bg-warning rounded-pill">{{ students_submitted }}</span>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    In Approved Submissions
+                                                    <span class="badge bg-success rounded-pill">{{ students_approved }}</span>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    Total Students
+                                                    <span class="badge bg-primary rounded-pill">{{ students_total }}</span>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+
+                        <div class="card m-4 p-4">
+                                <h5 class="border-bottom pb-2">Detailed Statistics</h5>
+
+                            <div class="card-header">
+                                <h5 class="mb-0">Categories</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th class="w-50" scope="col">Category</th>
+                                                <th class="text-center" scope="col">Approved</th>
+                                                <th class="text-center" scope="col">Submitted</th>
+                                                <th class="text-center" scope="col">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for category, counts in submissions_by_category.items %}
+                                            <tr>
+                                                <td class="w-50">{{ category }}</td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-success">{{ counts.approved }}</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-warning">{{ counts.submitted }}</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-primary">{{ counts.all }}</span>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card m-4 p-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Languages</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th class="w-50" scope="col">Language</th>
+                                                <th class="text-center" scope="col">Approved</th>
+                                                <th class="text-center" scope="col">Submitted</th>
+                                                <th class="text-center" scope="col">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for language, counts in submissions_by_language.items %}
+                                            <tr>
+                                                <td class="w-50">{{ language }}</td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-success">{{ counts.approved }}</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-warning">{{ counts.submitted }}</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-primary">{{ counts.all }}</span>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card m-4 p-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Grade Ranges</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th class="w-50" scope="col">Grade range</th>
+                                                <th class="text-center" scope="col">Approved</th>
+                                                <th class="text-center" scope="col">Submitted</th>
+                                                <th class="text-center" scope="col">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for grade_range, counts in submissions_by_grade_range.items %}
+                                            <tr>
+                                                <td class="w-50">{{ grade_range }}</td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-success">{{ counts.approved }}</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-warning">{{ counts.submitted }}</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-primary">{{ counts.all }}</span>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card m-4 p-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">T-Shirts</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th class="w-50" scope="col">T-shirt size</th>
+                                                <th class="text-center" scope="col">Approved</th>
+                                                <th class="text-center" scope="col">Submitted</th>
+                                                <th class="text-center" scope="col">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for tshirt_size, counts in tshirt_sizes_summary.items %}
+                                            <tr>
+                                                <td class="w-50">{{ tshirt_size }}</td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-success">{{ counts.approved }}</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-warning">{{ counts.submitted }}</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-primary">{{ counts.all }}</span>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card m-4 p-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Bag Count</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th class="w-50" scope="col">Status</th>
+                                                <th class="text-center" scope="col">Approved</th>
+                                                <th class="text-center" scope="col">Submitted</th>
+                                                <th class="text-center" scope="col">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td class="w-50">Count</td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-success">{{ bag_count.approved }}</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-warning">{{ bag_count.submitted }}</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-primary">{{ bag_count.all }}</span>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Programs Tab -->
+                    <div class="tab-pane fade" id="programs" role="tabpanel" aria-labelledby="programs-tab">
+                        <div class="card m-4 p-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Programs by Grade Range</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th class="w-50" scope="col">Grade Range</th>
+                                                <th class="text-center" scope="col">Approved</th>
+                                                <th class="text-center" scope="col">Submitted</th>
+                                                <th class="text-center" scope="col">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td class="w-50">PreK-5</td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-success">{{ prek5_programs.approved }}</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-warning">{{ prek5_programs.submitted }}</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-primary">{{ prek5_programs.all }}</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="w-50">6-12</td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-success">{{ grade612_programs.approved }}</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-warning">{{ grade612_programs.submitted }}</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-primary">{{ grade612_programs.all }}</span>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Languages Tab -->
+                    <div class="tab-pane fade" id="languages" role="tabpanel" aria-labelledby="languages-tab">
+                        <div class="card m-4 p-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Languages by Grade Range</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th class="w-50" scope="col">Grade Range</th>
+                                                <th class="text-center" scope="col">Approved</th>
+                                                <th class="text-center" scope="col">Submitted</th>
+                                                <th class="text-center" scope="col">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td class="w-50">PreK-5</td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-success">{{ prek5_languages.approved }}</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-warning">{{ prek5_languages.submitted }}</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-primary">{{ prek5_languages.all }}</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="w-50">6-12</td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-success">{{ grade612_languages.approved }}</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-warning">{{ grade612_languages.submitted }}</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-primary">{{ grade612_languages.all }}</span>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+</div>
 
-    <div class="d-flex mt-3 mb-2">
-        <div>
-            <button class="btn btn-primary me-1" id="downloadRegistrationCoverSheetsButton">Download Registration Cover Sheets</button>
-        </div>
-        <div class="spinner-border text-primary d-none" id="spinner-registration-cover-sheets" role="status">
-            <span class="sr-only"></span>
-        </div>
-    </div>
-
-    <div class="d-flex mt-3 mb-2">
-        <div>
-            <button class="btn btn-primary me-1" id="downloadPerformanceSheetsButton">Download Performance Sheets</button>
-        </div>
-        <div class="spinner-border text-primary d-none" id="spinner-performance-sheets" role="status">
-            <span class="sr-only"></span>
-        </div>
-    </div>
-
-    <div class="d-flex mt-3 mb-2">
-        <div>
-            <button class="btn btn-primary me-1" id="downloadPerformanceCardsButton">Download Performance Cards</button>
-        </div>
-        <div class="spinner-border text-primary d-none" id="spinner-performance-cards" role="status">
-            <span class="sr-only"></span>
-        </div>
-    </div>
-
-    <div class="d-flex mt-3 mb-2">
-        <div>
-            <button class="btn btn-primary me-1" id="downloadJudgeSheetsButton">Download Judge Sheets</button>
-        </div>
-        <div class="spinner-border text-primary d-none" id="spinner-judge" role="status">
-            <span class="sr-only"></span>
-        </div>
-    </div>
-
-    <h3>Performances</h3>
-    <ul>
-    <li>Number of submitted (and not approved) performances: {{ performances_submitted_count }}</li>
-    <li>Number of approved performances: {{ performances_approved_count }}</li>
-    <li>Total number of submitted and approved performances: {{ performances_total_count }}</li>
-    </ul>
-
-    <h3>Students</h3>
-    <ul>
-    <li>Number of students in submitted (and not approved) performances: {{ students_submitted }}</li>
-    <li>Number of students in approved performances: {{ students_approved }}</li>
-    <li>Total number of students in submitted and approved performances: {{ students_total }}</li>
-    </ul>
-
-    <h2>Stats for approved performances:</h2>
-
-    <h3>Categories</h3>
-    <table class="table">
-        <thead>
-            <tr>
-                <th scope="col">Category</th>
-                <th scope="col">Approved</th>
-                <th scope="col">Submitted</th>
-                <th scope="col">Total</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for category, counts in performances_by_category.items %}
-            <tr>
-                <td>{{ category }}</td>
-                <td>{{ counts.approved }}</td>
-                <td>{{ counts.submitted }}</td>
-                <td>{{ counts.all }}</td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-
-    <h3>Languages</h3>
-    <table class="table">
-        <thead>
-            <tr>
-                <th scope="col">Language</th>
-                <th scope="col">Approved</th>
-                <th scope="col">Submitted</th>
-                <th scope="col">Total</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for language, counts in performances_by_language.items %}
-            <tr>
-                <td>{{ language }}</td>
-                <td>{{ counts.approved }}</td>
-                <td>{{ counts.submitted }}</td>
-                <td>{{ counts.all }}</td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-
-    <h3>Grade Ranges</h3>
-    <table class="table">
-        <thead>
-            <tr>
-                <th scope="col">Grade range</th>
-                <th scope="col">Approved</th>
-                <th scope="col">Submitted</th>
-                <th scope="col">Total</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for grade_range, counts in performances_by_grade_range.items %}
-            <tr>
-                <td>{{ grade_range }}</td>
-                <td>{{ counts.approved }}</td>
-                <td>{{ counts.submitted }}</td>
-                <td>{{ counts.all }}</td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-
-    <h3>T-Shirts</h3>
-    <table class="table">
-        <thead>
-            <tr>
-                <th scope="col">T-shirt size</th>
-                <th scope="col">Approved</th>
-                <th scope="col">Submitted</th>
-                <th scope="col">Total</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for tshirt_size, counts in tshirt_sizes_summary.items %}
-            <tr>
-                <td>{{ tshirt_size }}</td>
-                <td>{{ counts.approved }}</td>
-                <td>{{ counts.submitted }}</td>
-                <td>{{ counts.all }}</td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-
-    <h3>Bag count</h3>
-    <table class="table">
-        <thead>
-            <tr>
-                <th scope="col">Approved</th>
-                <th scope="col">Submitted</th>
-                <th scope="col">Total</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>{{ bag_count.approved }}</td>
-                <td>{{ bag_count.submitted }}</td>
-                <td>{{ bag_count.all }}</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <h3>Accessories</h3>
-    <table class="table">
-        <thead>
-            <tr>
-                <th scope="col">Accessories</th>
-                <th scope="col">Approved</th>
-                <th scope="col">Submitted</th>
-                <th scope="col">Total</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for accessory, counts in accessories_summary.items %}
-            <tr>
-                <td>{{ accessory }}</td>
-                <td>{{ counts.approved }}</td>
-                <td>{{ counts.submitted }}</td>
-                <td>{{ counts.all }}</td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-
-
-
-    <script>
+<script>
         const downloadButton = document.getElementById('downloadButton');
         const spinner = document.getElementById('spinner');
         const downloadRegistrationCoverSheetsButton = document.getElementById('downloadRegistrationCoverSheetsButton');
         const spinnerRegistrationCoverSheets = document.getElementById('spinner-registration-cover-sheets');
-        const downloadPerformanceSheetsButton = document.getElementById('downloadPerformanceSheetsButton');
-        const spinnerPerformanceSheets = document.getElementById('spinner-performance-sheets');
-        const downloadPerformanceCardsButton = document.getElementById('downloadPerformanceCardsButton');
-        const spinnerPerformanceCards = document.getElementById('spinner-performance-cards');
+        const downloadSubmissionSheetsButton = document.getElementById('downloadSubmissionSheetsButton');
+        const spinnerSubmissionSheets = document.getElementById('spinner-submission-sheets');
+        const downloadSubmissionCardsButton = document.getElementById('downloadSubmissionCardsButton');
+        const spinnerSubmissionCards = document.getElementById('spinner-submission-cards');
         const downloadJudgeSheetsButton = document.getElementById('downloadJudgeSheetsButton');
         const spinnerJudge = document.getElementById('spinner-judge');
 
@@ -222,8 +453,8 @@
             constructor() {
                 downloadButton.addEventListener('click', this._downloadMetadata.bind(this));
                 downloadRegistrationCoverSheetsButton.addEventListener('click', this._downloadRegistrationCoverSheets.bind(this));
-                downloadPerformanceSheetsButton.addEventListener('click', this._downloadPerformanceSheets.bind(this));
-                downloadPerformanceCardsButton.addEventListener('click', this._downloadPerformanceCards.bind(this));
+                downloadSubmissionSheetsButton.addEventListener('click', this._downloadSubmissionSheets.bind(this));
+                downloadSubmissionCardsButton.addEventListener('click', this._downloadSubmissionCards.bind(this));
                 downloadJudgeSheetsButton.addEventListener('click', this._downloadJudgeSheets.bind(this));
             }
 
@@ -336,14 +567,14 @@
                     });
             }
 
-            _downloadPerformanceSheets(){
+            _downloadSubmissionSheets(){
                 const fair_pk = "{{ fair.pk }}"
                 const currentFair = "{{ currentFair }}"
-                downloadPerformanceSheetsButton.disabled = true;
-                downloadPerformanceSheetsButton.classList.remove('btn-primary');
-                downloadPerformanceSheetsButton.classList.add('btn-secondary');
-                spinnerPerformanceSheets.classList.remove('d-none');
-                fetch(`/api/fair/${fair_pk}/download-performance-sheets/`)
+                downloadSubmissionSheetsButton.disabled = true;
+                downloadSubmissionSheetsButton.classList.remove('btn-primary');
+                downloadSubmissionSheetsButton.classList.add('btn-secondary');
+                spinnerSubmissionSheets.classList.remove('d-none');
+                fetch(`/api/fair/${fair_pk}/download-submission-sheets/`)
                     .then(response => {
                         console.log(response);
                         const contentType = response.headers.get("content-type");
@@ -364,33 +595,33 @@
                         const url = window.URL.createObjectURL(blob);
                         const link = document.createElement('a');
                         link.href = url;
-                        link.download = sanitizeFilename(`fair${currentFair}-performance_sheets.pdf`);
+                        link.download = sanitizeFilename(`fair${currentFair}-submission_sheets.pdf`);
                         document.body.appendChild(link); // Append the link to the body
                         link.click();
                         document.body.removeChild(link); // Remove the link from the body
                         window.URL.revokeObjectURL(url); // Revoke the object URL
-                        downloadPerformanceSheetsButton.disabled = false;
-                        downloadPerformanceSheetsButton.classList.remove('btn-secondary');
-                        downloadPerformanceSheetsButton.classList.add('btn-primary');
-                        spinnerPerformanceSheets.classList.add('d-none');
+                        downloadSubmissionSheetsButton.disabled = false;
+                        downloadSubmissionSheetsButton.classList.remove('btn-secondary');
+                        downloadSubmissionSheetsButton.classList.add('btn-primary');
+                        spinnerSubmissionSheets.classList.add('d-none');
                     })
                     .catch(error => {
                         console.error('Error:', error);
-                        downloadPerformanceSheetsButton.disabled = false;
-                        downloadPerformanceSheetsButton.classList.remove('btn-secondary');
-                        downloadPerformanceSheetsButton.classList.add('btn-primary');
-                        spinnerPerformanceSheets.classList.add('d-none');
+                        downloadSubmissionSheetsButton.disabled = false;
+                        downloadSubmissionSheetsButton.classList.remove('btn-secondary');
+                        downloadSubmissionSheetsButton.classList.add('btn-primary');
+                        spinnerSubmissionSheets.classList.add('d-none');
                     });
             }
 
-            _downloadPerformanceCards(){
+            _downloadSubmissionCards(){
                 const fair_pk = "{{ fair.pk }}"
                 const currentFair = "{{ currentFair }}"
-                downloadPerformanceCardsButton.disabled = true;
-                downloadPerformanceCardsButton.classList.remove('btn-primary');
-                downloadPerformanceCardsButton.classList.add('btn-secondary');
-                spinnerPerformanceCards.classList.remove('d-none');
-                fetch(`/api/fair/${fair_pk}/download-performance-cards/`)
+                downloadSubmissionCardsButton.disabled = true;
+                downloadSubmissionCardsButton.classList.remove('btn-primary');
+                downloadSubmissionCardsButton.classList.add('btn-secondary');
+                spinnerSubmissionCards.classList.remove('d-none');
+                fetch(`/api/fair/${fair_pk}/download-submission-cards/`)
                     .then(response => {
                         console.log(response);
                         const contentType = response.headers.get("content-type");
@@ -411,22 +642,22 @@
                         const url = window.URL.createObjectURL(blob);
                         const link = document.createElement('a');
                         link.href = url;
-                        link.download = sanitizeFilename(`fair${currentFair}-performance_cards.pdf`);
+                        link.download = sanitizeFilename(`fair${currentFair}-submission_cards.pdf`);
                         document.body.appendChild(link); // Append the link to the body
                         link.click();
                         document.body.removeChild(link); // Remove the link from the body
                         window.URL.revokeObjectURL(url); // Revoke the object URL
-                        downloadPerformanceCardsButton.disabled = false;
-                        downloadPerformanceCardsButton.classList.remove('btn-secondary');
-                        downloadPerformanceCardsButton.classList.add('btn-primary');
-                        spinnerPerformanceCards.classList.add('d-none');
+                        downloadSubmissionCardsButton.disabled = false;
+                        downloadSubmissionCardsButton.classList.remove('btn-secondary');
+                        downloadSubmissionCardsButton.classList.add('btn-primary');
+                        spinnerSubmissionCards.classList.add('d-none');
                     })
                     .catch(error => {
                         console.error('Error:', error);
-                        downloadPerformanceCardsButton.disabled = false;
-                        downloadPerformanceCardsButton.classList.remove('btn-secondary');
-                        downloadPerformanceCardsButton.classList.add('btn-primary');
-                        spinnerPerformanceCards.classList.add('d-none');
+                        downloadSubmissionCardsButton.disabled = false;
+                        downloadSubmissionCardsButton.classList.remove('btn-secondary');
+                        downloadSubmissionCardsButton.classList.add('btn-primary');
+                        spinnerSubmissionCards.classList.add('d-none');
                     });
             }
 

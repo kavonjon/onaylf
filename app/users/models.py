@@ -1,7 +1,10 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 from django.utils import timezone
-from performances.models import STATE_CHOICES
+from submissions.models import STATE_CHOICES
+from django.contrib.auth.signals import user_logged_in
+from django.dispatch import receiver
+from datetime import datetime
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -50,6 +53,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []  # In Django, the USERNAME_FIELD is required by default.
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Store the original values when the instance is loaded
+        self._loaded_values = dict(organization=self.organization)
+
     # other methods...
 
 
@@ -57,4 +65,15 @@ class User(AbstractBaseUser, PermissionsMixin):
 #     user = models.OneToOneField(User, on_delete=models.CASCADE)
 #     organization = models.CharField(max_length=500)
 
+class Organization(models.Model):
+    name = models.CharField(max_length=500, unique=True)
+    def __str__(self):
+        return self.name
 
+@receiver(user_logged_in)
+def store_last_login(sender, user, request, **kwargs):
+    """Store the previous last_login in the session before it gets updated"""
+    if user.last_login:
+        request.session['previous_login'] = user.last_login.year
+    else:
+        request.session['previous_login'] = None

@@ -5,17 +5,136 @@
 
 {% block page_content %}
 {% if moderator %}
-    <h2>List of users</h2>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <h2>List of users</h2>
+        <div class="text-muted">
+            <small>Registration code: <span class="font-monospace">{{ registration_code }}</span></small>
+        </div>
+    </div>
 
-    <ul>
-    {% for user in users %}
-    <li>
-        <a href='/user/{{user.id}}'>
-            {{ user.first_name }} {{ user.last_name }} ({{ user.email }})
-        </a>
-    </li>
-    {% endfor %}
-    </ul>
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <input type="text" id="nameSearch" class="form-control" placeholder="Search by name...">
+                </div>
+                <div class="col-md-3">
+                    <input type="text" id="emailSearch" class="form-control" placeholder="Search by email...">
+                </div>
+                <div class="col-md-3">
+                    <input type="text" id="organizationSearch" class="form-control" placeholder="Search by organization...">
+                </div>
+                <div class="col-md-3">
+                    <input type="text" id="locationSearch" class="form-control" placeholder="Search by city or state...">
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Organization</th>
+                    <th>Location</th>
+                </tr>
+            </thead>
+            <tbody id="userTableBody">
+                {% for user in users %}
+                <tr class="user-row" 
+                    data-name="{{ user.first_name }} {{ user.last_name }}"
+                    data-email="{{ user.email }}"
+                    data-organization="{{ user.organization|default:'' }}"
+                    data-location="{{ user.city|default:'' }}{% if user.city and user.state %}, {% endif %}{{ user.state|default:'' }}"
+                    data-state-name="{% for code, name in state_choices %}{% if code == user.state %}{{ name }}{% endif %}{% endfor %}"
+                    style="cursor: pointer;"
+                    onclick="window.location='/user/{{ user.id }}'">
+                    <td>{{ user.first_name }} {{ user.last_name }}</td>
+                    <td>
+                        {{ user.email }}
+                        {% if user.groups.all %}
+                            {% for group in user.groups.all %}
+                                {% if group.name == 'moderator' %}
+                                    <span class="badge bg-primary ms-2">Moderator</span>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    </td>
+                    <td>{{ user.organization|default:"" }}</td>
+                    <td>
+                        {% if user.city or user.state %}
+                            {{ user.city }}{% if user.city and user.state %}, {% endif %}{{ user.state }}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const nameSearch = document.getElementById('nameSearch');
+    const emailSearch = document.getElementById('emailSearch');
+    const organizationSearch = document.getElementById('organizationSearch');
+    const locationSearch = document.getElementById('locationSearch');
+    const rows = document.querySelectorAll('.user-row');
+
+    function filterTable() {
+        const nameTerms = nameSearch.value.toLowerCase().split(' ');
+        const emailTerm = emailSearch.value.toLowerCase();
+        const organizationTerm = organizationSearch.value.toLowerCase();
+        const locationTerms = locationSearch.value.toLowerCase().split(' ');
+        
+        rows.forEach(row => {
+            const name = row.dataset.name.toLowerCase();
+            const email = row.dataset.email.toLowerCase();
+            const organization = row.dataset.organization.toLowerCase();
+            const location = row.dataset.location.toLowerCase();
+            const stateName = row.dataset.stateName.toLowerCase();
+
+            // Check if ALL name terms match the name field
+            const matchesName = nameTerms.every(term => 
+                term === '' || name.includes(term)
+            );
+
+            // Check email match
+            const matchesEmail = emailTerm === '' || email.includes(emailTerm);
+
+            // Check organization match
+            const matchesOrganization = organizationTerm === '' || organization.includes(organizationTerm);
+
+            // Check if ALL location terms match either the location field or state name
+            const matchesLocation = locationTerms.every(term => 
+                term === '' || location.includes(term) || stateName.includes(term)
+            );
+
+            // Show row only if all active filters match
+            row.style.display = (matchesName && matchesEmail && matchesOrganization && matchesLocation) ? '' : 'none';
+        });
+    }
+
+    // Add event listeners to all search inputs
+    nameSearch.addEventListener('input', filterTable);
+    emailSearch.addEventListener('input', filterTable);
+    organizationSearch.addEventListener('input', filterTable);
+    locationSearch.addEventListener('input', filterTable);
+});
+</script>
+
+<style>
+.form-control {
+    margin-bottom: 10px;
+}
+@media (min-width: 768px) {
+    .form-control {
+        margin-bottom: 0;
+    }
+}
+</style>
 {% endif %}
 {% endblock %}

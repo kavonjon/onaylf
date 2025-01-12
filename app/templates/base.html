@@ -12,8 +12,13 @@
     {% bootstrap_css %}
     {% bootstrap_javascript %}
     {% load bootstrap_icons %}
+    <link rel="shortcut icon" type="image/png" href="{% static 'favicon.ico' %}"/>
     <link rel="stylesheet" href="{% static 'template.css' %}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.1/font/bootstrap-icons.css">
+    <!-- Add Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <!-- Add Select2 Bootstrap 5 Theme (optional but recommended) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
   </head>
 
   <body>
@@ -28,12 +33,21 @@
       <li class="nav-item">
         <a class="nav-link" href="/">Home</a>
       </li>
+      <li class="nav-item">
+        <a class="nav-link" href="/students">Students</a>
+      </li>
       {% if moderator %}
       <li class="nav-item">
         <a class="nav-link" href="/users">Users</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" href="/fair">Fair</a>
+          <a class="nav-link" href="{% url 'organization_list' %}">Programs</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="/fair-info">Info</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="/fairs">Fairs</a>
       </li>
       {% endif %}
       <li class="nav-item">
@@ -62,8 +76,23 @@
 <div class="featured col-md-6 mx-auto bg-info bg-gradient">
     {% block featured %}{% endblock %}
 </div>
-<div class="container">
+{% if messages %}
+<div class="container mt-3">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+<div class="container-lg" style="max-width: 90%;">
     {% block page_content %}{% endblock %}
 </div>
+
+  <!-- Make sure jQuery is loaded before Select2 -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <!-- Add Select2 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 </html>

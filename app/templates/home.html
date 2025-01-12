@@ -8,45 +8,184 @@
 {% block title %}Home{% endblock %}
 
 {% block featured %}
-<h5>Welcome, {{ currentUser.first_name }}</h5>
-
-{% if moderator %}
-As a moderator, you can view all performances for the current fair. Click on column headers to sort by that column.<br />
-
-Approve or unapprove performances in the "Action" column. Perfomances can only be edited before they are submitted, so unapprove them first in order to edit and then resubmit them.<br />
-
-Emails will be sent for each performance the first time it is submitted and approved.<br />
-
-Click on a user to see a listing of their performances. You can also approve or unapprove performances from the user's page. You can add a performance for that user on their page.
-
-{% else %}
-This is your Homepage. On this page you can add or edit performances. Click "New Performance" to add a performance. Have a lot of posters? Try clicking the "New poster" button to pre-select the poster category. The table below shows your performances. You can view and edit each by clicking the info or edit buttons in the "Action" column.<br />
-
--When you have completed your entry, its status will be "Submitted". You will not be able to edit it after that. If you need to make changes, you can click the "Retract submission" button to change the status back to "In progress" and then edit your entry. <br />
-
--Once approved by the ONAYLF team, your entry status will change to "Approved". You will not be able to edit it after that. If you need to make changes, contact the ONAYLF team.
-
-{% endif %}
-{% endblock %}
-
-
-{% block page_content %}
-
-{% if moderator %}{% else %}{% if registrationOpen %}
-<div class="mb-3">
-    <a href="performance/add/" class="btn btn-primary">New Performance</a>
-</div>
-{% endif %}{% endif %}
-
-<div class="table-responsive">
-    <table class="table table-striped small performance-table">
-    <tbody>
-    </tbody>
-    </table>
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="card-title mb-0">
+                <i class="bi bi-house-door"></i> Welcome, {{ currentUser.first_name }}
+            </h4>
+            <button class="btn btn-link text-decoration-none" 
+                    type="button" 
+                    data-bs-toggle="collapse" 
+                    data-bs-target="#instructionsCollapse" 
+                    aria-expanded="true" 
+                    aria-controls="instructionsCollapse">
+                <i class="bi bi-chevron-up"></i>
+                <span class="instructions-toggle-text">Hide Instructions</span>
+            </button>
+        </div>
+        
+        <div class="collapse show" id="instructionsCollapse">
+            {% if moderator %}
+                <div class="alert alert-info">
+                    <h5><i class="bi bi-shield-check"></i> Moderator Instructions</h5>
+                    <ul class="mb-0">
+                        <li>View all submissions for the current fair. Click column headers to sort.</li>
+                        <li>Approve/unapprove submissions in the "Action" column.</li>
+                        <li>To edit performances, first unapprove them, then edit and resubmit.</li>
+                        <li>Emails are sent on first submission and approval.</li>
+                        <li>Click usernames to see their submission listings and add new submissions.</li>
+                    </ul>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <h5><i class="bi bi-info-circle"></i> Submission Instructions</h5>
+                    <ul class="mb-0">
+                        <li>Click "New Submission" to add an entry. For multiple posters, use the "New poster" shortcut.</li>
+                        <li>View and edit submissions using the action buttons in the table below.</li>
+                        <li>Status "Submitted" means complete but locked. Use "Retract submission" to edit again.</li>
+                        <li>Status "Approved" means locked. Contact ONAYLF team for changes.</li>
+                    </ul>
+                </div>
+            {% endif %}
+        </div>
+    </div>
 </div>
 
 <script>
-  const table = document.querySelector('.performance-table');
+document.addEventListener('DOMContentLoaded', function() {
+    const collapse = document.getElementById('instructionsCollapse');
+    const toggleBtn = collapse.previousElementSibling.querySelector('button');
+    const toggleIcon = toggleBtn.querySelector('i');
+    const toggleText = toggleBtn.querySelector('.instructions-toggle-text');
+    
+    // Load saved state
+    const isCollapsed = localStorage.getItem('instructionsCollapsed') === 'true';
+    if (isCollapsed) {
+        collapse.classList.remove('show');
+        toggleIcon.classList.replace('bi-chevron-up', 'bi-chevron-down');
+        toggleText.textContent = 'Show Instructions';
+    }
+
+    collapse.addEventListener('hide.bs.collapse', function () {
+        toggleIcon.classList.replace('bi-chevron-up', 'bi-chevron-down');
+        toggleText.textContent = 'Show Instructions';
+        localStorage.setItem('instructionsCollapsed', 'true');
+    });
+
+    collapse.addEventListener('show.bs.collapse', function () {
+        toggleIcon.classList.replace('bi-chevron-down', 'bi-chevron-up');
+        toggleText.textContent = 'Hide Instructions';
+        localStorage.setItem('instructionsCollapsed', 'false');
+    });
+});
+</script>
+{% endblock %}
+
+{% block page_content %}
+{% if no_fair %}
+    <div class="alert alert-warning">
+        <h4><i class="bi bi-exclamation-triangle"></i> No Fair Currently Set Up</h4>
+        {% if moderator %}
+            <p>No fair has been created yet. Please create a fair first.</p>
+            <a href="create_fair" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Create Fair
+            </a>
+        {% else %}
+            <p>No fair is currently set up. Please contact an administrator.</p>
+        {% endif %}
+    </div>
+{% else %}
+
+    {% if not moderator %}{% if registrationOpen %}
+        <div class="mb-3">
+            <a href="submission/add/" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> New Submission
+            </a>
+        </div>
+    {% endif %}{% endif %}
+
+    <div class="card shadow">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover small submission-table mb-0">
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+{% endif %}
+
+<style>
+    .dropdown-toggle.btn {
+        text-align: left;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .dropdown-menu {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .dropdown-item {
+        cursor: pointer;
+        padding: .25rem .5rem;
+    }
+
+    .table-responsive {
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+    }
+
+    .sort-btn {
+        cursor: pointer;
+    }
+
+    .sort-btn:hover {
+        background-color: rgba(0,0,0,.05);
+    }
+
+    .stealth {
+        text-decoration: none;
+    }
+
+    .overflow-wrap {
+        max-width: 200px;
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+    }
+</style>
+
+<div id="app-data" 
+    data-grade-ranges='{{ gradeRanges|safe }}'
+    data-performance-types='{{ performanceTypes|safe }}'
+    data-performance-status='{{ performanceStatus|safe }}'
+    data-categories='{{ categories|safe }}'>
+</div>
+
+<script>
+  // Get all data from the div using dataset
+  const appData = document.getElementById('app-data').dataset;
+//   console.log('Raw data from dataset:', appData);
+
+  // Parse each piece individually
+  const gradeRanges = JSON.parse(appData.gradeRanges || '{}');
+  const performanceTypes = JSON.parse(appData.performanceTypes || '{}');
+  const performanceStatus = JSON.parse(appData.performanceStatus || '{}');
+  const categories = JSON.parse(appData.categories || '[]');
+
+  console.log('Parsed data:', {
+    gradeRanges,
+    performanceTypes,
+    performanceStatus,
+    categories
+  });
+
+  const table = document.querySelector('.submission-table');
   const moderatorText = "{{ moderator }}"
   const moderator = moderatorText == 'True'
   const registrationOpenText = "{{ registrationOpen }}"
@@ -61,8 +200,8 @@ This is your Homepage. On this page you can add or edit performances. Click "New
             <th class="sort-btn" data-field="title"><div class="d-flex align-items-center">Title<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none;"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none;"></i></span></div></th>
             <th class="sort-btn" data-field="category.name"><div class="d-flex align-items-center">Category<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none;"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none;"></i></span></div></th>
             <th class="sort-btn" data-field="grade_range"><div class="d-flex align-items-center">Grade<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none;"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none;"></i></span></div></th>
-            <th class="sort-btn" data-field="performance_type"><div class="d-flex align-items-center">Performance type<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none;"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none;"></i></span></div></th>
-            <th class="sort-btn" data-field="group"><div class="d-flex align-items-center">Group<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none;"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none;"></i></span></div></th>
+            <th class="sort-btn" data-field="submission_type"><div class="d-flex align-items-center">Submission type<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none;"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none;"></i></span></div></th>
+            <th class="sort-btn" data-field="group"><div class="d-flex align-items-center">Presenting Group<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none;"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none;"></i></span></div></th>
             <th class="sort-btn" data-field="status_display"><div class="d-flex align-items-center">Status<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none;"></i><i class="bi bi-caret-down-fill sort-caret" style="display:none;"></i></span></div></th>
             <th class="sort-btn" data-field="updated"><div class="d-flex align-items-center">Action<span class="d-flex flex-column"><i class="bi bi-caret-up-fill sort-caret" style="display:none;"></i><i class="bi bi-caret-down-fill sort-caret" style="display:block;"></i></span></div></th>
         </tr>
@@ -75,9 +214,18 @@ This is your Homepage. On this page you can add or edit performances. Click "New
     activeEditButton
     sort = { field: 'updated', direction: 'desc'};
 
-
     constructor() {
+        // Add filter data properties
+        this.gradeRanges = gradeRanges;
+        this.performanceTypes = performanceTypes;
+        this.performanceStatus = performanceStatus;
+        this.categories = categories || [];
 
+        // Create filter row before setting up the table
+        this._createFilterRow();
+        this._initializeFilterElements();
+
+        // Your existing constructor code
         document.addEventListener('DOMContentLoaded', () => {
             this._loadTable(true, true);
         });
@@ -91,27 +239,27 @@ This is your Homepage. On this page you can add or edit performances. Click "New
             });
         });
 
-        this._clickApprovePerformance = this._clickApprovePerformance.bind(this);
+        this._clickApproveSubmission = this._clickApproveSubmission.bind(this);
         document.addEventListener('DOMContentLoaded', () => {
             document.body.addEventListener('click', (e) => {
-                if(e.target.closest('.performance-approve')) {
-                    this._clickApprovePerformance(e);
+                if(e.target.closest('.submission-approve')) {
+                    this._clickApproveSubmission(e);
                 }
             });
         });
 
-        this._clickUnapprovePerformance = this._clickUnapprovePerformance.bind(this);
+        this._clickUnapproveSubmission = this._clickUnapproveSubmission.bind(this);
         document.addEventListener('DOMContentLoaded', () => {
             document.body.addEventListener('click', (e) => {
-                if(e.target.closest('.performance-unapprove')) {
-                    this._clickUnapprovePerformance(e);
+                if(e.target.closest('.submission-unapprove')) {
+                    this._clickUnapproveSubmission(e);
                 }
             });
         });
         document.addEventListener('DOMContentLoaded', () => {
             document.body.addEventListener('click', (e) => {
-                if(e.target.closest('.performance-retract')) {
-                    this._clickUnapprovePerformance(e);
+                if(e.target.closest('.submission-retract')) {
+                    this._clickUnapproveSubmission(e);
                 }
             });
         });
@@ -133,7 +281,7 @@ This is your Homepage. On this page you can add or edit performances. Click "New
         return cookieValue;
     }
 
-    _getPerformances(){
+    _getSubmissions(){
 
         let user_param;
         // console.log("moderator: " + moderator)
@@ -145,7 +293,7 @@ This is your Homepage. On this page you can add or edit performances. Click "New
         }
 
         const headers = { 'Content-Type': 'application/json' };
-        return fetch(`/api/performance-poster/${user_param}`, { headers, })
+        return fetch(`/api/submission-poster/${user_param}`, { headers, })
             .then(res => res.json())
             .then(data => {
                 this.tableObjects = data
@@ -153,10 +301,10 @@ This is your Homepage. On this page you can add or edit performances. Click "New
 
     }
 
-    _getPerformance(performance_id){
+    _getSubmission(submission_id){
 
         const headers = { 'Content-Type': 'application/json' };
-        return fetch(`/api/performance/${performance_id}`, { headers, })
+        return fetch(`/api/submission/${submission_id}`, { headers, })
             .then(res => res.json())
             .then(data => {
                 return data;
@@ -166,7 +314,7 @@ This is your Homepage. On this page you can add or edit performances. Click "New
 
     async _loadTable(doFetch, sort, { field = 'updated', direction = 'desc' } = {}) {
         if ( doFetch == true ) {
-            await this._getPerformances()
+            await this._getSubmissions()
         } 
         if (!sort) {
             field = this.sort.field;
@@ -201,7 +349,7 @@ This is your Homepage. On this page you can add or edit performances. Click "New
             }
 
         table.innerHTML = this.tableHeader
-        this.tableBody = document.querySelector('.performance-table tbody');
+        this.tableBody = document.querySelector('.submission-table tbody');
         this.tableObjects.forEach((tableObject) => {
             const html = this._buildRowHtml(tableObject);
             // const row = this.tableBody.insertRow();
@@ -213,36 +361,36 @@ This is your Homepage. On this page you can add or edit performances. Click "New
 
     _buildRowHtml(tableObject) {
         let category;
-        let performance_type;
+        let submission_type;
         let group;
         let detail_link;
         let edit_link;
         // console.log(tableObject)
         // console.log(tableObject.category)
         category = tableObject.category.name;
-        performance_type = tableObject.performance_type;
+        submission_type = tableObject.submission_type;
         group = tableObject.group;
-        detail_link = `/performance/${tableObject.id}/`;
+        detail_link = `/submission/${tableObject.id}/`;
         edit_link = detail_link + 'edit/';
 
         let approveTooltip;
         let approveButton
         if ( tableObject.status=="submitted" ) {
             approveTooltip = ' title="Approve"'
-            approveButton = `{% bs_icon 'check-square-fill' extra_classes='performance-approve' color='green' %}`
+            approveButton = `{% bs_icon 'check-square-fill' extra_classes='submission-approve' color='green' %}`
         } else {
             approveTooltip = ''
-            approveButton = `{% bs_icon 'check-square-fill' extra_classes='performance-approve' color='grey' %}`
+            approveButton = `{% bs_icon 'check-square-fill' extra_classes='submission-approve' color='grey' %}`
         }
 
         let unapproveTooltip;
         let unapproveButton;
         if ( tableObject.status=="submitted" || tableObject.status=="approved") {
             unapproveTooltip = ' title="Unapprove"'
-            unapproveButton = `{% bs_icon 'x-square-fill' extra_classes="performance-unapprove" color='darkred' %}`
+            unapproveButton = `{% bs_icon 'x-square-fill' extra_classes="submission-unapprove" color='darkred' %}`
         } else {
             unapproveTooltip = ''
-            unapproveButton = `{% bs_icon 'x-square-fill' extra_classes="performance-unapprove" color='grey' %}`
+            unapproveButton = `{% bs_icon 'x-square-fill' extra_classes="submission-unapprove" color='grey' %}`
         }
         
         let editTooltip;
@@ -252,21 +400,21 @@ This is your Homepage. On this page you can add or edit performances. Click "New
             if ( tableObject.status=="in_progress" ) {
                 editHref = edit_link;
                 editTooltip = ' title="Edit"'
-                editButton = `{% bs_icon 'pencil-square' extra_classes="performance-edit" color='blue' %}`
+                editButton = `{% bs_icon 'pencil-square' extra_classes="submission-edit" color='blue' %}`
             } else {
                 if (moderator) {
                     editHref = 'javascript:void(0)';
                     editTooltip = ''
-                    editButton = `{% bs_icon 'pencil-square' extra_classes="performance-edit" color='grey' %}`
+                    editButton = `{% bs_icon 'pencil-square' extra_classes="submission-edit" color='grey' %}`
                 } else {
                     if ( tableObject.status=="submitted" ) {
                         editHref = 'javascript:void(0)';
                         editTooltip = ' title="Retract submission to continue editing"'
-                        editButton = `{% bs_icon 'arrow-counterclockwise' extra_classes="performance-retract" color='tomato' %}`
+                        editButton = `{% bs_icon 'arrow-counterclockwise' extra_classes="submission-retract" color='tomato' %}`
                     } else {
                         editHref = 'javascript:void(0)';
                         editTooltip = ''
-                        editButton = `{% bs_icon 'pencil-square' extra_classes="performance-edit" color='grey' %}`
+                        editButton = `{% bs_icon 'pencil-square' extra_classes="submission-edit" color='grey' %}`
                     }
                 }
 
@@ -274,7 +422,7 @@ This is your Homepage. On this page you can add or edit performances. Click "New
         } else {
             editHref = 'javascript:void(0)';
             editTooltip = ''
-            editButton = `{% bs_icon 'pencil-square' extra_classes="performance-edit" color='grey' %}`
+            editButton = `{% bs_icon 'pencil-square' extra_classes="submission-edit" color='grey' %}`
         }
 
 
@@ -284,8 +432,10 @@ This is your Homepage. On this page you can add or edit performances. Click "New
             <td>
                 ${moderator ? `<a href='/user/${tableObject.user.id}'>` : ``}
                     ${(tableObject.user.first_name + ' ' + tableObject.user.last_name).substring(0, 30)}<br />
-                    ${(tableObject.user.email).substring(0, 30)}
                 ${moderator ? `</a>` : ``}
+                    ${(tableObject.user.organization || '').substring(0, 30)}<br />
+                    ${(tableObject.user.email).substring(0, 30)}
+
             </td>
             <td class="overflow-wrap">
                 ${tableObject.title}
@@ -297,7 +447,7 @@ This is your Homepage. On this page you can add or edit performances. Click "New
                 ${tableObject.grade_range_display}
             </td>
             <td>
-                ${performance_type}
+                ${submission_type}
             </td>
             <td>
                 ${group}
@@ -319,7 +469,7 @@ This is your Homepage. On this page you can add or edit performances. Click "New
                 <span> | </span>` : ``}
                 <span>
                         <a class="stealth" href="${detail_link}" title="Info">
-                            {% bs_icon 'info-circle-fill' extra_classes="performance-detail" %}
+                            {% bs_icon 'info-circle-fill' extra_classes="submission-detail" %}
                         </a>
                 </span>
                 <span>
@@ -329,7 +479,7 @@ This is your Homepage. On this page you can add or edit performances. Click "New
                 </span>
                 ${moderator ? `<span>
                         <a class="stealth" href="javascript:void(0)" title="Delete">
-                            {% bs_icon 'trash3-fill' extra_classes="performance-delete" color='red' %}
+                            {% bs_icon 'trash3-fill' extra_classes="submission-delete" color='red' %}
                         </a>
                 </span>` : ``}
             </td>
@@ -360,7 +510,7 @@ This is your Homepage. On this page you can add or edit performances. Click "New
         
         const carets = document.querySelectorAll('.sort-caret');
         await carets.forEach(caret => caret.style.display = 'none');
-        const thisColumn = document.querySelector(`.performance-table th[data-field="${field}"]`);
+        const thisColumn = document.querySelector(`.submission-table th[data-field="${field}"]`);
         if ( direction == 'asc' ) {
             const thisCaret = thisColumn.querySelector('.bi-caret-up-fill');
             thisCaret.style.display = 'block';
@@ -373,41 +523,41 @@ This is your Homepage. On this page you can add or edit performances. Click "New
     }
 
 
-    async _clickApprovePerformance(e) {
+    async _clickApproveSubmission(e) {
         const row = e.target.closest('tr');
-        const performance_id = row.dataset.id;
+        const submission_id = row.dataset.id;
         const status = row.dataset.status;
         if (status == "submitted") {
-            await this._updatePerformance(performance_id, 'approved');
-            const updatedPerformance = await this._getPerformance(performance_id);
-            // const html = this._buildRowHtml(updatedPerformance);
+            await this._updateSubmission(submission_id, 'approved');
+            const updatedSubmission = await this._getSubmission(submission_id);
+            // const html = this._buildRowHtml(updatedSubmission);
             // row.outerHTML = html;
             await this._loadTable(true, false);
         }
 
     }
 
-    async _clickUnapprovePerformance(e) {
+    async _clickUnapproveSubmission(e) {
         const row = e.target.closest('tr');
-        const performance_id = row.dataset.id;
+        const submission_id = row.dataset.id;
         const status = row.dataset.status;
         if (status == "submitted" || status == "approved") {
-            await this._updatePerformancePartStatus(performance_id, 'review_status', 'pending')
-            await this._updatePerformance(performance_id, 'in_progress');
-            const updatedPerformance = await this._getPerformance(performance_id);
-            // const html = this._buildRowHtml(updatedPerformance);
+            await this._updateSubmissionPartStatus(submission_id, 'review_status', 'pending')
+            await this._updateSubmission(submission_id, 'in_progress');
+            const updatedSubmission = await this._getSubmission(submission_id);
+            // const html = this._buildRowHtml(updatedSubmission);
             // row.outerHTML = html;
             await this._loadTable(true, false);
         }
 
     }
 
-    _updatePerformance(performance_id, status) {
+    _updateSubmission(submission_id, status) {
             const body = JSON.stringify({
                 status: status,});
             const csrftoken = this._getCookie('csrftoken');
             const headers = { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken,};
-            return fetch(`/api/performance-update/${performance_id}/`, {
+            return fetch(`/api/submission-update/${submission_id}/`, {
                 method: 'PATCH',
                 headers,
                 body: body,
@@ -417,22 +567,22 @@ This is your Homepage. On this page you can add or edit performances. Click "New
                 // console.log(res)
             })
             .then(data => {
-                console.log('Modified performance:', data);
-                // Handle any further actions after modifying the performance
+                console.log('Modified submission:', data);
+                // Handle any further actions after modifying the submission
             })
             .catch(error => {
-                console.error('Error modifying performance:', error);
+                console.error('Error modifying submission:', error);
                 // Handle errors, if any
             });
     }
 
-    _updatePerformancePartStatus(performance_id, field, status) {
+    _updateSubmissionPartStatus(submission_id, field, status) {
 
         const body = JSON.stringify({
             [field]: status});
         const csrftoken = this._getCookie('csrftoken');
         const headers = { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken,};
-        return fetch(`/api/performance-update/${performance_id}/`, {
+        return fetch(`/api/submission-update/${submission_id}/`, {
             method: 'PATCH',
             headers,
             body: body,
@@ -442,12 +592,214 @@ This is your Homepage. On this page you can add or edit performances. Click "New
             console.log(res)
         })
         .then(data => {
-            console.log('Modified performance status:', data);
-            // Handle any further actions after modifying the performance
+            console.log('Modified submission status:', data);
+            // Handle any further actions after modifying the submission
         })
         .catch(error => {
-            console.error('Error modifying performance status:', error);
+            console.error('Error modifying submission status:', error);
             // Handle errors, if any
+        });
+    }
+
+    _createFilterRow() {
+        const filterRow = `
+            <div class="row g-2 mb-2 align-items-center">
+                <!-- User Search -->
+                <div class="col" style="width: 15%">
+                    <input type="text" id="userSearchInput" class="form-control form-control-sm" placeholder="Search users...">
+                </div>
+                <!-- Title Search -->
+                <div class="col" style="width: 20%">
+                    <input type="text" id="titleSearchInput" class="form-control form-control-sm" placeholder="Search titles...">
+                </div>
+                <!-- Category Filter -->
+                <div class="col" style="width: 12%">
+                    <div class="dropdown">
+                        <button class="btn btn-secondary btn-sm dropdown-toggle w-100" type="button" id="categoryDropdown" data-bs-toggle="dropdown">
+                            Category
+                        </button>
+                        <div class="dropdown-menu">
+                            <label class="dropdown-item">
+                                <input type="checkbox" value="" class="category-checkbox me-2"> All
+                            </label>
+                            ${this.categories.map(cat => `
+                                <label class="dropdown-item">
+                                    <input type="checkbox" value="${cat.id}" class="category-checkbox me-2"> ${cat.name}
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+                <!-- Grade Range Filter -->
+                <div class="col" style="width: 12%">
+                    <div class="dropdown">
+                        <button class="btn btn-secondary btn-sm dropdown-toggle w-100" type="button" id="gradeDropdown" data-bs-toggle="dropdown">
+                            Grade
+                        </button>
+                        <div class="dropdown-menu">
+                            <label class="dropdown-item">
+                                <input type="checkbox" value="" class="grade-checkbox me-2"> All
+                            </label>
+                            ${Object.entries(this.gradeRanges).map(([id, name]) => `
+                                <label class="dropdown-item">
+                                    <input type="checkbox" value="${id}" class="grade-checkbox me-2"> ${name}
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+                <!-- Submission Type Filter -->
+                <div class="col" style="width: 12%">
+                    <div class="dropdown">
+                        <button class="btn btn-secondary btn-sm dropdown-toggle w-100" type="button" id="typeDropdown" data-bs-toggle="dropdown">
+                            Type
+                        </button>
+                        <div class="dropdown-menu">
+                            <label class="dropdown-item">
+                                <input type="checkbox" value="" class="type-checkbox me-2"> All
+                            </label>
+                            ${Object.entries(this.performanceTypes).map(([id, name]) => `
+                                <label class="dropdown-item">
+                                    <input type="checkbox" value="${id}" class="type-checkbox me-2"> ${name}
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+                <!-- Group Search -->
+                <div class="col" style="width: 12%">
+                    <input type="text" id="groupSearchInput" class="form-control form-control-sm" placeholder="Search groups...">
+                </div>
+                <!-- Status Filter -->
+                <div class="col" style="width: 12%">
+                    <div class="dropdown">
+                        <button class="btn btn-secondary btn-sm dropdown-toggle w-100" type="button" id="statusDropdown" data-bs-toggle="dropdown">
+                            Status
+                        </button>
+                        <div class="dropdown-menu">
+                            <label class="dropdown-item">
+                                <input type="checkbox" value="" class="status-checkbox me-2"> All
+                            </label>
+                            ${Object.entries(this.performanceStatus).map(([id, name]) => `
+                                <label class="dropdown-item">
+                                    <input type="checkbox" value="${id}" class="status-checkbox me-2"> ${name}
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+                <!-- Blank column to align with action column -->
+                <div class="col" style="width: 5%">
+                </div>
+            </div>
+        `;
+        
+        const table = document.querySelector('.submission-table');
+        table.insertAdjacentHTML('beforebegin', filterRow);
+    }
+
+    _initializeFilterElements() {
+        // Get references to filter elements
+        this.userSearchInput = document.getElementById('userSearchInput');
+        this.titleSearchInput = document.getElementById('titleSearchInput');
+        this.groupSearchInput = document.getElementById('groupSearchInput');
+        this.categoryCheckboxes = document.querySelectorAll('.category-checkbox');
+        this.gradeCheckboxes = document.querySelectorAll('.grade-checkbox');
+        this.typeCheckboxes = document.querySelectorAll('.type-checkbox');
+        this.statusCheckboxes = document.querySelectorAll('.status-checkbox');
+
+        // Add filter event listeners
+        this.userSearchInput.addEventListener('input', () => this._applyFilters());
+        this.titleSearchInput.addEventListener('input', () => this._applyFilters());
+        this.groupSearchInput.addEventListener('input', () => this._applyFilters());
+
+        // Initialize checkboxes
+        [
+            {checkboxes: this.categoryCheckboxes, dropdown: document.getElementById('categoryDropdown'), text: 'Category'},
+            {checkboxes: this.gradeCheckboxes, dropdown: document.getElementById('gradeDropdown'), text: 'Grade'},
+            {checkboxes: this.typeCheckboxes, dropdown: document.getElementById('typeDropdown'), text: 'Type'},
+            {checkboxes: this.statusCheckboxes, dropdown: document.getElementById('statusDropdown'), text: 'Status'}
+        ].forEach(({checkboxes, dropdown, text}) => {
+            // Set initial state
+            const allCheckbox = Array.from(checkboxes).find(cb => cb.value === '');
+            if (allCheckbox) allCheckbox.checked = true;
+
+            // Add change listeners
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', () => {
+                    this._handleCheckboxSelection(checkbox, checkboxes, dropdown, text);
+                });
+            });
+        });
+
+        // Prevent dropdowns from closing when clicking checkboxes
+        document.querySelectorAll('.dropdown-menu').forEach(dropdown => {
+            dropdown.addEventListener('click', e => e.stopPropagation());
+        });
+    }
+
+    _handleCheckboxSelection(checkbox, checkboxes, dropdown, defaultText) {
+        if (checkbox.value === '') {
+            // If "All" is selected, uncheck others
+            checkboxes.forEach(cb => {
+                if (cb !== checkbox) cb.checked = false;
+            });
+        } else {
+            // If specific item is selected, uncheck "All"
+            const allCheckbox = Array.from(checkboxes).find(cb => cb.value === '');
+            if (allCheckbox) allCheckbox.checked = false;
+
+            // If no specific items are checked, check "All"
+            const anyChecked = Array.from(checkboxes).some(cb => cb.value !== '' && cb.checked);
+            if (!anyChecked) allCheckbox.checked = true;
+        }
+
+        this._updateDropdownText(checkboxes, dropdown, defaultText);
+        this._applyFilters();
+    }
+
+    _updateDropdownText(checkboxes, dropdownButton, defaultText) {
+        const checked = Array.from(checkboxes)
+            .filter(cb => cb.checked && cb.value !== '')
+            .map(cb => cb.parentElement.textContent.trim());
+        
+        dropdownButton.textContent = checked.length ? checked.join(', ') : defaultText;
+    }
+
+    _applyFilters() {
+        const userSearch = this.userSearchInput.value.toLowerCase();
+        const titleSearch = this.titleSearchInput.value.toLowerCase();
+        const groupSearch = this.groupSearchInput.value.toLowerCase();
+
+        const selectedCategories = Array.from(this.categoryCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+        const selectedGrades = Array.from(this.gradeCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+        const selectedTypes = Array.from(this.typeCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+        const selectedStatuses = Array.from(this.statusCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+
+        this.tableObjects.forEach(submission => {
+            const row = document.querySelector(`tr[data-id="${submission.id}"]`);
+            if (!row) return;
+
+            const userText = `${submission.user.first_name} ${submission.user.last_name} ${submission.user.organization} ${submission.user.email}`.toLowerCase();
+            const matchesUser = !userSearch || userText.includes(userSearch);
+            const matchesTitle = !titleSearch || submission.title.toLowerCase().includes(titleSearch);
+            const matchesGroup = !groupSearch || (submission.group || '').toLowerCase().includes(groupSearch);
+            const matchesCategory = selectedCategories.includes('') || selectedCategories.includes(submission.category.id.toString());
+            const matchesGrade = selectedGrades.includes('') || selectedGrades.includes(submission.grade_range);
+            const matchesType = selectedTypes.includes('') || selectedTypes.includes(submission.submission_type);
+            const matchesStatus = selectedStatuses.includes('') || selectedStatuses.includes(submission.status);
+
+            row.style.display = (matchesUser && matchesTitle && matchesGroup && 
+                               matchesCategory && matchesGrade && matchesType && 
+                               matchesStatus) ? '' : 'none';
         });
     }
   }

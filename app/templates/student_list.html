@@ -1,0 +1,356 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block page_content %}
+<div class="container mt-4">
+    <h2>Students in {{ currentFair }}</h2>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <input type="text" id="searchInput" class="form-control" placeholder="Search students...">
+                </div>
+                <div class="col-md-4">
+                    <div class="dropdown">
+                        <button class="btn btn-secondary dropdown-toggle form-control text-left" type="button" id="gradeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            Select Grades
+                        </button>
+                        <div class="dropdown-menu w-100" aria-labelledby="gradeDropdown">
+                            <label class="dropdown-item">
+                                <input type="checkbox" value="" class="grade-checkbox me-2"> All Grades
+                            </label>
+                            {% for grade_id, grade_name in grades %}
+                                <label class="dropdown-item">
+                                    <input type="checkbox" value="{{ grade_id }}" class="grade-checkbox me-2"> {{ grade_name }}
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="dropdown">
+                        <button class="btn btn-secondary dropdown-toggle form-control text-left" type="button" id="submissionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            Select Submission Types
+                        </button>
+                        <div class="dropdown-menu w-100" aria-labelledby="submissionDropdown">
+                            <label class="dropdown-item">
+                                <input type="checkbox" value="" class="submission-checkbox me-2"> All Submission Types
+                            </label>
+                            <label class="dropdown-item">
+                                <input type="checkbox" value="none" class="submission-checkbox me-2"> No Submissions
+                            </label>
+                            {% for category in categories %}
+                                <label class="dropdown-item">
+                                    <input type="checkbox" value="{{ category.id }}" class="submission-checkbox me-2"> {{ category.name }}
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Tribe</th>
+                    <th>Grade</th>
+                    <th>Location</th>
+                    <th>T-Shirt Size</th>
+                    <th>Submissions</th>
+                </tr>
+            </thead>
+            <tbody id="studentTableBody">
+                {% for student in students %}
+                <tr class="student-row" 
+                    data-name="{{ student.firstname }} {{ student.lastname }}"
+                    data-grade="{{ student.grade }}"
+                    data-school="{{ student.user.organization }}"
+                    data-state="{{ student.state }}"
+                    data-hometown="{{ student.hometown }}"
+                    data-tribe="{% for tribe in student.tribe.all %}{{ tribe.name }}{% if not forloop.last %}, {% endif %}{% endfor %}"
+                    data-submissions="{% for submission in student.submission_student.all %}{{ submission.category.id }}{% if not forloop.last %},{% endif %}{% endfor %}"
+                    data-student-id="{{ student.id }}"
+                    data-student-name="{{ student.firstname|escapejs }} {{ student.lastname|escapejs }}"
+                    class="student-row"
+                    style="cursor: pointer;">
+                    <td>{{ student.firstname }} {{ student.lastname }}</td>
+                    <td>
+                        {% for tribe in student.tribe.all %}
+                            {{ tribe.name }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    </td>
+                    <td>{{ student.get_grade_display }}</td>
+                    <td>{{ student.hometown }}, {{ student.state }}</td>
+                    <td>{{ student.get_tshirt_size_display }}</td>
+                    <td>
+                        {% if student.submission_student.all %}
+                            {% for submission in student.submission_student.all %}
+                                <span class="badge bg-primary">{{ submission.category.name }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="badge bg-secondary">No submissions</span>
+                        {% endif %}
+                    </td>
+                    <!-- Add hidden JSON data -->
+                    <script id="submissions-{{ student.id }}" type="application/json">
+                        [
+                            {% for submission in student.submission_student.all %}
+                                {
+                                    "id": {{ submission.id }},
+                                    "title": "{{ submission.title|escapejs }}",
+                                    "category": "{{ submission.category.name|escapejs }}"
+                                }{% if not forloop.last %},{% endif %}
+                            {% endfor %}
+                        ]
+                    </script>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Modal -->
+<div class="modal fade" id="submissionModal" tabindex="-1" aria-labelledby="submissionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="submissionModalLabel">Student Submissions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="submissionsList"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.dropdown-menu {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.dropdown-item {
+    cursor: pointer;
+    padding: .5rem 1rem;
+}
+
+.dropdown-item:active {
+    color: initial;
+    background-color: #f8f9fa;
+}
+
+.dropdown-toggle.form-control {
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const gradeCheckboxes = document.querySelectorAll('.grade-checkbox');
+    const submissionCheckboxes = document.querySelectorAll('.submission-checkbox');
+    const rows = document.querySelectorAll('.student-row');
+    const gradeDropdown = document.getElementById('gradeDropdown');
+    const submissionDropdown = document.getElementById('submissionDropdown');
+
+    // Initialize only if no checkboxes are currently checked
+    const anyGradesChecked = Array.from(gradeCheckboxes).some(cb => cb.checked);
+    const anySubmissionsChecked = Array.from(submissionCheckboxes).some(cb => cb.checked);
+
+    if (!anyGradesChecked) {
+        const allGradesCheckbox = Array.from(gradeCheckboxes).find(cb => cb.value === '');
+        if (allGradesCheckbox) allGradesCheckbox.checked = true;
+    }
+
+    if (!anySubmissionsChecked) {
+        const allSubmissionsCheckbox = Array.from(submissionCheckboxes).find(cb => cb.value === '');
+        if (allSubmissionsCheckbox) allSubmissionsCheckbox.checked = true;
+    }
+
+    // Update dropdown text for any existing selections
+    updateDropdownText(gradeCheckboxes, gradeDropdown, 'Select Grades');
+    updateDropdownText(submissionCheckboxes, submissionDropdown, 'Select Submission Types');
+
+    // Apply filters on page load
+    filterTable();
+
+    function updateDropdownText(checkboxes, dropdownButton, defaultText) {
+        const checked = Array.from(checkboxes)
+            .filter(cb => cb.checked && cb.value !== '')
+            .map(cb => cb.parentElement.textContent.trim());
+        
+        dropdownButton.textContent = checked.length ? checked.join(', ') : defaultText;
+    }
+
+    function handleGradeSelection(checkbox) {
+        if (checkbox.value === '') {
+            // If "All Grades" is selected, uncheck all other options
+            gradeCheckboxes.forEach(cb => {
+                cb.checked = (cb === checkbox);
+            });
+        } else {
+            // If any other grade is selected, uncheck "All Grades"
+            const allGradesCheckbox = Array.from(gradeCheckboxes).find(cb => cb.value === '');
+            if (allGradesCheckbox) {
+                allGradesCheckbox.checked = false;
+            }
+            
+            // If no options are checked, automatically check "All Grades"
+            const anyChecked = Array.from(gradeCheckboxes).some(cb => cb.checked);
+            if (!anyChecked) {
+                allGradesCheckbox.checked = true;
+            }
+        }
+        updateDropdownText(gradeCheckboxes, gradeDropdown, 'Select Grades');
+        filterTable();
+    }
+
+    function handleSubmissionSelection(checkbox) {
+        if (checkbox.value === '') {
+            // If "All Submission Types" is selected, uncheck all other options
+            submissionCheckboxes.forEach(cb => {
+                cb.checked = (cb === checkbox);
+            });
+        } else {
+            // If any other submission type is selected, uncheck "All Submission Types"
+            const allSubmissionsCheckbox = Array.from(submissionCheckboxes).find(cb => cb.value === '');
+            if (allSubmissionsCheckbox) {
+                allSubmissionsCheckbox.checked = false;
+            }
+            
+            // If no options are checked, automatically check "All Submission Types"
+            const anyChecked = Array.from(submissionCheckboxes).some(cb => cb.checked);
+            if (!anyChecked) {
+                allSubmissionsCheckbox.checked = true;
+            }
+        }
+        updateDropdownText(submissionCheckboxes, submissionDropdown, 'Select Submission Types');
+        filterTable();
+    }
+
+    function filterTable() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedGrades = Array.from(gradeCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+        const selectedSubmissions = Array.from(submissionCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+
+        rows.forEach(row => {
+            const name = row.dataset.name.toLowerCase();
+            const grade = row.dataset.grade;
+            const school = row.dataset.school.toLowerCase();
+            const state = row.dataset.state.toLowerCase();
+            const hometown = row.dataset.hometown.toLowerCase();
+            const tribe = row.dataset.tribe.toLowerCase();
+            const submissions = row.dataset.submissions ? row.dataset.submissions.split(',') : [];
+
+            const matchesSearch = name.includes(searchTerm) || 
+                                school.includes(searchTerm) ||
+                                state.includes(searchTerm) ||
+                                hometown.includes(searchTerm) ||
+                                tribe.includes(searchTerm);
+            const matchesGrade = selectedGrades.includes('') || selectedGrades.includes(grade);
+            
+            // Updated submission filtering logic
+            let matchesSubmission = false;
+            if (selectedSubmissions.includes('')) {
+                matchesSubmission = true;  // Show all if "All Submission Types" is selected
+            } else {
+                // Check if student matches any of the selected criteria:
+                // - Has no submissions (if 'none' is selected)
+                // - Has any of the selected submission types
+                matchesSubmission = (
+                    (selectedSubmissions.includes('none') && submissions.length === 0) ||
+                    submissions.some(sub => selectedSubmissions.includes(sub))
+                );
+            }
+
+            row.style.display = (matchesSearch && matchesGrade && matchesSubmission) ? '' : 'none';
+        });
+    }
+
+    // Handle clicks on dropdown items (both text and checkbox)
+    document.querySelectorAll('.dropdown-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            const checkbox = this.querySelector('input[type="checkbox"]');
+            checkbox.checked = !checkbox.checked;
+            
+            if (checkbox.classList.contains('grade-checkbox')) {
+                handleGradeSelection(checkbox);
+            } else {
+                handleSubmissionSelection(checkbox);
+            }
+            
+            e.preventDefault();
+            e.stopPropagation();
+        });
+    });
+
+    // Handle direct checkbox clicks
+    document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('click', function(e) {
+            if (this.classList.contains('grade-checkbox')) {
+                handleGradeSelection(this);
+            } else {
+                handleSubmissionSelection(this);
+            }
+            e.stopPropagation();
+        });
+    });
+
+    // Prevent dropdown from closing when clicking inside
+    document.querySelectorAll('.dropdown-menu').forEach(dropdown => {
+        dropdown.addEventListener('click', e => e.stopPropagation());
+    });
+
+    searchInput.addEventListener('input', filterTable);
+
+    // Add click handler for student rows
+    document.querySelectorAll('.student-row').forEach(row => {
+        row.addEventListener('click', function() {
+            const studentId = this.dataset.studentId;
+            const studentName = this.dataset.studentName;
+            const submissions = JSON.parse(document.getElementById(`submissions-${studentId}`).textContent);
+            showStudentSubmissions(studentId, studentName, submissions);
+        });
+    });
+});
+
+function showStudentSubmissions(studentId, studentName, submissions) {
+    const modal = new bootstrap.Modal(document.getElementById('submissionModal'));
+    const modalTitle = document.getElementById('submissionModalLabel');
+    const submissionsList = document.getElementById('submissionsList');
+    
+    modalTitle.textContent = `Submissions for ${studentName}`;
+    
+    if (submissions.length === 0) {
+        submissionsList.innerHTML = '<p>No submissions found for this student.</p>';
+    } else {
+        submissionsList.innerHTML = '<ul class="list-group">' +
+            submissions.map(submission => 
+                `<a href="/submission/${submission.id}" class="list-group-item list-group-item-action">
+                    ${submission.title} (${submission.category})
+                </a>`
+            ).join('') +
+            '</ul>';
+    }
+    
+    modal.show();
+}
+</script>
+{% endblock %}

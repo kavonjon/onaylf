@@ -1,15 +1,13 @@
-version: '3.7'
-
 services:
   web:
     build: .
     container_name: django_gunicorn
     restart: unless-stopped
-    command: bash -c "python manage.py collectstatic --no-input && python manage.py runserver 0.0.0.0:8000"
+    command: bash -c "python manage.py collectstatic --no-input && python manage.py runserver 0.0.0.0:8100"
     volumes:
       - static:/app/static
     expose:
-      - 8000
+      - 8100
     env_file:
       - .env
     depends_on:
@@ -21,8 +19,15 @@ services:
     restart: unless-stopped
     volumes:
       - postgres_data:/var/lib/postgresql/data/
+      - ./backup:/backup
+      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
     env_file:
       - .env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 10s
+      retries: 6
 
   nginx:
     build: ./nginx
@@ -31,7 +36,7 @@ services:
     volumes:
       - static:/static/
     expose:
-      - 8081
+      - 8181
     depends_on:
       - web
 

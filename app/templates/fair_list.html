@@ -1,0 +1,1912 @@
+{% extends "base.html" %}
+{% load bootstrap5 %}
+{% load bootstrap_icons %}
+
+{% block title %}Fairs{% endblock %}
+
+{% block page_content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Left Panel - Fair List -->
+        <div class="col-md-3">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="card-title mb-0">Fairs</h3>
+                        <button class="btn btn-light btn-sm" id="addFairBtn">
+                            <i class="bi bi-plus-circle"></i> Add Fair
+                        </button>
+                    </div>
+                </div>
+                <div class="list-group list-group-flush" id="fairList">
+                    {% for fair in fairs %}
+                    <a href="#" class="list-group-item list-group-item-action fair-item {% if fair.id == active_fair.id %}active{% endif %}" 
+                       data-fair-id="{{ fair.id }}">
+                        {{ fair.name }}
+                        {% if fair.id == current_fair.id %}
+                            <span class="badge bg-success ms-2" style="box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);">Current Fair</span>
+                        {% endif %}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="col-md-9">
+            <div class="card shadow">
+                {% if active_fair %}
+                <!-- Fair Details Section -->
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="card-title mb-0">
+                            <span id="fairName">{{ active_fair.name }}</span>
+                            <span class="current-fair-badge">
+                                {% if active_fair.id == current_fair.id %}
+                                <span class="badge bg-success ms-2" style="box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);">Current Fair</span>
+                                {% else %}
+                                <button class="btn btn-secondary btn-sm ms-2 set-current-fair-btn" 
+                                        data-fair-id="{{ active_fair.id }}" 
+                                        style="box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);">
+                                    Set to Current Fair
+                                </button>
+                                {% endif %}
+                            </span>
+                        </h3>
+                        <div class="form-check form-switch d-flex align-items-center">
+                            <input class="form-check-input" type="checkbox" id="registrationToggle" 
+                                   {% if active_fair.registration_open %}checked{% endif %} style="transform: scale(1.5); box-shadow: 0 0 5px rgba(0, 0, 0, 0.5); margin-right: 20px;">
+                            <label class="form-check-label text-white fw-bold" for="registrationToggle" id="registrationLabel" style="font-size: 1.2em; width: 180px; display: inline-block; white-space: nowrap;">
+                                {% if active_fair.registration_open %}Registration Open{% else %}Registration Closed{% endif %}
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <!-- Notes Section -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h4>Notes</h4>
+                            <button class="btn btn-sm btn-outline-primary edit-notes">
+                                <i class="bi bi-pencil"></i> Edit notes
+                            </button>
+                        </div>
+                        <div id="notesDisplay">
+                            <p id="notesText">{{ active_fair.notes }}</p>
+                        </div>
+                        <div id="notesEdit" class="d-none">
+                            <textarea class="form-control" rows="3" id="notesInput"></textarea>
+                            <div class="mt-2">
+                                <button class="btn btn-primary save-notes">Save</button>
+                                <button class="btn btn-secondary cancel-notes">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Related Objects Tabs -->
+                    <ul class="nav nav-tabs" id="fairTabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="languoids-tab" data-bs-toggle="tab" href="#languoids" role="tab">
+                                Languages
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="tribes-tab" data-bs-toggle="tab" href="#tribes" role="tab">
+                                Tribes
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="categories-tab" data-bs-toggle="tab" href="#categories" role="tab">
+                                Categories
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="accessories-tab" data-bs-toggle="tab" href="#accessories" role="tab">
+                                Accessories
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content pt-3" id="fairTabContent">
+                        <!-- Languoids Tab -->
+                        <div class="tab-pane fade show active" id="languoids" role="tabpanel">
+                            <div class="d-flex justify-content-between mb-3">
+                                <h5>Languages</h5>
+                                <button class="btn btn-primary btn-sm add-languoid">
+                                    <i class="bi bi-plus-circle"></i> Add Language
+                                </button>
+                            </div>
+                            <div class="list-group" id="languoidList">
+                                {% for languoid in languoids %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center" data-id="{{ languoid.id }}">
+                                    <div class="d-flex align-items-center" style="width: 80%;">
+                                        <span class="item-name me-2">{{ languoid.name }}</span>
+                                        <span class="text-muted">
+                                            <small>({{ languoid.glottocode }}, {{ languoid.get_level_display }})</small>
+                                        </span>
+                                    </div>
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-outline-primary edit-item">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger delete-item">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Tribes Tab -->
+                        <div class="tab-pane fade" id="tribes" role="tabpanel">
+                            <div class="d-flex justify-content-between mb-3">
+                                <h5>Tribes</h5>
+                                <button class="btn btn-primary btn-sm add-tribe">
+                                    <i class="bi bi-plus-circle"></i> Add Tribe
+                                </button>
+                            </div>
+                            <div class="list-group" id="tribeList">
+                                {% for tribe in tribes %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center" data-id="{{ tribe.id }}">
+                                    <span class="item-name">{{ tribe.name }}</span>
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-outline-primary edit-item">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger delete-item">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Categories Tab -->
+                        <div class="tab-pane fade" id="categories" role="tabpanel">
+                            <div class="d-flex justify-content-between mb-3">
+                                <h5>Categories</h5>
+                                <button class="btn btn-primary btn-sm add-category">
+                                    <i class="bi bi-plus-circle"></i> Add Category
+                                </button>
+                            </div>
+                            <div class="list-group" id="categoryList">
+                                {% for category in categories %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center" data-id="{{ category.id }}">
+                                    <div class="d-flex align-items-center" style="width: 80%;">
+                                        <span class="item-name me-2">{{ category.name }}</span>
+                                        <span class="text-muted">
+                                            <small>(Material submission: {% if category.material_submission %}Yes{% else %}No{% endif %}, Max students: {{ category.max_students|default:'None' }})</small>
+                                        </span>
+                                    </div>
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-outline-primary edit-item">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger delete-item">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Accessories Tab -->
+                        <div class="tab-pane fade" id="accessories" role="tabpanel">
+                            <div class="d-flex justify-content-between mb-3">
+                                <h5>Accessories</h5>
+                                <button class="btn btn-primary btn-sm add-accessory">
+                                    <i class="bi bi-plus-circle"></i> Add Accessory
+                                </button>
+                            </div>
+                            <div class="list-group" id="accessoryList">
+                                {% for accessory in accessories %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center" data-id="{{ accessory.id }}">
+                                    <span class="item-name">{{ accessory.name }}</span>
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-outline-primary edit-item">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger delete-item">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="card-body text-center">
+                    <p class="text-muted">Select a fair from the list to view details</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Warning Modal -->
+<div class="modal fade" id="deleteWarningModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cannot Delete - Associated Items Found</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="associationsList">
+                    <!-- Associations will be inserted here dynamically -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Validation Modal -->
+<div class="modal fade" id="validationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Validation Error</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="validationMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add this modal template near the top of the file -->
+<div class="modal fade" id="addFairModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Fair</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addFairForm">
+                    <div class="mb-3">
+                        <label for="newFairName" class="form-label">Fair Name*</label>
+                        <input type="text" class="form-control" id="newFairName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="fairNotes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="fairNotes" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="templateFair" class="form-label">Template Fair*</label>
+                        <select class="form-select" id="templateFair" required>
+                            <option value="">Select a fair to duplicate entries from</option>
+                            {% for fair in fairs %}
+                                <option value="{{ fair.id }}">{{ fair.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="createFairBtn">Create Fair</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% csrf_token %}
+
+<style>
+    .form-check-input:checked {
+        background-color: #28a745; /* Bootstrap's success color */
+        border-color: #28a745;
+    }
+    .form-check-input {
+        background-color: #f8f9fa; /* Light background for better contrast */
+        border-color: #f8f9fa;
+    }
+</style>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Debug logging
+    console.log('Fair list JavaScript loaded');
+
+    // URL configurations
+    const URLS = {
+        get: (id) => `/api/fairs/${id}/`,
+        edit: (id) => `/api/fairs/${id}/edit/`,
+        languoid: {
+            add: (fairId) => `/api/fairs/${fairId}/languoids/`,
+            edit: (fairId, itemId) => `/api/fairs/${fairId}/languoids/${itemId}/`,
+            checkDelete: (fairId, itemId) => `/api/fairs/${fairId}/languoids/${itemId}/check_delete/`
+        },
+        tribe: {
+            add: (fairId) => `/api/fairs/${fairId}/tribes/`,
+            edit: (fairId, itemId) => `/api/fairs/${fairId}/tribes/${itemId}/`,
+            checkDelete: (fairId, itemId) => `/api/fairs/${fairId}/tribes/${itemId}/check_delete/`
+        },
+        category: {
+            add: (fairId) => `/api/fairs/${fairId}/categories/`,
+            edit: (fairId, itemId) => `/api/fairs/${fairId}/categories/${itemId}/`,
+            checkDelete: (fairId, itemId) => `/api/fairs/${fairId}/categories/${itemId}/check_delete/`
+        },
+        accessory: {
+            add: (fairId) => `/api/fairs/${fairId}/accessories/`,
+            edit: (fairId, itemId) => `/api/fairs/${fairId}/accessories/${itemId}/`,
+            checkDelete: (fairId, itemId) => `/api/fairs/${fairId}/accessories/${itemId}/check_delete/`
+        }
+    };
+
+    // Main elements
+    const fairList = document.getElementById('fairList');
+    if (!fairList) {
+        console.error('Fair list element not found');
+        return;
+    }
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteWarningModal'));
+    const registrationToggle = document.getElementById('registrationToggle');
+    const registrationLabel = document.getElementById('registrationLabel');
+    const fairTabs = document.getElementById('fairTabs');
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    let activeFairId = '{{ active_fair.id }}' || null;
+    let currentFairId = '{{ current_fair.id }}';
+    let isCurrentFair = activeFairId === currentFairId;
+    console.log('Initial fair ID:', activeFairId);
+
+    // Initialize UI state based on current/active fair
+    updateEditControls(isCurrentFair);
+
+    // Handle fair selection from left panel
+    fairList.addEventListener('click', async function(e) {
+        const fairItem = e.target.closest('.fair-item');
+        if (!fairItem) return;
+        e.preventDefault();
+
+        try {
+            const fairId = fairItem.dataset.fairId;
+            console.log('Loading fair:', fairId);
+            
+            const response = await fetch(`/api/fair/${fairId}/`);
+            const data = await response.json();
+            
+            if (!response.ok) throw new Error(data.error || 'Failed to load fair details');
+            
+            activeFairId = fairId;
+            isCurrentFair = fairId === currentFairId;  // Update isCurrentFair when switching fairs
+            
+            // Update fair name and registration status
+            document.getElementById('fairName').textContent = data.name;
+            if (registrationToggle) {
+                registrationToggle.checked = data.registration_open;
+                registrationLabel.textContent = data.registration_open ? 'Registration Open' : 'Registration Closed';
+            }
+
+            // Update lists with fair-specific items
+            const lists = {
+                languoidList: data.languoids || [],
+                tribeList: data.tribes || [],
+                categoryList: data.categories || [],
+                accessoryList: data.accessories || []
+            };
+
+            // Update each list's content
+            Object.entries(lists).forEach(([listId, items]) => {
+                const list = document.getElementById(listId);
+                if (!list) {
+                    console.log(`List ${listId} not found`);
+                    return;
+                }
+                
+                // Sort items by name, with special handling for 'Other'
+                items.sort((a, b) => {
+                    if (a.name === 'Other') return -1;
+                    if (b.name === 'Other') return 1;
+                    return a.name.localeCompare(b.name, undefined, {sensitivity: 'base'});
+                });
+                
+                // Clear existing items
+                list.innerHTML = '';
+                
+                // Add new items with conditional edit/delete buttons
+                items.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'list-group-item d-flex justify-content-between align-items-center';
+                    div.dataset.id = item.id;
+
+                    if (listId === 'languoidList') {
+                        div.innerHTML = `
+                            <div class="d-flex align-items-center" style="width: 80%;">
+                                <span class="item-name me-2">${item.name}</span>
+                                <span class="text-muted">
+                                    <small>(${item.glottocode}, ${item.level_display})</small>
+                                </span>
+                            </div>
+                        `;
+                    } else if (listId === 'categoryList') {
+                        div.innerHTML = `
+                            <div class="d-flex align-items-center" style="width: 80%;">
+                                <span class="item-name me-2">${item.name}</span>
+                                <span class="text-muted">
+                                    <small>(Material submission: ${item.material_submission ? 'Yes' : 'No'}, Max students: ${item.max_students || 'None'})</small>
+                                </span>
+                            </div>
+                        `;
+                    } else {
+                        div.innerHTML = `<span class="item-name">${item.name}</span>`;
+                    }
+
+                    // Only add edit/delete buttons if this fair is the current fair
+                    if (isCurrentFair) {
+                        div.innerHTML += `
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-primary edit-item">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger delete-item">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        `;
+                    }
+
+                    list.appendChild(div);
+                });
+            });
+
+            // Also update visibility of add buttons
+            const addButtons = document.querySelectorAll('[class^="add-"]');
+            addButtons.forEach(button => {
+                button.style.display = isCurrentFair ? '' : 'none';
+            });
+
+            // Update active state in list
+            document.querySelectorAll('.fair-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            fairItem.classList.add('active');
+
+            // Update URL without page reload
+            window.history.pushState({}, '', `?fair_id=${fairId}`);
+
+        } catch (error) {
+            console.error('Error loading fair:', error);
+            alert('Error loading fair details. Please try again.');
+        }
+    });
+
+    // Handle registration toggle
+    registrationToggle?.addEventListener('change', async function() {
+        if (!activeFairId) return;
+        console.log('Toggle registration for fair:', activeFairId);
+
+        try {
+            const response = await fetch(URLS.edit(activeFairId), {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    registration_open: this.checked
+                })
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error);
+
+        } catch (error) {
+            console.error('Error toggling registration:', error);
+            this.checked = !this.checked;
+            alert(error.message);
+        }
+    });
+
+    // Handle notes editing
+    const notesDisplay = document.getElementById('notesDisplay');
+    const notesEdit = document.getElementById('notesEdit');
+    const notesInput = document.getElementById('notesInput');
+    const editNotesBtn = document.querySelector('.edit-notes');
+    const saveNotesBtn = document.querySelector('.save-notes');
+    const cancelNotesBtn = document.querySelector('.cancel-notes');
+
+    console.log('Elements found:', {
+        notesDisplay: !!notesDisplay,
+        notesEdit: !!notesEdit,
+        notesInput: !!notesInput,
+        editNotesBtn: !!editNotesBtn,
+        saveNotesBtn: !!saveNotesBtn,
+        cancelNotesBtn: !!cancelNotesBtn
+    });
+
+    if (editNotesBtn) {
+        console.log('Edit notes button found, attaching listener');
+        editNotesBtn.addEventListener('click', function(e) {
+            console.log('Edit notes clicked');
+            e.preventDefault();
+            notesInput.value = document.getElementById('notesText').textContent;
+            notesDisplay.classList.add('d-none');
+            notesEdit.classList.remove('d-none');
+        });
+    } else {
+        console.warn('Edit notes button not found!');
+    }
+
+    if (saveNotesBtn) {
+        saveNotesBtn?.addEventListener('click', async function(e) {
+            e.preventDefault();
+            if (!activeFairId) return;
+            console.log('Save notes clicked');
+
+            try {
+                const response = await fetch(URLS.edit(activeFairId), {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'update_notes',
+                        notes: notesInput.value.trim()
+                    })
+                });
+
+                if (!response.ok) {
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const data = await response.json();
+                        throw new Error(data.error || 'Failed to save notes');
+                    } else {
+                        const text = await response.text();
+                        throw new Error('Server error occurred');
+                    }
+                }
+
+                const data = await response.json();
+                
+                // Update the display
+                document.getElementById('notesText').textContent = notesInput.value;
+                notesDisplay.classList.remove('d-none');
+                notesEdit.classList.add('d-none');
+
+            } catch (error) {
+                console.error('Error saving notes:', error);
+                alert('Failed to save notes. Please try again.');
+            }
+        });
+    }
+
+    if (cancelNotesBtn) {
+        cancelNotesBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Cancel notes clicked');
+            notesDisplay.classList.remove('d-none');
+            notesEdit.classList.add('d-none');
+        });
+    }
+
+    // Handle adding new items in tabs
+    document.querySelectorAll('[class^="add-"]').forEach(button => {
+        button.addEventListener('click', async function() {
+            const type = this.className.split('add-')[1];
+            console.log('Add clicked for type:', type);
+            const name = prompt(`Enter new ${type} name:`);
+            if (!name?.trim()) return;
+
+            try {
+                const response = await fetch(URLS[type].add(activeFairId), {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name: name.trim() })
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error);
+
+                // Add new item to list
+                const listElement = document.getElementById(`${type}List`);
+                const newItemHtml = createListItem(type, data);
+                
+                if (type === 'languoids') {
+                    // Special sorting for languoids
+                    const items = Array.from(listElement.children);
+                    const newItem = document.createElement('div');
+                    newItem.innerHTML = newItemHtml;
+                    items.push(newItem.firstChild);
+                    
+                    items.sort((a, b) => {
+                        const nameA = a.querySelector('.item-name')?.textContent || '';
+                        const nameB = b.querySelector('.item-name')?.textContent || '';
+                        
+                        if (nameA === 'Other') return -1;
+                        if (nameB === 'Other') return 1;
+                        return nameA.toLowerCase().localeCompare(nameB.toLowerCase());
+                    });
+
+                    listElement.innerHTML = '';
+                    items.forEach(item => listElement.appendChild(item));
+                } else {
+                    // Original sorting for other types
+                    const items = Array.from(listElement.children);
+                    const insertIndex = items.findIndex(item => 
+                        item.querySelector('.item-name').textContent.toLowerCase() > data.name.toLowerCase()
+                    );
+
+                    if (insertIndex === -1) {
+                        listElement.insertAdjacentHTML('beforeend', newItemHtml);
+                    } else {
+                        items[insertIndex].insertAdjacentHTML('beforebegin', newItemHtml);
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error adding item:', error);
+                alert(error.message);
+            }
+        });
+    });
+
+    // Handle editing items
+    document.addEventListener('click', async function(e) {
+        const deleteBtn = e.target.closest('.delete-item');
+        if (!deleteBtn) return;
+
+        const item = deleteBtn.closest('.list-group-item');
+        const type = item.closest('[id$="List"]').id.replace('List', '');
+        
+        try {
+            const checkResponse = await fetch(URLS[type].checkDelete(activeFairId, item.dataset.id));
+            console.log('Check response:', {
+                status: checkResponse.status,
+                ok: checkResponse.ok,
+                contentType: checkResponse.headers.get('content-type')
+            });
+            
+            const checkData = await checkResponse.json();
+            console.log('Raw response:', JSON.stringify(checkData));
+            
+            // Only show warning if there are actual associations
+            if (checkData.associations?.some(assoc => assoc.items?.length > 0)) {
+                showDeleteWarningModal(checkData.associations);
+            } else {
+                showDeleteConfirmModal(item, type);
+            }
+        } catch (error) {
+            console.error('Error checking associations:', error);
+            alert('Error checking item associations');
+        }
+    });
+
+    // Function to update the main display area
+    function updateFairDisplay(fair) {
+        console.log('Updating fair display:', fair);
+        
+        // Check if we have an active fair before updating elements
+        if (!fair) {
+            console.log('No fair data provided');
+            return;
+        }
+
+        // Update fair name and registration status
+        document.getElementById('fairName').textContent = fair.name;
+        
+        // Update notes
+        const notesText = document.getElementById('notesText');
+        if (notesText) {
+            notesText.textContent = fair.notes || '';
+        }
+
+        // Update registration toggle
+        if (registrationToggle) {
+            registrationToggle.checked = fair.registration_open;
+            if (registrationLabel) {
+                registrationLabel.textContent = fair.registration_open ? 'Registration Open' : 'Registration Closed';
+            }
+        }
+
+        // Update related items lists if they exist
+        const lists = {
+            'languoids': fair.languoids || [],
+            'tribes': fair.tribes || [],
+            'categories': fair.categories || [],
+            'accessories': fair.accessories || []
+        };
+
+        Object.entries(lists).forEach(([type, items]) => {
+            const listElement = document.getElementById(`${type}List`);
+            if (listElement) {
+                listElement.innerHTML = items.map(item => createListItem(type, item)).join('');
+            } else {
+                console.log(`List element for ${type} not found`);
+            }
+        });
+
+        // Update the UI to show main content
+        const mainContent = document.querySelector('.card-body');
+        const emptyState = document.querySelector('.text-muted');
+        
+        if (mainContent && emptyState) {
+            mainContent.style.display = 'block';
+            emptyState.style.display = 'none';
+        }
+    }
+
+    // Function to update a tab's content
+    function updateTabContent(tabName, items) {
+        console.log('Updating tab content:', tabName);
+        const listElement = document.getElementById(`${tabName}List`);
+        listElement.innerHTML = items.map(item => createListItem(tabName, item)).join('');
+    }
+
+    // Add this mapping at the top of your JavaScript
+    const LEVEL_CHOICES = {
+        'family': 'Family',
+        'language': 'Language',
+        'dialect': 'Dialect'
+    };
+
+    // Update the createListItem function
+    function createListItem(type, item) {
+        if (type === 'languoids') {
+            const levelDisplay = LEVEL_CHOICES[item.level] || item.level;
+            return `
+                <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${item.id}">
+                    <div class="d-flex align-items-center" style="width: 80%;">
+                        <span class="item-name me-2">${item.name}</span>
+                        <span class="text-muted">
+                            <small>(${item.glottocode || ''}, ${levelDisplay})</small>
+                        </span>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-primary edit-item">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger delete-item">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Default return for other types remains unchanged
+        return `
+            <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${item.id}">
+                <span class="item-name">${item.name}</span>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-primary edit-item">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger delete-item">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    // Common function to handle edit functionality for both tabs
+    function setupEditHandler(listId) {
+        document.querySelector(`#${listId}`).addEventListener('click', async function(e) {
+            const editBtn = e.target.closest('.edit-item');
+            if (!editBtn) return;
+
+            const item = editBtn.closest('.list-group-item');
+            const nameSpan = item.querySelector('.item-name');
+            const currentName = nameSpan.textContent;
+
+            // Create edit form
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'form-control';
+            input.value = currentName;
+
+            const saveBtn = document.createElement('button');
+            saveBtn.className = 'btn btn-sm btn-success';
+            saveBtn.innerHTML = '<i class="bi bi-check"></i>';
+
+            const btnContainer = editBtn.parentElement;
+            btnContainer.insertBefore(saveBtn, editBtn);
+            editBtn.style.display = 'none';
+
+            nameSpan.style.display = 'none';
+            item.insertBefore(input, nameSpan);
+            input.focus();
+
+            // Handle clicks outside the edit area
+            const handleClickOutside = (event) => {
+                const isClickInside = input.contains(event.target) || 
+                                    saveBtn.contains(event.target);
+                if (!isClickInside) {
+                    resetEdit();
+                    document.removeEventListener('click', handleClickOutside);
+                }
+            };
+
+            // Delay adding the click listener to prevent immediate triggering
+            setTimeout(() => {
+                document.addEventListener('click', handleClickOutside);
+            }, 0);
+
+            const handleSave = async () => {
+                const newName = input.value.trim();
+                if (!newName || newName === currentName) {
+                    resetEdit();
+                    return;
+                }
+
+                try {
+                    const type = listId.replace('List', '');
+                    const response = await fetch(URLS[type].edit(activeFairId, item.dataset.id), {
+                        method: 'PUT',
+                        headers: {
+                            'X-CSRFToken': csrfToken,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ name: newName })
+                    });
+
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error);
+
+                    nameSpan.textContent = newName;
+                    
+                    // Sort items after edit
+                    const list = document.getElementById(listId);
+                    const items = Array.from(list.children);
+                    items.sort((a, b) => {
+                        const nameA = a.querySelector('.item-name')?.textContent || '';
+                        const nameB = b.querySelector('.item-name')?.textContent || '';
+                        
+                        // Special handling for "Other" - always comes first
+                        if (nameA === 'Other') return -1;
+                        if (nameB === 'Other') return 1;
+                        
+                        // Case insensitive sort for everything else
+                        return nameA.toLowerCase().localeCompare(nameB.toLowerCase());
+                    });
+
+                    // Maintain scroll position while reordering
+                    const scrollPos = list.scrollTop;
+                    items.forEach(item => list.appendChild(item));
+                    list.scrollTop = scrollPos;
+
+                } catch (error) {
+                    console.error('Error saving item:', error);
+                    alert(error.message);
+                } finally {
+                    resetEdit();
+                }
+            };
+
+            const resetEdit = () => {
+                nameSpan.style.display = '';
+                input.remove();
+                saveBtn.remove();
+                editBtn.style.display = '';
+                document.removeEventListener('click', handleClickOutside);
+            };
+
+            input.addEventListener('keydown', e => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSave();
+                }
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    resetEdit();
+                }
+            });
+            
+            saveBtn.addEventListener('click', e => {
+                e.preventDefault();
+                handleSave();
+            });
+        });
+    }
+
+    // Set up edit handlers for both lists
+    setupEditHandler('accessoryList');
+    setupEditHandler('tribeList');
+
+    // Handle adding new items in tabs
+    document.querySelector('.add-accessory').addEventListener('click', function() {
+        const list = document.getElementById('accessoryList');
+        
+        // Create new list item
+        const newItem = document.createElement('div');
+        newItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+        
+        // Create edit form
+        const formGroup = document.createElement('div');
+        formGroup.className = 'd-flex gap-2 align-items-center';
+        formGroup.style.width = '80%';
+        
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.className = 'form-control';
+        nameInput.placeholder = 'Enter accessory name';
+        
+        const btnGroup = document.createElement('div');
+        btnGroup.className = 'btn-group';
+        
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'btn btn-sm btn-success';
+        saveBtn.innerHTML = '<i class="bi bi-check"></i>';
+        
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'btn btn-sm btn-danger';
+        cancelBtn.innerHTML = '<i class="bi bi-x"></i>';
+        
+        btnGroup.appendChild(saveBtn);
+        btnGroup.appendChild(cancelBtn);
+        formGroup.appendChild(nameInput);
+        newItem.appendChild(formGroup);
+        newItem.appendChild(btnGroup);
+        
+        list.insertBefore(newItem, list.firstChild);
+        nameInput.focus();
+
+        const handleSave = async () => {
+            const name = nameInput.value.trim();
+            if (!name) {
+                newItem.remove();
+                return;
+            }
+
+            try {
+                const response = await fetch(URLS.accessory.add(activeFairId), {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name: name })
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error);
+
+                // Create a new element instead of modifying existing one
+                const finalItem = document.createElement('div');
+                finalItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+                finalItem.dataset.id = data.id;
+                finalItem.innerHTML = `
+                    <span class="item-name">${data.name}</span>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-primary edit-item">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger delete-item">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                `;
+
+                // Replace the form with the final item
+                newItem.replaceWith(finalItem);
+
+                // Sort items
+                const items = Array.from(list.children);
+                items.sort((a, b) => {
+                    const nameA = a.querySelector('.item-name')?.textContent.toLowerCase() || '';
+                    const nameB = b.querySelector('.item-name')?.textContent.toLowerCase() || '';
+                    return nameA.localeCompare(nameB);
+                });
+
+                // Maintain scroll position while reordering
+                const scrollPos = list.scrollTop;
+                items.forEach(item => list.appendChild(item));
+                list.scrollTop = scrollPos;
+
+            } catch (error) {
+                console.error('Error adding accessory:', error);
+                alert(error.message);
+                newItem.remove();
+            }
+        };
+
+        // Event listeners
+        nameInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSave();
+            }
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                newItem.remove();
+            }
+        });
+
+        saveBtn.addEventListener('click', handleSave);
+        cancelBtn.addEventListener('click', () => newItem.remove());
+    });
+
+    // Handle adding new tribes
+    document.querySelector('.add-tribe').addEventListener('click', async function() {
+        console.log('Add tribe clicked');
+        
+        const newItem = document.createElement('div');
+        newItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+        
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'form-control';
+        input.placeholder = 'Enter tribe name';
+        
+        const btnGroup = document.createElement('div');
+        btnGroup.className = 'btn-group';
+        
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'btn btn-sm btn-success';
+        saveBtn.innerHTML = '<i class="bi bi-check"></i>';
+        
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'btn btn-sm btn-danger';
+        cancelBtn.innerHTML = '<i class="bi bi-x"></i>';
+        
+        btnGroup.appendChild(saveBtn);
+        btnGroup.appendChild(cancelBtn);
+        newItem.appendChild(input);
+        newItem.appendChild(btnGroup);
+        
+        const list = document.getElementById('tribeList');
+        list.insertBefore(newItem, list.firstChild);
+        input.focus();
+        
+        const handleSave = async () => {
+            const name = input.value.trim();
+            if (!name) {
+                newItem.remove();
+                return;
+            }
+            
+            try {
+                const response = await fetch(URLS.tribe.add(activeFairId), {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name: name })
+                });
+                
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error);
+                
+                newItem.dataset.id = data.id;
+                newItem.innerHTML = `
+                    <span class="item-name">${data.name}</span>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-primary edit-item">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger delete-item">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                `;
+
+                
+                // Sort items with "Other" first
+                const items = Array.from(list.children);
+                items.sort((a, b) => {
+                    const nameA = a.querySelector('.item-name')?.textContent || '';
+                    const nameB = b.querySelector('.item-name')?.textContent || '';
+                    
+                    if (nameA === 'Other') return -1;
+                    if (nameB === 'Other') return 1;
+                    return nameA.toLowerCase().localeCompare(nameB.toLowerCase());
+                });
+                
+                // Reorder DOM elements
+                items.forEach(item => list.appendChild(item));
+                
+            } catch (error) {
+                console.error('Error adding tribe:', error);
+                alert(error.message);
+                newItem.remove();
+            }
+        };
+        
+        input.addEventListener('keydown', e => {
+            if (e.key === 'Enter') handleSave();
+            if (e.key === 'Escape') newItem.remove();
+        });
+        
+        saveBtn.addEventListener('click', handleSave);
+        cancelBtn.addEventListener('click', () => newItem.remove());
+    });
+
+    // Handle edit functionality for languoids
+    document.querySelector('#languoidList').addEventListener('click', async function(e) {
+        const editBtn = e.target.closest('.edit-item');
+        if (!editBtn) return;
+
+        const item = editBtn.closest('.list-group-item');
+        const contentContainer = item.firstElementChild;
+        const nameSpan = contentContainer.querySelector('.item-name');
+        const infoSpan = contentContainer.querySelector('.text-muted small');
+        
+        // Store original content
+        const originalContent = contentContainer.cloneNode(true);
+        
+        // Parse current values
+        const currentName = nameSpan.textContent.trim();
+        const currentInfo = infoSpan.textContent.match(/\((.*?), (.*?)\)/);
+        const currentGlottocode = currentInfo[1];
+        const currentLevel = currentInfo[2];
+
+        // Create edit form
+        const formGroup = document.createElement('div');
+        formGroup.className = 'd-flex gap-2 align-items-center';
+        formGroup.style.width = '80%';
+        
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.className = 'form-control form-control-sm';
+        nameInput.value = currentName;
+        nameInput.placeholder = 'Name';
+        
+        const glottocodeInput = document.createElement('input');
+        glottocodeInput.type = 'text';
+        glottocodeInput.className = 'form-control form-control-sm';
+        glottocodeInput.value = currentGlottocode;
+        glottocodeInput.placeholder = 'Glottocode';
+        glottocodeInput.style.width = '150px';
+        
+        const levelSelect = document.createElement('select');
+        levelSelect.className = 'form-select form-select-sm';
+        levelSelect.style.width = '120px';
+        
+        const levels = [
+            ['family', 'Family'],
+            ['language', 'Language'],
+            ['dialect', 'Dialect']
+        ];
+        
+        levels.forEach(([value, label]) => {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = label;
+            if (label === currentLevel) option.selected = true;
+            levelSelect.appendChild(option);
+        });
+
+        formGroup.appendChild(nameInput);
+        formGroup.appendChild(glottocodeInput);
+        formGroup.appendChild(levelSelect);
+
+        // Replace the entire content with the form
+        contentContainer.replaceWith(formGroup);
+
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'btn btn-sm btn-success';
+        saveBtn.innerHTML = '<i class="bi bi-check"></i>';
+
+        const btnContainer = editBtn.parentElement;
+        btnContainer.insertBefore(saveBtn, editBtn);
+        editBtn.style.display = 'none';
+
+        nameInput.focus();
+
+        const resetEdit = () => {
+            formGroup.replaceWith(originalContent);
+            saveBtn.remove();
+            editBtn.style.display = '';
+        };
+
+        // Handle clicks outside the edit area
+        const handleClickOutside = (event) => {
+            const isClickInside = formGroup.contains(event.target) || 
+                                saveBtn.contains(event.target);
+            if (!isClickInside) {
+                resetEdit();
+                document.removeEventListener('click', handleClickOutside);
+            }
+        };
+
+        setTimeout(() => {
+            document.addEventListener('click', handleClickOutside);
+        }, 0);
+
+        const handleSave = async () => {
+            const newName = nameInput.value.trim();
+            const newGlottocode = glottocodeInput.value.trim();
+            const newLevel = levelSelect.value;
+
+            if (!newName || !newGlottocode) {
+                resetEdit();
+                return;
+            }
+
+            try {
+                const response = await fetch(URLS.languoid.edit(activeFairId, item.dataset.id), {
+                    method: 'PUT',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        name: newName,
+                        glottocode: newGlottocode,
+                        level: newLevel
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error);
+
+                // Create new content with updated values
+                const newContent = originalContent.cloneNode(true);
+                const newNameSpan = newContent.querySelector('.item-name');
+                const newInfoSpan = newContent.querySelector('.text-muted small');
+                
+                newNameSpan.textContent = newName;
+                newInfoSpan.textContent = `(${newGlottocode}, ${levels.find(l => l[0] === newLevel)[1]})`;
+                
+                // Replace form with updated content
+                formGroup.replaceWith(newContent);
+                saveBtn.remove();
+                editBtn.style.display = '';
+
+                // Sort items after edit
+                const list = document.getElementById('languoidList');
+                const items = Array.from(list.children);
+                items.sort((a, b) => {
+                    const nameA = a.querySelector('.item-name')?.textContent || '';
+                    const nameB = b.querySelector('.item-name')?.textContent || '';
+                    
+                    // Special handling for "Other" - always comes first
+                    if (nameA === 'Other') return -1;
+                    if (nameB === 'Other') return 1;
+                    
+                    // Case insensitive sort for everything else
+                    return nameA.toLowerCase().localeCompare(nameB.toLowerCase());
+                });
+                
+                // Maintain scroll position while reordering
+                const scrollPos = list.scrollTop;
+                items.forEach(item => list.appendChild(item));
+                list.scrollTop = scrollPos;
+
+            } catch (error) {
+                console.error('Error saving languoid:', error);
+                alert(error.message);
+                resetEdit();
+            }
+        };
+
+        const handleKeydown = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSave();
+            }
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                resetEdit();
+            }
+        };
+
+        nameInput.addEventListener('keydown', handleKeydown);
+        glottocodeInput.addEventListener('keydown', handleKeydown);
+        levelSelect.addEventListener('keydown', handleKeydown);
+        saveBtn.addEventListener('click', handleSave);
+    });
+
+    // Handle edit functionality for categories
+    document.querySelector('#categoryList').addEventListener('click', async function(e) {
+        const editBtn = e.target.closest('.edit-item');
+        if (!editBtn) return;
+
+        const item = editBtn.closest('.list-group-item');
+        const contentDiv = item.querySelector('div');
+        const nameSpan = contentDiv.querySelector('.item-name');
+        const infoSpan = contentDiv.querySelector('.text-muted small');
+
+        // Create edit form
+        const formGroup = document.createElement('div');
+        formGroup.className = 'd-flex align-items-center';
+        formGroup.style.width = '80%';
+
+        // Add form fields
+        formGroup.innerHTML = `
+            <input type="text" class="form-control form-control-sm me-2" style="width: 200px" value="${nameSpan.textContent.trim()}" placeholder="Name">
+            <div class="d-flex align-items-center me-2">
+                <label class="me-2">Material submission:</label>
+                <input type="checkbox" class="form-check-input" id="material-${item.dataset.id}" 
+                       ${contentDiv.querySelector('.text-muted').textContent.includes('Material submission: Yes') ? 'checked' : ''}>
+            </div>
+            <div class="d-flex align-items-center">
+                <label class="me-2">Max # of students:</label>
+                <input type="text" class="form-control form-control-sm" style="width: 80px" 
+                       value="${contentDiv.querySelector('.text-muted').textContent.match(/Max # of students: (.*?)\)/)?.[1]?.replace('None', '') || ''}" 
+                       placeholder="No max">
+            </div>
+        `;
+
+        // Add save button
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'btn btn-sm btn-success';
+        saveBtn.innerHTML = '<i class="bi bi-check"></i>';
+
+        // Store original content and swap in edit form
+        const originalContent = contentDiv.cloneNode(true);
+        contentDiv.replaceWith(formGroup);
+        editBtn.style.display = 'none';
+        item.querySelector('.btn-group').insertBefore(saveBtn, item.querySelector('.btn-group').firstChild);
+
+        // Handle save
+        const handleSave = async () => {
+            const nameInput = formGroup.querySelector('input[type="text"]');
+            const materialCheck = formGroup.querySelector('input[type="checkbox"]');
+            const maxStudentsInput = formGroup.querySelectorAll('input[type="text"]')[1];
+
+            const name = nameInput.value.trim();
+            const materialSubmission = materialCheck.checked;
+            let maxStudents = maxStudentsInput.value.trim();
+
+            if (!name) return;
+            if (maxStudents && (!Number.isInteger(Number(maxStudents)) || Number(maxStudents) <= 0)) {
+                // Store the current form state
+                const currentFormState = {
+                    name: nameInput.value,
+                    materialSubmission: materialCheck.checked,
+                    maxStudents: maxStudentsInput.value
+                };
+
+                const validationModal = new bootstrap.Modal(document.getElementById('validationModal'));
+                document.getElementById('validationMessage').textContent = 'Max students must be a positive integer or left blank';
+                
+                const modalElement = document.getElementById('validationModal');
+                modalElement.addEventListener('hidden.bs.modal', () => {
+                    // Restore the form
+                    nameInput.value = currentFormState.name;
+                    materialCheck.checked = currentFormState.materialSubmission;
+                    maxStudentsInput.value = currentFormState.maxStudents;
+                    maxStudentsInput.focus();
+                    
+                    // Prevent the click-outside handler
+                    document.removeEventListener('click', handleClickOutside);
+                    setTimeout(() => {
+                        document.addEventListener('click', handleClickOutside);
+                    }, 0);
+                }, { once: true });
+                
+                validationModal.show();
+                return;
+            }
+
+            try {
+                const response = await fetch(URLS.category.edit(activeFairId, item.dataset.id), {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        name,
+                        material_submission: materialCheck.checked,
+                        max_students: maxStudents ? Number(maxStudents) : null
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to save category');
+                const data = await response.json();
+
+                // Update display
+                const newContent = document.createElement('div');
+                newContent.className = 'd-flex align-items-center';
+                newContent.style.width = '80%';
+                newContent.innerHTML = `
+                    <span class="item-name me-2">${name}</span>
+                    <span class="text-muted">
+                        <small>(Material submission: ${materialCheck.checked ? 'Yes' : 'No'}, Max # of students: ${maxStudents || 'None'})</small>
+                    </span>
+                `;
+
+                formGroup.replaceWith(newContent);
+                saveBtn.remove();
+                editBtn.style.display = '';
+
+                // Sort items
+                const list = document.getElementById('categoryList');
+                const items = Array.from(list.children);
+                items.sort((a, b) => {
+                    const nameA = a.querySelector('.item-name').textContent.toLowerCase();
+                    const nameB = b.querySelector('.item-name').textContent.toLowerCase();
+                    return nameA.localeCompare(nameB);
+                });
+                
+                const scrollPos = list.scrollTop;
+                items.forEach(item => list.appendChild(item));
+                list.scrollTop = scrollPos;
+
+            } catch (error) {
+                console.error('Error saving category:', error);
+                alert(error.message);
+            }
+        };
+
+        // Add event listeners
+        const handleKeydown = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSave();
+            }
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                formGroup.replaceWith(originalContent);
+                saveBtn.remove();
+                editBtn.style.display = '';
+            }
+        };
+
+        formGroup.querySelectorAll('input').forEach(input => {
+            input.addEventListener('keydown', handleKeydown);
+        });
+        saveBtn.addEventListener('click', handleSave);
+
+        // Handle clicks outside
+        setTimeout(() => {
+            document.addEventListener('click', function handleClickOutside(event) {
+                if (!item.contains(event.target) && !event.target.closest('.modal')) {
+                    formGroup.replaceWith(originalContent);
+                    saveBtn.remove();
+                    editBtn.style.display = '';
+                    document.removeEventListener('click', handleClickOutside);
+                }
+            });
+        }, 0);
+    });
+
+    // At the top of your script, after document.addEventListener('DOMContentLoaded'...
+    let deleteModalInstance = null;
+    let confirmModalInstance = null;
+
+    function showDeleteWarningModal(associations) {
+        // Get or create warning modal instance
+        if (!deleteModalInstance) {
+            const modalElement = document.getElementById('deleteWarningModal');
+            deleteModalInstance = new bootstrap.Modal(modalElement);
+            
+            modalElement.addEventListener('hidden.bs.modal', function() {
+                const associationsList = document.getElementById('associationsList');
+                if (associationsList) {
+                    associationsList.innerHTML = '';
+                }
+            });
+        }
+
+        // Update content
+        const associationsList = document.getElementById('associationsList');
+        associationsList.innerHTML = associations.map(assoc => `
+            <div class="mb-3">
+                <h6 class="border-bottom pb-2 mb-2">${assoc.type}</h6>
+                <ul class="list-group list-group-flush">
+                    ${assoc.items.map(item => `
+                        <li class="list-group-item bg-transparent px-2 py-1">
+                            ${item.id ? 
+                                `<a href="/submission/${item.id}/" class="text-body text-decoration-none d-block" target="_blank">
+                                    <i class="bi bi-link-45deg text-muted me-1"></i>${item.text}
+                                </a>` : 
+                                item.text
+                            }
+                        </li>
+                    `).join('')}
+                </ul>
+            </div>
+        `).join('');
+
+        // Show modal
+        deleteModalInstance.show();
+    }
+
+    function showDeleteConfirmModal(item, type) {
+        // Get or create confirm modal instance
+        if (!confirmModalInstance) {
+            // Create the modal if it doesn't exist
+            const modalHTML = `
+                <div class="modal fade" id="confirmDeleteModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Confirm Delete</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p>Are you sure you want to delete this item?</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-danger confirm-delete">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            
+            const modalElement = document.getElementById('confirmDeleteModal');
+            confirmModalInstance = new bootstrap.Modal(modalElement);
+        }
+        
+        const modalElement = document.getElementById('confirmDeleteModal');
+        const confirmButton = modalElement.querySelector('.confirm-delete');
+        
+        // Remove any existing click handlers
+        const newConfirmButton = confirmButton.cloneNode(true);
+        confirmButton.parentNode.replaceChild(newConfirmButton, confirmButton);
+        
+        // Add new click handler
+        newConfirmButton.addEventListener('click', async function() {
+            try {
+                const response = await fetch(URLS[type].edit(activeFairId, item.dataset.id), {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Failed to delete item');
+                
+                // Remove item from list
+                item.remove();
+                confirmModalInstance.hide();
+                
+            } catch (error) {
+                console.error('Error deleting item:', error);
+                alert('Error deleting item');
+            }
+        });
+        
+        confirmModalInstance.show();
+    }
+
+    registrationToggle.addEventListener('change', function() {
+        if (this.checked) {
+            registrationLabel.textContent = 'Registration Open';
+        } else {
+            registrationLabel.textContent = 'Registration Closed';
+        }
+    });
+
+    // Add this after the other event listeners
+    document.querySelector('.add-languoid').addEventListener('click', async function() {
+        const list = document.getElementById('languoidList');
+        
+        // Create new list item
+        const newItem = document.createElement('div');
+        newItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+        
+        // Create form group
+        const formGroup = document.createElement('div');
+        formGroup.className = 'd-flex gap-2 align-items-center';
+        formGroup.style.width = '80%';
+        
+        // Create inputs
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.className = 'form-control form-control-sm';
+        nameInput.placeholder = 'Name';
+        
+        const glottocodeInput = document.createElement('input');
+        glottocodeInput.type = 'text';
+        glottocodeInput.className = 'form-control form-control-sm';
+        glottocodeInput.placeholder = 'Glottocode';
+        glottocodeInput.style.width = '150px';
+        
+        const levelSelect = document.createElement('select');
+        levelSelect.className = 'form-select form-select-sm';
+        levelSelect.style.width = '120px';
+        
+        // Add level options
+        const levels = [
+            ['family', 'Family'],
+            ['language', 'Language'],
+            ['dialect', 'Dialect']
+        ];
+        
+        levels.forEach(([value, label]) => {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = label;
+            if (value === 'language') option.selected = true;
+            levelSelect.appendChild(option);
+        });
+        
+        formGroup.appendChild(nameInput);
+        formGroup.appendChild(glottocodeInput);
+        formGroup.appendChild(levelSelect);
+        
+        // Create buttons
+        const btnGroup = document.createElement('div');
+        btnGroup.className = 'btn-group';
+        
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'btn btn-sm btn-success';
+        saveBtn.innerHTML = '<i class="bi bi-check"></i>';
+        
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'btn btn-sm btn-secondary';
+        cancelBtn.innerHTML = '<i class="bi bi-x"></i>';
+        
+        btnGroup.appendChild(saveBtn);
+        btnGroup.appendChild(cancelBtn);
+        
+        newItem.appendChild(formGroup);
+        newItem.appendChild(btnGroup);
+        list.insertBefore(newItem, list.firstChild);
+        
+        nameInput.focus();
+        
+        const handleSave = async () => {
+            const name = nameInput.value.trim();
+            const glottocode = glottocodeInput.value.trim();
+            const level = levelSelect.value;
+            
+            if (!name || !glottocode) {
+                newItem.remove();
+                return;
+            }
+            
+            try {
+                const response = await fetch(URLS.languoid.add(activeFairId), {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        name: name,
+                        glottocode: glottocode,
+                        level: level
+                    })
+                });
+                
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error);
+                
+                // Create a new element instead of modifying existing one
+                const finalItem = document.createElement('div');
+                finalItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+                finalItem.dataset.id = data.id;
+                finalItem.innerHTML = `
+                    <div class="d-flex align-items-center" style="width: 80%;">
+                        <span class="item-name me-2">${data.name}</span>
+                        <span class="text-muted">
+                            <small>(${data.glottocode}, ${levels.find(l => l[0] === data.level)[1]})</small>
+                        </span>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-primary edit-item">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger delete-item">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                `;
+                
+                // Replace the form with the final item
+                newItem.replaceWith(finalItem);
+                
+                // Sort items
+                const items = Array.from(list.children);
+                items.sort((a, b) => {
+                    const nameA = a.querySelector('.item-name')?.textContent || '';
+                    const nameB = b.querySelector('.item-name')?.textContent || '';
+                    
+                    if (nameA === 'Other') return -1;
+                    if (nameB === 'Other') return 1;
+                    return nameA.toLowerCase().localeCompare(nameB.toLowerCase());
+                });
+                
+                // Maintain scroll position while reordering
+                const scrollPos = list.scrollTop;
+                items.forEach(item => list.appendChild(item));
+                list.scrollTop = scrollPos;
+                
+            } catch (error) {
+                console.error('Error adding languoid:', error);
+                alert(error.message);
+                newItem.remove();
+            }
+        };
+        
+        saveBtn.addEventListener('click', handleSave);
+        cancelBtn.addEventListener('click', () => newItem.remove());
+        
+        // Handle Enter and Escape keys
+        const handleKeydown = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSave();
+            }
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                newItem.remove();
+            }
+        };
+        
+        nameInput.addEventListener('keydown', handleKeydown);
+        glottocodeInput.addEventListener('keydown', handleKeydown);
+        levelSelect.addEventListener('keydown', handleKeydown);
+    });
+
+    document.getElementById('createFairBtn').addEventListener('click', async function() {
+        registrationToggle.addEventListener('change', function() {
+            if (this.checked) {
+                registrationLabel.textContent = 'Registration Open';
+            } else {
+                registrationLabel.textContent = 'Registration Closed';
+            }
+        });
+    });
+
+    document.querySelector('#addFairBtn').addEventListener('click', function() {
+        const modal = new bootstrap.Modal(document.getElementById('addFairModal'));
+        modal.show();
+    });
+
+    document.getElementById('createFairBtn').addEventListener('click', async function() {
+        const nameInput = document.getElementById('newFairName');
+        const notesInput = document.getElementById('fairNotes');
+        const templateSelect = document.getElementById('templateFair');
+        
+        // Validate inputs
+        if (!nameInput.value.trim() || !templateSelect.value) {
+            alert('Please fill in all required fields');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/fairs/add/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: nameInput.value.trim(),
+                    notes: notesInput.value.trim(),
+                    template_fair_id: templateSelect.value
+                })
+            });
+            
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error);
+            
+            // Close modal and reload data
+            bootstrap.Modal.getInstance(document.getElementById('addFairModal')).hide();
+            
+            // Update the fair list and switch to the new fair
+            window.location.href = `/fairs/?fair_id=${data.id}`;
+            
+        } catch (error) {
+            console.error('Error creating fair:', error);
+            alert(error.message || 'Error creating fair');
+        }
+    });
+
+    // Add click handlers to all "Set to Current Fair" buttons
+    document.querySelectorAll('.set-current-fair-btn').forEach(button => {
+        button.addEventListener('click', handleSetCurrentFair);
+    });
+
+    // Fair selection handler in left menu
+    document.querySelectorAll('.fair-item').forEach(item => {
+        item.addEventListener('click', async function(e) {
+            e.preventDefault();
+            const fairId = this.dataset.fairId;
+            
+            try {
+                const response = await fetch(`/api/fairs/${fairId}/`);
+                if (!response.ok) throw new Error('Failed to get fair data');
+                const fairData = await response.json();
+                
+                // Update the fair name
+                document.getElementById('fairName').textContent = fairData.name;
+                activeFairId = fairId;  // Update which fair is being displayed
+                isCurrentFair = activeFairId === currentFairId;                
+                
+                // Update the current fair button/badge
+                const buttonContainer = document.querySelector('.current-fair-badge');
+                if (fairData.is_current_fair) {
+                    buttonContainer.innerHTML = `
+                        <span class="badge bg-success" style="box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);">Current Fair</span>
+                    `;
+                } else {
+                    buttonContainer.innerHTML = `
+                        <button class="btn btn-secondary btn-sm set-current-fair-btn" 
+                                data-fair-id="${fairId}" 
+                                style="box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);">
+                            Set to Current Fair
+                        </button>
+                    `;
+                    // Add click handler to the new button
+                    buttonContainer.querySelector('.set-current-fair-btn')
+                        .addEventListener('click', handleSetCurrentFair);
+                }
+
+                // Update active state in left menu
+                document.querySelectorAll('.fair-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                this.classList.add('active');
+                
+                // Update UI based on whether this fair is the current fair
+                updateEditControls(isCurrentFair);
+
+            } catch (error) {
+                console.error('Error updating fair:', error);
+                alert('Error updating fair');
+            }
+        });
+    });
+
+    // Helper function to update edit controls visibility
+    function updateEditControls(isFairCurrent) {
+        const editButtons = document.querySelectorAll('.edit-item');
+        const deleteButtons = document.querySelectorAll('.delete-item');
+        const addButtons = document.querySelectorAll('.add-languoid, .add-tribe, .add-category, .add-accessory');
+        const registrationToggle = document.getElementById('registrationToggle');
+        
+        [editButtons, deleteButtons, addButtons].forEach(buttons => {
+            buttons.forEach(btn => {
+                btn.style.display = isFairCurrent ? '' : 'none';
+            });
+        });
+        
+        if (registrationToggle) {
+            registrationToggle.disabled = !isFairCurrent;
+        }
+    }
+
+    // Separate function for handling set current fair
+    async function handleSetCurrentFair(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const fairId = this.dataset.fairId;
+        
+        try {
+            const response = await fetch('/api/set_current_fair/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ fair_id: fairId })
+            });
+
+            if (!response.ok) throw new Error('Failed to set current fair');
+
+            location.reload();
+        } catch (error) {
+            console.error('Error setting current fair:', error);
+            alert('Error setting current fair');
+        }
+    }
+
+});
+
+</script>
+{% endblock %}
+{% endblock %}

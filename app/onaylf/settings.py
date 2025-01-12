@@ -44,7 +44,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'bootstrap5',
     'django_bootstrap_icons',
-    'performances',
+    'submissions',
 ]
 
 MIDDLEWARE = [
@@ -55,6 +55,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'users.middleware.YearlyProfileCheckMiddleware',
 ]
 
 ROOT_URLCONF = 'onaylf.urls'
@@ -70,6 +71,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'users.context_processors.user_context',
             ],
         },
     },
@@ -147,7 +149,7 @@ LOGIN_REDIRECT_URL = '/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST = os.getenv('EMAIL_HOST')
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
 
@@ -179,7 +181,7 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True,
         },
-        'performances': {
+        'submissions': {
             'handlers': ['console'],
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
             'propagate': True,

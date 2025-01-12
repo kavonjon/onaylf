@@ -3,15 +3,48 @@
 {% block title %}Contact{% endblock %}
 
 {% block page_content %}
-    <h1>Contact Information</h1>
-    <div>
-        <p>
-            Phone: (405) 325-7588<br />
-            Email: onaylf.samnoblemuseum@ou.edu
-        </p>
-    </div>
+<div class="container mt-4">
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h4 class="card-title mb-3">
+                <i class="bi bi-envelope"></i> Contact Information
+            </h4>
+            
+            <div class="card bg-light mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-telephone"></i> Get in Touch
+                    </h5>
+                    <p class="card-text">
+                        <i class="bi bi-telephone-fill me-2"></i> (405) 325-7588<br>
+                        <i class="bi bi-envelope-fill me-2"></i> <a href="mailto:onaylf.samnoblemuseum@ou.edu" class="text-decoration-none">onaylf.samnoblemuseum@ou.edu</a>
+                    </p>
+                </div>
+            </div>
 
-    <div class="col-6">
-        Please contact us with questions and comments if you need assistance. We’ll be happy to help you get registered. The ONAYLF office is staffed on Wednesdays; we will return your messages as soon as possible.
+            <div class="card bg-light mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-info-circle"></i> Office Hours
+                    </h5>
+                    <p class="card-text">
+                        The ONAYLF office is staffed on Wednesdays; we will return your messages as soon as possible.
+                    </p>
+                </div>
+            </div>
+
+            <div class="alert alert-info">
+                <h5 class="alert-heading">
+                    <i class="bi bi-question-circle"></i> Need Help?
+                </h5>
+                <p class="mb-0">
+                    Please contact us with questions and comments if you need assistance. We'll be happy to help you get registered.
+                </p>
+            </div>
+        </div>
     </div>
+</div>
+
+<!-- Add extra space at bottom of page -->
+<div class="pb-5"></div>
 {% endblock %}

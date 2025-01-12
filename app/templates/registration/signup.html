@@ -1,10 +1,53 @@
 {% extends "base.html" %}
+{% load bootstrap5 %}
+{% bootstrap_css %}
+{% bootstrap_javascript %}
+{% load bootstrap_icons %}
+{% load static %}
+
+{% block title %}Sign Up{% endblock %}
 
 {% block page_content %}
-  <h2>Sign up</h2>
-  <form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Sign up</button>
-  </form>
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="card-title mb-0">
+                        <i class="bi bi-person-plus"></i> Sign Up
+                    </h2>
+                </div>
+
+                <div class="card-body">
+                    {% if error_message %}
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill"></i> {{ error_message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="p-2">
+                            {% bootstrap_form form %}
+                            <div class="form-group mb-3">
+                                <label for="registration_code">Registration Code</label>
+                                <input type="text" class="form-control" id="registration_code" name="registration_code" required>
+                                <small class="form-text text-muted">Please enter the registration code provided by your administrator.</small>
+                            </div>
+                            <div class="d-grid gap-2 mt-4">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-person-plus-fill"></i> Sign Up
+                                </button>
+                                <a href="{% url 'login' %}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-box-arrow-in-right"></i> Already have an account? Log in
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

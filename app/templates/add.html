@@ -22,7 +22,7 @@
       {{form.title}}
     </div>
     <div>
-      <b>Group:</b><br/>
+      <b>Presenting group:</b><br/>
       {{form.group}}
     </div>
     <div class="row">
@@ -45,10 +45,10 @@
     </div>
     <div>
       <b>Individual or group:*</b><br/>
-      {{form.performance_type}}
+      {{form.submission_type}}
     </div>
     <hr />
-    <input type="submit" class="btn btn-primary" value="{% if add_type == 'Performance' %}Continue{% else %}Create {{ add_type }}{% endif %}"/>
+    <input type="submit" class="btn btn-primary" value="{% if add_type == 'Submission' %}Continue{% else %}Create {{ add_type }}{% endif %}"/>
 </form>
 
 <script>

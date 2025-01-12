@@ -5,7 +5,7 @@
 }
 
 body {
-  margin-top: 6rem;
+  margin-top: 8rem;
 }
 
 ul {
@@ -13,8 +13,8 @@ ul {
 }
 
 .navbar-brand img {
-  max-width: 90vw;
-  height: auto;
+  height: 80px;
+  width: auto;
 }
 
 .stealth {
