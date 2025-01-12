@@ -3,7 +3,7 @@ services:
     build: .
     container_name: onaylf_django
     restart: unless-stopped
-    command: bash -c "./wait-for-postgres.sh onaylf_db && python manage.py migrate && python manage.py collectstatic --no-input && python manage.py runserver 0.0.0.0:8100"
+    command: bash -c "./wait-for-postgres.sh onaylf_db && python manage.py migrate && python manage.py collectstatic --no-input && gunicorn onaylf.wsgi:application --bind 0.0.0.0:8100 --timeout 120"
     volumes:
       - static:/app/static
       - ./wait-for-postgres.sh:/app/wait-for-postgres.sh
