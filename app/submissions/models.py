@@ -153,7 +153,7 @@ class Tribe(models.Model):
 class Instructor(models.Model):
     # on delete set to superuser
     fair = models.ForeignKey('Fair', related_name='fair_instructors', on_delete=models.CASCADE)
-    user = models.ForeignKey('users.User', related_name='instructor_user', null=False, on_delete=models.SET(get_superuser)) # on delete set to superuser
+    user = models.ForeignKey('users.User', related_name='instructor_user', null=False, on_delete=models.CASCADE)
     lastname = models.CharField(max_length=255)
     firstname = models.CharField(max_length=255)
     added = models.DateTimeField(auto_now_add=True)
@@ -190,7 +190,7 @@ class Student(models.Model):
             ('xxl', 'Adult Extra Extra Large (XXL)'),
             ('xxxl', 'Adult Extra Extra Extra Large (XXXL)'))
     fair = models.ForeignKey('Fair', related_name='fair_students', on_delete=models.CASCADE)
-    user = models.ForeignKey('users.User', related_name='student_user', null=False, on_delete=models.SET(get_superuser)) # on delete set to superuser
+    user = models.ForeignKey('users.User', related_name='student_user', null=False, on_delete=models.CASCADE)
     lastname = models.CharField(max_length=255)
     firstname = models.CharField(max_length=255)
     tribe = models.ManyToManyField(Tribe, verbose_name="tribes of student", related_name='student_tribe', blank=True)

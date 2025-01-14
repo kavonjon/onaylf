@@ -33,13 +33,13 @@ class UserChangeForm(UserCreationForm):
 
 class UserAdmin(BaseUserAdmin):
     # Fields to display in the user list
-    list_display = ('email', 'first_name', 'last_name', 'organization', 'is_staff')
+    list_display = ('email', 'first_name', 'last_name', 'organization', 'is_staff', 'confirmed')
     # Fields to include in the add/edit forms
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
         ('Personal info', {'fields': ('first_name', 'last_name', 'organization', 'phone', 'alt_phone', 'fax', 'alt_email', 'address', 'city', 'state', 'zip')}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
-        ('Important dates', {'fields': ('last_login', 'date_joined')}),
+        ('Important dates', {'fields': ('last_login', 'date_joined', 'confirmed')}),
     )
     # Fields to use in the username field when creating a user
     add_fieldsets = (

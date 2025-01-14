@@ -21,7 +21,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
 from submissions import views
-from users.views import SignUpView, user_account_detail, user_account_edit, user_edit, organization_list, organization_add, organization_edit, organization_delete
+from users.views import SignUpView, user_account_detail, user_account_edit, user_edit, organization_list, organization_add, organization_edit, organization_delete, confirm_user, delete_user, user_add
 
 handler500 = 'submissions.views.custom_500_view'
 
@@ -34,7 +34,7 @@ urlpatterns = [
     path('api/', include(router.urls)),  # include the router.urls under an 'api/' path
     path('api/submission/', views.submission_list, name='submissions-get-list'),
     path('api/poster/', views.poster_list, name='posters-get-list'),
-    path('api/submission-poster/', views.submission_poster_list, name='submissions-posters-get-list'),
+    # path('api/submission-poster/', views.submission_poster_list, name='submissions-posters-get-list'),
     path('api/submission/<int:perf_pk>/', views.submission_get, name='submission-get'),
     path('api/category-update/<int:pk>/', views.CategoryUpdateView.as_view(), name='category-update'),
     path('api/submission-update/<int:pk>/', views.SubmissionUpdateView.as_view(), name='submission-update'),
@@ -123,6 +123,12 @@ urlpatterns = [
     path('api/fair/<int:fair_pk>/', views.get_fair_data, name='get_fair_data'),
     path('fairs/add/', views.add_fair, name='add_fair'),
     path('api/set_current_fair/', views.set_current_fair, name='set_current_fair'),
+    path('api/confirm-user/<int:user_id>/', confirm_user, name='confirm_user'),
+    path('api/delete-user/<int:user_id>/', delete_user, name='delete_user'),
+    path('api/submission/<int:submission_id>/delete/', views.submission_delete, name='submission_delete'),
+    path('user/add/', user_add, name='user_add'),
+    path('api/students/<int:student_id>/check_delete/', views.check_student_delete, name='check_student_delete'),
+    path('api/students/<int:student_id>/delete/', views.delete_student, name='delete_student'),
 ]
 
 urlpatterns += router.urls

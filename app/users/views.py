@@ -7,12 +7,16 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required, user_passes_test, permission_required
 from .models import Organization, User
-from submissions.models import CurrentFair
+from submissions.models import CurrentFair, Submission
 from .forms import UserProfileForm, UserEditForm
 from datetime import datetime
 from django.db import transaction
 from django.db.models.functions import Lower
-from .utils import generate_registration_code
+from django.views.decorators.http import require_POST, require_http_methods
+import logging
+from django.contrib.auth.hashers import make_password
+
+logger = logging.getLogger(__name__)
 
 def is_moderator(user):
     return user.groups.filter(name='moderator').exists()
@@ -20,23 +24,18 @@ def is_moderator(user):
 
 class SignUpView(generic.CreateView):
     form_class = CustomUserCreationForm
-    # success_url = reverse_lazy('login')
     template_name = 'registration/signup.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        # Check if registration is closed
+        current_fair = CurrentFair.objects.first()
+        if not current_fair or not current_fair.fair.registration_open:
+            messages.error(request, f'Registration is currently closed')
+            return redirect('login')
+        return super().dispatch(request, *args, **kwargs)
 
     def get_success_url(self):
         return '/accounts/profile/edit/'
-
-    def form_valid(self, form):
-        # Get the registration code from POST data
-        submitted_code = self.request.POST.get('registration_code')
-        expected_code = generate_registration_code()
-
-        # Check if the submitted code matches
-        if submitted_code != expected_code:
-            form.add_error(None, "Invalid registration code")
-            return self.form_invalid(form)
-
-        return super().form_valid(form)
 
 @login_required
 def user_account_detail(request):
@@ -205,3 +204,87 @@ def organization_delete(request, pk):
         if new_org_data:
             response_data['new_organization'] = new_org_data
         return JsonResponse(response_data)
+
+@require_POST
+@login_required
+@user_passes_test(is_moderator)
+def confirm_user(request, user_id):
+    try:
+        user = User.objects.get(id=user_id)
+        user.confirmed = True
+        user.save()
+        return JsonResponse({'status': 'success'})
+    except User.DoesNotExist:
+        return JsonResponse({'error': 'User not found'}, status=404)
+
+@require_http_methods(["DELETE"])
+@login_required
+@user_passes_test(is_moderator)
+def delete_user(request, user_id):
+    try:
+        # Don't allow deletion of self
+        if request.user.id == user_id:
+            logger.warning(f"User {request.user.id} attempted to delete their own account")
+            return JsonResponse({'error': 'Cannot delete your own account'}, status=400)
+            
+        user = User.objects.get(id=user_id)
+        
+        # Check if user has any submissions (this will block deletion)
+        submissions = Submission.objects.filter(user=user)
+        if submissions.exists():
+            logger.warning(f"Cannot delete user {user_id} - has {submissions.count()} submissions")
+            return JsonResponse({
+                'error': f'Cannot delete user with existing submissions ({submissions.count()} found). Please delete or reassign their submissions first.',
+                'blockDelete': True
+            }, status=400)
+        
+        # Log deletion attempt    
+        logger.info(f"Attempting to delete user {user.id} ({user.email})")
+        
+        # Check for related objects that will be cascade deleted
+        instructor_count = user.instructor_user.count()
+        student_count = user.student_user.count()
+        
+        # If there are related records and this isn't a confirmed delete, show warning
+        if (instructor_count > 0 or student_count > 0) and 'X-Confirm-Delete' not in request.headers:
+            warning_parts = []
+            if instructor_count > 0:
+                warning_parts.append(f"{instructor_count} Instructor{'s' if instructor_count > 1 else ''}")
+            if student_count > 0:
+                warning_parts.append(f"{student_count} Student{'s' if student_count > 1 else ''}")
+                
+            return JsonResponse({
+                'warning': f"Deleting user will also delete related data ({', '.join(warning_parts)})",
+                'blockDelete': False
+            }, status=200)
+            
+        # If we get here, either there are no related records or this is a confirmed delete
+        user.delete()
+        logger.info(f"Successfully deleted user {user_id}")
+        return JsonResponse({'status': 'success'})
+        
+    except User.DoesNotExist:
+        logger.warning(f"Attempted to delete non-existent user {user_id}")
+        return JsonResponse({'error': 'User not found'}, status=404)
+    except Exception as e:
+        logger.error(f"Error deleting user {user_id}: {str(e)}", exc_info=True)
+        return JsonResponse({'error': str(e)}, status=500)
+
+@user_passes_test(is_moderator)
+def user_add(request):
+    if request.method == 'POST':
+        form = UserEditForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            # Generate a random password that the user will need to reset
+            temp_password = User.objects.make_random_password()
+            user.password = make_password(temp_password)
+            user.confirmed = True  # Automatically confirm users added by moderators
+            user.save()
+            
+            messages.success(request, f'User {user.email} has been created successfully.')
+            return redirect('user_detail', user_pk=user.id)
+    else:
+        form = UserEditForm()
+    
+    return render(request, 'user_add.html', {'form': form})

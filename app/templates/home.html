@@ -117,6 +117,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
 {% endif %}
 
+<div id="app-data" 
+    data-grade-ranges='{{ gradeRanges|safe }}'
+    data-performance-types='{{ performanceTypes|safe }}'
+    data-performance-status='{{ performanceStatus|safe }}'
+    data-categories='{{ categories|safe }}'>
+</div>
+
+<div class="loading-spinner" id="tableLoader" style="display: none;">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+    <div class="mt-2 text-muted">Loading submissions...</div>
+</div>
+
 <style>
     .dropdown-toggle.btn {
         text-align: left;
@@ -128,6 +142,8 @@ document.addEventListener('DOMContentLoaded', function() {
     .dropdown-menu {
         max-height: 300px;
         overflow-y: auto;
+        transform: none !important;
+        top: auto !important;
     }
     
     .dropdown-item {
@@ -139,6 +155,7 @@ document.addEventListener('DOMContentLoaded', function() {
         margin: 0;
         padding: 0;
         overflow-x: hidden;
+        min-height: 400px;
     }
 
     .sort-btn {
@@ -158,14 +175,48 @@ document.addEventListener('DOMContentLoaded', function() {
         overflow-wrap: break-word;
         word-wrap: break-word;
     }
-</style>
 
-<div id="app-data" 
-    data-grade-ranges='{{ gradeRanges|safe }}'
-    data-performance-types='{{ performanceTypes|safe }}'
-    data-performance-status='{{ performanceStatus|safe }}'
-    data-categories='{{ categories|safe }}'>
-</div>
+    .nowrap {
+        white-space: nowrap;
+    }
+
+    .clickable-row {
+        cursor: pointer;
+    }
+
+    .clickable-row:hover {
+        background-color: rgba(0,0,0,.06) !important;
+    }
+
+    .action-buttons {
+        z-index: 1;
+        position: relative;
+    }
+
+    .action-buttons a {
+        z-index: 2;
+    }
+
+    .loading-spinner {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        z-index: 1000;
+    }
+
+    .table-responsive {
+        position: relative;
+        min-height: 400px;
+    }
+
+    /* Optional: Add fade effect to table while loading */
+    .table-loading {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+</style>
 
 <script>
   // Get all data from the div using dataset
@@ -263,6 +314,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         });
+
+        // Add click handler for rows
+        document.addEventListener('click', (e) => {
+            const row = e.target.closest('.clickable-row');
+            if (row && !e.target.closest('.action-buttons')) {
+                window.location.href = row.dataset.href;
+            }
+        });
     }
 
     _getCookie(name) {
@@ -282,9 +341,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     _getSubmissions(){
-
         let user_param;
-        // console.log("moderator: " + moderator)
         if (moderator) {
             user_param = ""
         } else {
@@ -293,12 +350,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const headers = { 'Content-Type': 'application/json' };
-        return fetch(`/api/submission-poster/${user_param}`, { headers, })
+        return fetch(`/api/submission/${user_param}`, { headers, })
             .then(res => res.json())
             .then(data => {
                 this.tableObjects = data
             });
-
     }
 
     _getSubmission(submission_id){
@@ -313,50 +369,61 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async _loadTable(doFetch, sort, { field = 'updated', direction = 'desc' } = {}) {
-        if ( doFetch == true ) {
-            await this._getSubmissions()
-        } 
-        if (!sort) {
-            field = this.sort.field;
-            direction = this.sort.direction;
-        }
-
-        // console.log(field, direction)
-            // Sort tableObjects if a field is specified
-            if (field) {
-                this.tableObjects.sort((a, b) => {
-                    // Check if the first index of the field exists in a or b
-                    const firstIndex = field.split('.')[0];
-                    if (!(firstIndex in a)) return 1;
-                    if (!(firstIndex in b)) return -1;
-
-                    // Split the field string into an array and use reduce to access the nested property
-                    let aField = field.split('.').reduce((o, i) => (o ? o[i] : undefined), a);
-                    let bField = field.split('.').reduce((o, i) => (o ? o[i] : undefined), b);
-
-                    // If aField or bField is undefined, sort it last
-                    if (aField === undefined) return 1;
-                    if (bField === undefined) return -1;
-
-                    // Convert fields to lowercase if they are strings
-                    if (typeof aField === 'string') aField = aField.toLowerCase();
-                    if (typeof bField === 'string') bField = bField.toLowerCase();
-
-                    if (aField < bField) return direction === 'asc' ? -1 : 1;
-                    if (aField > bField) return direction === 'asc' ? 1 : -1;
-                    return 0;
-                });
+        const loader = document.getElementById('tableLoader');
+        const tableBody = document.querySelector('.submission-table tbody');
+        
+        try {
+            loader.style.display = 'block';
+            tableBody.classList.add('table-loading');
+            
+            if (doFetch == true) {
+                await this._getSubmissions()
+            }
+            if (!sort) {
+                field = this.sort.field;
+                direction = this.sort.direction;
             }
 
-        table.innerHTML = this.tableHeader
-        this.tableBody = document.querySelector('.submission-table tbody');
-        this.tableObjects.forEach((tableObject) => {
-            const html = this._buildRowHtml(tableObject);
-            // const row = this.tableBody.insertRow();
-            // row.innerHTML = html
-            this.tableBody.insertAdjacentHTML('beforeend', html);
-        });
+            // console.log(field, direction)
+                // Sort tableObjects if a field is specified
+                if (field) {
+                    this.tableObjects.sort((a, b) => {
+                        // Check if the first index of the field exists in a or b
+                        const firstIndex = field.split('.')[0];
+                        if (!(firstIndex in a)) return 1;
+                        if (!(firstIndex in b)) return -1;
 
+                        // Split the field string into an array and use reduce to access the nested property
+                        let aField = field.split('.').reduce((o, i) => (o ? o[i] : undefined), a);
+                        let bField = field.split('.').reduce((o, i) => (o ? o[i] : undefined), b);
+
+                        // If aField or bField is undefined, sort it last
+                        if (aField === undefined) return 1;
+                        if (bField === undefined) return -1;
+
+                        // Convert fields to lowercase if they are strings
+                        if (typeof aField === 'string') aField = aField.toLowerCase();
+                        if (typeof bField === 'string') bField = bField.toLowerCase();
+
+                        if (aField < bField) return direction === 'asc' ? -1 : 1;
+                        if (aField > bField) return direction === 'asc' ? 1 : -1;
+                        return 0;
+                    });
+                }
+
+            table.innerHTML = this.tableHeader
+            this.tableBody = document.querySelector('.submission-table tbody');
+            this.tableObjects.forEach((tableObject) => {
+                const html = this._buildRowHtml(tableObject);
+                // const row = this.tableBody.insertRow();
+                // row.innerHTML = html
+                this.tableBody.insertAdjacentHTML('beforeend', html);
+            });
+
+        } finally {
+            loader.style.display = 'none';
+            tableBody.classList.remove('table-loading');
+        }
     }
 
     _buildRowHtml(tableObject) {
@@ -428,7 +495,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
         const html = `
-        <tr data-id="${tableObject.id}" data-status="${tableObject.status}">
+        <tr data-id="${tableObject.id}" data-status="${tableObject.status}" class="clickable-row" data-href="${detail_link}">
             <td>
                 ${moderator ? `<a href='/user/${tableObject.user.id}'>` : ``}
                     ${(tableObject.user.first_name + ' ' + tableObject.user.last_name).substring(0, 30)}<br />
@@ -455,33 +522,35 @@ document.addEventListener('DOMContentLoaded', function() {
             <td>
                 ${tableObject.status_display}
             </td>
-            <td>
-                ${moderator ? `<span>
-                        <a class="stealth" href="javascript:void(0)"${approveTooltip}>
-                            ${approveButton}
-                        </a>
+            <td class="action-buttons">
+                <span class="d-inline-flex align-items-center nowrap">
+                    ${moderator ? `<span>
+                            <a class="stealth" href="javascript:void(0)"${approveTooltip}>
+                                ${approveButton}
+                            </a>
+                    </span>
+                    <span>
+                            <a class="stealth" href="javascript:void(0)"${unapproveTooltip}>
+                                ${unapproveButton}
+                            </a>
+                    </span>
+                    <span> | </span>` : ``}
+                    <span>
+                            <a class="stealth" href="${detail_link}" title="Info">
+                                {% bs_icon 'info-circle-fill' extra_classes="submission-detail" %}
+                            </a>
+                    </span>
+                    <span>
+                            <a class="stealth" href="${editHref}"${editTooltip}>
+                                ${editButton}
+                            </a>
+                    </span>
+                    ${moderator ? `<span>
+                            <a class="stealth" href="javascript:void(0)" title="Delete">
+                                {% bs_icon 'trash3-fill' extra_classes="submission-delete" color='red' %}
+                            </a>
+                    </span>` : ``}
                 </span>
-                <span>
-                        <a class="stealth" href="javascript:void(0)"${unapproveTooltip}>
-                            ${unapproveButton}
-                        </a>
-                </span>
-                <span> | </span>` : ``}
-                <span>
-                        <a class="stealth" href="${detail_link}" title="Info">
-                            {% bs_icon 'info-circle-fill' extra_classes="submission-detail" %}
-                        </a>
-                </span>
-                <span>
-                        <a class="stealth" href="${editHref}"${editTooltip}>
-                            ${editButton}
-                        </a>
-                </span>
-                ${moderator ? `<span>
-                        <a class="stealth" href="javascript:void(0)" title="Delete">
-                            {% bs_icon 'trash3-fill' extra_classes="submission-delete" color='red' %}
-                        </a>
-                </span>` : ``}
             </td>
         </tr>
   `;

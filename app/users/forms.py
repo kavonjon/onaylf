@@ -83,12 +83,12 @@ class UserEditForm(forms.ModelForm):
     organization_choice = forms.ChoiceField(
         choices=[('', 'Select a program/school...')],
         required=True,
-        label="Program/School"
+        label="Program/School*"
     )
     other_organization = forms.CharField(
         max_length=255,
         required=False,
-        label="Other program/school name",
+        label="Other program/school name*",
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
 
@@ -166,12 +166,12 @@ class UserProfileForm(forms.ModelForm):
     organization_choice = forms.ChoiceField(
         choices=[('', 'Select a program/school...')],  # Add empty default option
         required=True,  # Make it required
-        label="Program/School"
+        label="Program/School*"
     )
     other_organization = forms.CharField(
         max_length=255,
         required=False,
-        label="Other program/school name",
+        label="Other program/school name*",
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
 

@@ -39,6 +39,7 @@ from .models import STATE_CHOICES, Fair, CurrentFair, Languoid, Tribe, Submissio
 from .serializers import CategorySerializer, SubmissionSerializer, PosterSerializer, InstructorSerializer, StudentSerializer, SubmissionAccessorySerializer, SubmissionJsonSerializer
 from .forms import SubmissionForm, SubmissionCommentsForm, InstructorForm, StudentForm, PosterForm
 from users.utils import generate_registration_code
+from datetime import timedelta
 
 
 import requests
@@ -70,12 +71,35 @@ def contact_info(request):
 @api_view(['GET'])
 def submission_list(request):
     if not request.user.is_authenticated:
-        return Response({'detail': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
-    submissions = Submission.objects.filter(poster=False)
-    user_id = request.GET.get('user_id')
-    if user_id is not None:
-        user = get_object_or_404(User, pk=user_id)
-        submissions = submissions.filter(user=user)
+        return Response({'detail': 'Authentication credentials were not provided.'}, 
+                       status=status.HTTP_401_UNAUTHORIZED)
+    
+    # Get the fair_id from query params, default to current fair
+    fair_id = request.GET.get('fair_id')
+    if fair_id:
+        fair = get_object_or_404(Fair, pk=fair_id)
+    else:
+        current_fair = CurrentFair.objects.first()
+        if not current_fair:
+            return Response({'detail': 'No current fair set.'}, status=status.HTTP_404_NOT_FOUND)
+        fair = current_fair.fair
+
+    # Start with optimized query using select_related and prefetch_related
+    submissions = (Submission.objects
+        .select_related('user', 'category', 'fair')  # For foreign keys
+        .prefetch_related(
+            'students',
+            'instructors',
+            'languoids',
+            'accessories'
+        )
+        .filter(fair=fair)
+    )
+
+    # Apply filters based on query parameters
+    if user_id := request.GET.get('user_id'):
+        submissions = submissions.filter(user_id=user_id)
+    
     serializer = SubmissionSerializer(submissions, many=True)
     return Response(serializer.data)
 
@@ -87,30 +111,30 @@ def poster_list(request):
     serializer = PosterSerializer(submissions, many=True)
     return Response(serializer.data)
 
-@api_view(['GET'])
-def submission_poster_list(request):
-    if not request.user.is_authenticated:
-        return Response({'detail': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
+# @api_view(['GET'])
+# def submission_poster_list(request):
+#     if not request.user.is_authenticated:
+#         return Response({'detail': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
     
-    # Get the fair_id from query params, default to current fair
-    fair_id = request.GET.get('fair_id')
-    if fair_id:
-        fair = get_object_or_404(Fair, pk=fair_id)
-    else:
-        current_fair = CurrentFair.objects.first()
-        if not current_fair:
-            return Response({'detail': 'No current fair set.'}, status=status.HTTP_404_NOT_FOUND)
-        fair = current_fair.fair
+#     # Get the fair_id from query params, default to current fair
+#     fair_id = request.GET.get('fair_id')
+#     if fair_id:
+#         fair = get_object_or_404(Fair, pk=fair_id)
+#     else:
+#         current_fair = CurrentFair.objects.first()
+#         if not current_fair:
+#             return Response({'detail': 'No current fair set.'}, status=status.HTTP_404_NOT_FOUND)
+#         fair = current_fair.fair
     
-    # Filter submissions by fair and user if specified
-    submissions = Submission.objects.filter(fair=fair)
-    user_id = request.GET.get('user_id')
-    if user_id is not None:
-        user = get_object_or_404(User, pk=user_id)
-        submissions = submissions.filter(user=user)
+#     # Filter submissions by fair and user if specified
+#     submissions = Submission.objects.filter(fair=fair)
+#     user_id = request.GET.get('user_id')
+#     if user_id is not None:
+#         user = get_object_or_404(User, pk=user_id)
+#         submissions = submissions.filter(user=user)
     
-    serializer = SubmissionSerializer(submissions, many=True)
-    return Response(serializer.data)
+#     serializer = SubmissionSerializer(submissions, many=True)
+#     return Response(serializer.data)
 
 @api_view(['GET'])
 def submission_get(request, perf_pk):
@@ -946,7 +970,16 @@ def user_list(request):
     is_moderator = request.user.groups.filter(name='moderator').exists()
 
     # Get all users sorted by first name
-    all_users = User.objects.prefetch_related('groups').all().order_by('first_name', 'last_name')
+    all_users = User.objects.prefetch_related('groups').all()
+
+    # Add is_new flag for users less than 6 months old
+    six_months_ago = timezone.now() - timedelta(days=180)
+    
+    for user in all_users:
+        user.is_new = user.date_joined >= six_months_ago
+    
+
+
 
     template = 'user_list.html'
     context = {
@@ -1198,11 +1231,12 @@ class submission_add(LoginRequiredMixin, FormView):
             self.object.save()
 
             # Determine the redirect URL based on the request path
-            print("submit-and-add" in self.request.POST)
             if 'submit-and-add' in self.request.POST:
-                return redirect("/submission/add/")
-            else:
-                return redirect("/submission/%s/" % self.object.pk)
+                redirect_url = self.request.POST.get('submit-and-add')
+                if redirect_url:
+                    return redirect(redirect_url)
+                
+            return redirect("/submission/%s/" % self.object.pk)
     def form_invalid(self, form):
         print(form.errors)
         return super().form_invalid(form)
@@ -1580,6 +1614,12 @@ def submission_edit(request, perf_pk):
             edited_submission.review_status = "completed"
             edited_submission.status = "submitted"
             edited_submission.save()
+
+            # Check if this is a submit-and-add request
+            if 'submit-and-add' in request.POST:
+                redirect_url = request.POST.get('submit-and-add')
+                if redirect_url:
+                    return redirect(redirect_url)
 
             return redirect(".")
     else:
@@ -3713,4 +3753,64 @@ def migrate_data(request):
                 return redirect('migrate_data')
 
     return render(request, 'migrate.html', {'fairs': fairs})
+
+@require_http_methods(["DELETE"])
+@login_required
+@user_passes_test(is_moderator)
+def submission_delete(request, submission_id):
+    if request.method != 'DELETE':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+        
+    try:
+        submission = get_object_or_404(Submission, id=submission_id)
+        submission.delete()
+        return JsonResponse({'status': 'success'})
+    except Exception as e:
+        logger.error(f"Error deleting submission {submission_id}: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+@require_http_methods(["GET"])
+def check_student_delete(request, student_id):
+    student = get_object_or_404(Student, id=student_id)
+    
+    # Check for submissions associated with this student
+    submissions = Submission.objects.filter(students=student)
+    
+    if submissions.exists():
+        # Student has associated submissions - cannot delete
+        return JsonResponse({
+            'can_delete': False,
+            'submissions': [{
+                'id': sub.id,
+                'title': sub.title,
+                'category': sub.category.name
+            } for sub in submissions]
+        })
+    else:
+        # No associations - safe to delete
+        return JsonResponse({
+            'can_delete': True,
+            'submissions': []
+        })
+
+@login_required
+@require_http_methods(["DELETE"])
+def delete_student(request, student_id):
+    try:
+        student = get_object_or_404(Student, id=student_id)
+        
+        # Check for submissions before deleting
+        if student.submission_student.exists():
+            return JsonResponse({
+                'error': 'Cannot delete student with associated submissions'
+            }, status=400)
+        
+        student.delete()
+        return JsonResponse({'success': True})
+        
+    except Exception as e:
+        return JsonResponse({
+            'error': str(e)
+        }, status=400)
 

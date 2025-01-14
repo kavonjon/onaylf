@@ -18,6 +18,12 @@ class SubmissionForm(forms.ModelForm):
         
         # Filter the languoids queryset by fair
         self.fields['languoids'].queryset = Languoid.objects.filter(fair=current_fair)
+        self.fields['languoids'].required = True  # Make languoids required
+        self.fields['languoids'].label = "Languages"  # Add asterisk to indicate required
+        
+        # Make other_languoid not required by default
+        self.fields['other_languoid'].required = False
+        self.fields['other_languoid'].label = "Other language name"
 
         # Only set initial category if we don't have an instance
         if selected_category and not self.instance.pk:
@@ -38,6 +44,22 @@ class SubmissionForm(forms.ModelForm):
 
         # Change the category field label
         self.fields['category'].label = "Category"
+
+    def clean(self):
+        cleaned_data = super().clean()
+        languoids = cleaned_data.get('languoids')
+        other_languoid = cleaned_data.get('other_languoid')
+
+        # Check if any languoids were selected
+        if not languoids:
+            raise forms.ValidationError("Please select at least one language.")
+
+        # If 'Other' is selected, require other_languoid
+        if languoids and any(languoid.name == 'Other' for languoid in languoids):
+            if not other_languoid:
+                raise forms.ValidationError("Please specify the other language name.")
+
+        return cleaned_data
 
     class Meta:
         model = Submission

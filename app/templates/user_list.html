@@ -8,8 +8,10 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center">
         <h2>List of users</h2>
-        <div class="text-muted">
-            <small>Registration code: <span class="font-monospace">{{ registration_code }}</span></small>
+        <div class="d-flex align-items-center">
+            <a href="{% url 'user_add' %}" class="btn btn-primary d-inline-flex align-items-center">
+                <i class="bi bi-person-plus me-2"></i>Add User
+            </a>
         </div>
     </div>
 
@@ -40,6 +42,7 @@
                     <th>Email</th>
                     <th>Organization</th>
                     <th>Location</th>
+                    <th>Status</th>
                 </tr>
             </thead>
             <tbody id="userTableBody">
@@ -50,8 +53,9 @@
                     data-organization="{{ user.organization|default:'' }}"
                     data-location="{{ user.city|default:'' }}{% if user.city and user.state %}, {% endif %}{{ user.state|default:'' }}"
                     data-state-name="{% for code, name in state_choices %}{% if code == user.state %}{{ name }}{% endif %}{% endfor %}"
+                    data-id="{{ user.id }}"
                     style="cursor: pointer;"
-                    onclick="window.location='/user/{{ user.id }}'">
+                    onclick="handleRowClick(event, '/user/{{ user.id }}')">
                     <td>{{ user.first_name }} {{ user.last_name }}</td>
                     <td>
                         {{ user.email }}
@@ -69,6 +73,35 @@
                             {{ user.city }}{% if user.city and user.state %}, {% endif %}{{ user.state }}
                         {% endif %}
                     </td>
+                    <td class="user-status-cell" onclick="event.stopPropagation()">
+                        {% if user.is_new %}
+                            {% if user.confirmed %}
+                                <span class="d-inline-flex align-items-center nowrap">New User - Confirmed</span>
+                            {% else %}
+                                <span class="d-inline-flex align-items-center nowrap status-container">
+                                    <span>New User - </span>
+                                    <button class="btn btn-warning btn-sm confirm-user-btn ms-1" data-user-id="{{ user.id }}">
+                                        <span class="button-text">Confirm</span>
+                                        <div class="check-icon" style="display: none;">
+                                            <i class="bi bi-check-lg"></i>
+                                        </div>
+                                    </button>
+                                </span>
+                            {% endif %}
+                        {% else %}
+                            {% if not user.confirmed %}
+                                <span class="d-inline-flex align-items-center nowrap status-container">
+                                    <span>Unconfirmed user - </span>
+                                    <button class="btn btn-warning btn-sm confirm-user-btn ms-1" data-user-id="{{ user.id }}">
+                                        <span class="button-text">Confirm</span>
+                                        <div class="check-icon" style="display: none;">
+                                            <i class="bi bi-check-lg"></i>
+                                        </div>
+                                    </button>
+                                </span>
+                            {% endif %}
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -77,6 +110,13 @@
 </div>
 
 <script>
+// Move handleRowClick to global scope
+function handleRowClick(event, url) {
+    if (!event.target.closest('.confirm-user-btn')) {
+        window.location = url;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const nameSearch = document.getElementById('nameSearch');
     const emailSearch = document.getElementById('emailSearch');
@@ -123,6 +163,54 @@ document.addEventListener('DOMContentLoaded', function() {
     emailSearch.addEventListener('input', filterTable);
     organizationSearch.addEventListener('input', filterTable);
     locationSearch.addEventListener('input', filterTable);
+
+    // Add confirmation button handler
+    document.querySelectorAll('.confirm-user-btn').forEach(button => {
+        button.addEventListener('click', async function() {
+            const userId = this.dataset.userId;
+            const cell = this.closest('.user-status-cell');
+            const container = this.closest('.status-container');
+            const buttonText = this.querySelector('.button-text');
+            const checkIcon = this.querySelector('.check-icon');
+            
+            try {
+                // Start transition: Hide text, show check
+                this.classList.remove('btn-warning');
+                this.classList.add('btn-success');
+                buttonText.style.display = 'none';
+                checkIcon.style.display = 'inline-block';
+                
+                const response = await fetch(`/api/confirm-user/${userId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Failed to confirm user');
+                
+                // Wait a moment to show the check
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Final state transition
+                if (container.textContent.includes('New User')) {
+                    container.innerHTML = '<span class="d-inline-flex align-items-center nowrap">New User - Confirmed</span>';
+                } else {
+                    container.innerHTML = '';
+                }
+                
+            } catch (error) {
+                console.error('Error confirming user:', error);
+                alert('Failed to confirm user');
+                
+                // Reset button state on error
+                this.classList.add('btn-warning');
+                this.classList.remove('btn-success');
+                buttonText.style.display = 'inline-block';
+                checkIcon.style.display = 'none';
+            }
+        });
+    });
 });
 </script>
 
@@ -134,6 +222,52 @@ document.addEventListener('DOMContentLoaded', function() {
     .form-control {
         margin-bottom: 0;
     }
+}
+.nowrap {
+    white-space: nowrap;
+}
+.user-status-cell {
+    min-width: 200px;  /* Adjust this value based on your longest status message */
+}
+.confirm-user-btn {
+    min-width: 75px;
+    height: 31px;
+    position: relative;
+    transition: background-color 0.3s ease;
+    padding: 0;
+}
+
+.button-text {
+    line-height: 31px;
+}
+
+.check-icon {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Remove any default Bootstrap Icon positioning */
+.bi::before {
+    vertical-align: middle;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+.status-container {
+    min-height: 31px;
+    display: inline-flex;
+    align-items: center;
 }
 </style>
 {% endif %}

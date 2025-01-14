@@ -5,6 +5,7 @@ from submissions.models import STATE_CHOICES
 from django.contrib.auth.signals import user_logged_in
 from django.dispatch import receiver
 from datetime import datetime
+from django.db.models.functions import Lower
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -45,6 +46,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     city = models.CharField(max_length=100, blank=True, null=True)
     state = models.CharField(max_length=2, choices=STATE_CHOICES, blank=True, null=True)
     zip = models.CharField(max_length=10, blank=True, null=True)
+    confirmed = models.BooleanField(default=False)
+    updated_at = models.DateTimeField(auto_now=True)
     
 
 
@@ -58,7 +61,8 @@ class User(AbstractBaseUser, PermissionsMixin):
         # Store the original values when the instance is loaded
         self._loaded_values = dict(organization=self.organization)
 
-    # other methods...
+    class Meta:
+        ordering = (Lower('last_name'), Lower('first_name'))
 
 
 # class FairUser(models.Model):

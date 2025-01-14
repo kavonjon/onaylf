@@ -52,6 +52,15 @@
                             <div class="mb-3">
                                 <label class="form-label"><strong>Program/School</strong></label>
                                 <div class="form-control-plaintext">{{ organization_preview|default:"No program/school set" }}</div>
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle"></i> 
+                                    You can update your program/school in your 
+                                    {% if moderator %}
+                                        <a href="{% url 'user_edit' owning_user.id %}">user profile</a>
+                                    {% else %}
+                                        <a href="{% url 'user_account_detail' %}">user profile</a>
+                                    {% endif %}.
+                                </small>
                             </div>
 
                             {% bootstrap_field form.group %}
@@ -66,6 +75,9 @@
 
                             <div class="mb-3 other_languoid" style="display: none;">
                                 {% bootstrap_field form.other_languoid %}
+                                <div class="text-danger submit-incomplete-other-language" style="display: none;">
+                                    <i class="bi bi-exclamation-circle"></i> Please specify the other language name.
+                                </div>
                             </div>
 
                             {% if submission %}{% if moderator %}
@@ -1465,6 +1477,35 @@
                 this.form.appendChild(accessoriesHiddenInput);
             }
 
+            // Validate languoids
+            const selectedLanguoids = Array.from(languoidsSelect.selectedOptions);
+            const submitIncompleteLanguageDiv = document.querySelector('.submit-incomplete-language');
+            const submitIncompleteOtherLanguageDiv = document.querySelector('.submit-incomplete-other-language');
+
+            if (selectedLanguoids.length === 0) {
+                submitIncompleteLanguageDiv.style.display = 'block';
+                submitIncomplete = true;
+            } else {
+                submitIncompleteLanguageDiv.style.display = 'none';
+                
+                // Check if "Other" is selected but other_languoid is empty
+                const otherIsSelected = selectedLanguoids.some(option => option.text === 'Other');
+                const otherLanguoidInput = document.getElementById('id_other_languoid');
+                
+                if (otherIsSelected) {
+                    otherLanguoidDiv.style.display = 'block';
+                    if (!otherLanguoidInput.value.trim()) {
+                        submitIncompleteOtherLanguageDiv.style.display = 'block';
+                        submitIncomplete = true;
+                    } else {
+                        submitIncompleteOtherLanguageDiv.style.display = 'none';
+                    }
+                } else {
+                    otherLanguoidDiv.style.display = 'none';
+                    submitIncompleteOtherLanguageDiv.style.display = 'none';
+                }
+            }
+
             // If the form is incomplete, don't submit it
             if (submitIncomplete) {
                 submitIncompleteDiv.style.display = 'block';
@@ -1485,6 +1526,28 @@
                 const hiddenInput = document.createElement('input');
                 hiddenInput.type = 'hidden';
                 hiddenInput.name = 'submit-and-add';
+
+                // Get the current URL path
+                const currentPath = window.location.pathname;
+                
+                // If we're on the admin submission add page (contains /user/{id}/submission/add/)
+                if (currentPath.includes('/user/') && currentPath.includes('/submission/add/')) {
+                    // Keep the same URL for the next submission
+                    hiddenInput.value = currentPath;
+                } else {
+                    // Check if we're a moderator and have an owning_user
+                    const isModerator = '{{ moderator|yesno:"true,false" }}';
+                    const owningUserId = '{{ owning_user.id|default:"null" }}';
+                    
+                    if (isModerator && owningUserId) {
+                        // Build the admin submission add URL
+                        hiddenInput.value = `/user/${owningUserId}/submission/add/`;
+                    } else {
+                        // Use the standard submission add URL
+                        hiddenInput.value = '/submission/add/';
+                    }
+                }
+
 
                 // Add the hidden input field to the form
                 this.form.appendChild(hiddenInput);

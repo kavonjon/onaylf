@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load bootstrap5 %}
+{% bootstrap_css %}
+{% bootstrap_javascript %}
+{% load bootstrap_icons %}
+{% load static %}
+
+{% block title %}Add New User{% endblock %}
+
+{% block page_content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="card-title mb-0">
+                        <i class="bi bi-person-plus"></i> Add New User
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        {% bootstrap_form form %}
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-person-plus"></i> Create User
+                            </button>
+                            <a href="{% url 'user_list' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const orgSelect = document.getElementById('id_organization_choice');
+    const otherOrgContainer = document.getElementById('id_other_organization').closest('.mb-3');
+    const otherOrgInput = document.getElementById('id_other_organization');
+
+    function toggleOtherOrg() {
+        if (orgSelect.value === 'other') {
+            otherOrgContainer.style.display = 'block';
+            otherOrgInput.required = true;
+        } else {
+            otherOrgContainer.style.display = 'none';
+            otherOrgInput.required = false;
+        }
+    }
+
+    // Initial state
+    toggleOtherOrg();
+
+    // Listen for changes
+    orgSelect.addEventListener('change', toggleOtherOrg);
+});
+</script>
+{% endblock %}
+
+{% endblock %}
