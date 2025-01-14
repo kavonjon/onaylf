@@ -5,7 +5,7 @@ ENV PYTHONUNBUFFERED 1
 
 RUN apt update && apt install -y ffmpeg
 
-RUN apt install -y python3-dev
+RUN apt-get update && apt-get install -y python3-dev
 
 
 RUN python3 -m pip install --upgrade pip setuptools wheel

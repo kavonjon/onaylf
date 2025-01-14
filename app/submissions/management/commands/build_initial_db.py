@@ -26,26 +26,33 @@ class Command(BaseCommand):
 
         # create moderator user
 
-        nancy = User.objects.create_user(
-            email='nancy@nal.ou.edu',
-            first_name='Nancy',
-            last_name='C',
-            password = str(os.getenv('NANCYS_PASSWORD')),
+        onaylf_user = User.objects.create_user(
+            email='onaylf@nal.ou.edu',
+            first_name='ONAYLF',
+            last_name='Content Admin',
+            password=str(os.getenv('ONAYLFS_PASSWORD')),
         )
 
-        raina = User.objects.create_user(
-            email='raina@nal.ou.edu',
-            first_name='Raina',
-            last_name='H',
-            password=str(os.getenv('RAINAS_PASSWORD')),
-        )
+        # nancy = User.objects.create_user(
+        #     email='nancy@nal.ou.edu',
+        #     first_name='Nancy',
+        #     last_name='C',
+        #     password = str(os.getenv('NANCYS_PASSWORD')),
+        # )
 
-        will = User.objects.create_user(
-            email='will@nal.ou.edu',
-            first_name='Will',
-            last_name='M',
-            password=str(os.getenv('WILLS_PASSWORD')),
-        )
+        # raina = User.objects.create_user(
+        #     email='raina@nal.ou.edu',
+        #     first_name='Raina',
+        #     last_name='H',
+        #     password=str(os.getenv('RAINAS_PASSWORD')),
+        # )
+
+        # will = User.objects.create_user(
+        #     email='will@nal.ou.edu',
+        #     first_name='Will',
+        #     last_name='M',
+        #     password=str(os.getenv('WILLS_PASSWORD')),
+        # )
 
         # create basic user
         
@@ -59,9 +66,10 @@ class Command(BaseCommand):
         # create moderator group, assing to admin and moderator user
         
         mod_group, created = Group.objects.get_or_create(name='moderator')
-        mod_group.user_set.add(nancy)
-        mod_group.user_set.add(raina)
-        mod_group.user_set.add(will)
+        mod_group.user_set.add(onaylf_user)
+        # mod_group.user_set.add(nancy)
+        # mod_group.user_set.add(raina)
+        # mod_group.user_set.add(will)
         admin_user = User.objects.get(email='admin@nal.ou.edu')
         mod_group.user_set.add(admin_user)
         # set the first_name and last_name of the admin user
