@@ -52,19 +52,22 @@ def update_submissions_organization(sender, instance, created, raw, update_field
 
 @receiver(post_save, sender=Submission)
 def mark_submission_submitted(sender, instance, **kwargs):
-
+    logger.info(f"Signal triggered for submission {instance.id} with status {instance.status}")
+    
     if instance.status == 'submitted' and instance.submitted_email_sent == False:
-        instance.submitted_email_sent = True
-        instance.save(update_fields=['submitted_email_sent'])
-        currentFair = CurrentFair.objects.first()
-        year = currentFair.name
-        submission_title = instance.title
-        if len(submission_title) > 40:
-            short_title = submission_title[:40].strip() + "..."
-        else:
-            short_title = submission_title
-        template_subject = "[ONAYLF {year}] Submission submitted: {short_title}"
-        template_email = """Submission title: {title}
+        logger.info("Conditions met for sending submission email")
+        try:
+            instance.submitted_email_sent = True
+            instance.save(update_fields=['submitted_email_sent'])
+            currentFair = CurrentFair.objects.first()
+            year = currentFair.name
+            submission_title = instance.title
+            if len(submission_title) > 40:
+                short_title = submission_title[:40].strip() + "..."
+            else:
+                short_title = submission_title
+            template_subject = "[ONAYLF {year}] Submission submitted: {short_title}"
+            template_email = """Submission title: {title}
 
 Thank you for registering your student's submission for the {year} ONAYLF.
 
@@ -76,13 +79,16 @@ You can contact us at onaylf.samnoblemuseum@ou.edu with any questions.
 
 Thank you,
 ONAYLF Team"""
-        send_mail(
-            template_subject.format(year=year, short_title=short_title),
-            template_email.format(title=submission_title, year=year),
-            settings.EMAIL_HOST_USER,
-            [instance.user.email, 'onaylf.samnoblemuseum@ou.edu'],  # the email address to send to
-            fail_silently=True,
-        )
+            send_mail(
+                template_subject.format(year=year, short_title=short_title),
+                template_email.format(title=submission_title, year=year),
+                settings.EMAIL_HOST_USER,
+                [instance.user.email, 'onaylf.samnoblemuseum@ou.edu'],
+                fail_silently=False,  # Change to False for debugging
+            )
+            logger.info(f"Email sent successfully for submission {instance.id}")
+        except Exception as e:
+            logger.error(f"Error sending email: {str(e)}")
 
 @receiver(post_save, sender=Submission)
 def at_submission_approved(sender, instance, **kwargs):
