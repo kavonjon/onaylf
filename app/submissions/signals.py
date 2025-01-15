@@ -51,7 +51,7 @@ def update_submissions_organization(sender, instance, created, raw, update_field
         logger.error(f"Error updating submissions: {str(e)}")
 
 @receiver(post_save, sender=Submission)
-def mark_submission_submitted(sender, instance, **kwargs):
+def mark_submission_submitted(sender, instance, created, **kwargs):
     logger.info(f"Signal triggered for submission {instance.id} with status {instance.status}")
     
     if instance.status == 'submitted' and instance.submitted_email_sent == False:
@@ -97,7 +97,7 @@ ONAYLF Team"""
             send_mail(
                 subject=subject,
                 message=body,
-                from_email=settings.EMAIL_HOST_USER,
+                from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[instance.user.email, 'onaylf.samnoblemuseum@ou.edu'],
                 fail_silently=False,
             )
@@ -110,31 +110,44 @@ ONAYLF Team"""
             logger.error(f"Traceback: {traceback.format_exc()}")
 
 @receiver(post_save, sender=Submission)
-def at_submission_approved(sender, instance, **kwargs):
+def at_submission_approved(sender, instance, created, **kwargs):
     if instance.status == 'approved' and instance.approved_email_sent == False:
-        instance.approved_email_sent = True
-        instance.save(update_fields=['approved_email_sent'])
-        currentFair = CurrentFair.objects.first()
-        year = currentFair.name
-        submission_title = instance.title
-        if len(submission_title) > 40:
-            short_title = submission_title[:40].strip() + "..."
-        else:
-            short_title = submission_title
-        template_subject = "[ONAYLF {year}] Submission approved: {short_title}"
-        template_email = """Submission title: {title}
+        try:
+            instance.approved_email_sent = True
+            instance.save(update_fields=['approved_email_sent'])
+            currentFair = CurrentFair.objects.first()
+            
+            if not currentFair:
+                logger.error("No current fair found")
+                return
+                
+            year = currentFair.name
+            submission_title = instance.title
+            if len(submission_title) > 40:
+                short_title = submission_title[:40].strip() + "..."
+            else:
+                short_title = submission_title
 
-Your students' submission has been approved by the ONAYLF Team.  We look forward to seeing you and your students at the Fair.
+            subject = f"[ONAYLF {year}] Submission approved: {short_title}"
+            body = f"""Submission title: {submission_title}
+
+Your students' submission has been approved by the ONAYLF Team. We look forward to seeing you and your students at the Fair.
 
 You can contact us at onaylf.samnoblemuseum@ou.edu with any questions.
 
 Thank you,
 ONAYLF Team"""
-        send_mail(
-            template_subject.format(year=year, short_title=short_title),
-            template_email.format(title=submission_title, year=year),
-            settings.EMAIL_HOST_USER,
-            [instance.user.email, 'onaylf.samnoblemuseum@ou.edu'],  # the email address to send to
-            fail_silently=True,
-        )
+
+            send_mail(
+                subject=subject,
+                message=body,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[instance.user.email, 'onaylf.samnoblemuseum@ou.edu'],
+                fail_silently=False,
+            )
+            logger.info(f"Approval email sent successfully for submission {instance.id}")
+        except Exception as e:
+            logger.error(f"Error sending approval email: {str(e)}")
+            logger.error(f"Error type: {type(e).__name__}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
 
