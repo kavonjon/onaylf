@@ -57,17 +57,29 @@ def mark_submission_submitted(sender, instance, **kwargs):
     if instance.status == 'submitted' and instance.submitted_email_sent == False:
         logger.info("Conditions met for sending submission email")
         try:
+            # Log email details before sending
+            logger.info(f"Preparing email for submission {instance.id}:")
+            logger.info(f"User email: {instance.user.email}")
+            logger.info(f"From email: {settings.EMAIL_HOST_USER}")
+            logger.info(f"SMTP settings - Host: {settings.EMAIL_HOST}, Port: {settings.EMAIL_PORT}")
+            
             instance.submitted_email_sent = True
             instance.save(update_fields=['submitted_email_sent'])
             currentFair = CurrentFair.objects.first()
+            
+            if not currentFair:
+                logger.error("No current fair found")
+                return
+                
             year = currentFair.name
             submission_title = instance.title
             if len(submission_title) > 40:
                 short_title = submission_title[:40].strip() + "..."
             else:
                 short_title = submission_title
-            template_subject = "[ONAYLF {year}] Submission submitted: {short_title}"
-            template_email = """Submission title: {title}
+
+            subject = f"[ONAYLF {year}] Submission submitted: {short_title}"
+            body = f"""Submission title: {submission_title}
 
 Thank you for registering your student's submission for the {year} ONAYLF.
 
@@ -79,16 +91,23 @@ You can contact us at onaylf.samnoblemuseum@ou.edu with any questions.
 
 Thank you,
 ONAYLF Team"""
+
+            logger.info(f"Attempting to send email with subject: {subject}")
+            
             send_mail(
-                template_subject.format(year=year, short_title=short_title),
-                template_email.format(title=submission_title, year=year),
-                settings.EMAIL_HOST_USER,
-                [instance.user.email, 'onaylf.samnoblemuseum@ou.edu'],
-                fail_silently=False,  # Change to False for debugging
+                subject=subject,
+                message=body,
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=[instance.user.email, 'onaylf.samnoblemuseum@ou.edu'],
+                fail_silently=False,
             )
             logger.info(f"Email sent successfully for submission {instance.id}")
         except Exception as e:
             logger.error(f"Error sending email: {str(e)}")
+            logger.error(f"Error type: {type(e).__name__}")
+            # If there's a traceback available
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
 
 @receiver(post_save, sender=Submission)
 def at_submission_approved(sender, instance, **kwargs):
