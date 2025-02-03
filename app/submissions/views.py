@@ -1457,6 +1457,7 @@ def student_list(request):
     template = 'student_list.html'
     context = {
         'currentFair': currentFair.name,
+        'fair': fair,
         'students': students,
         'grades': grades,
         'categories': categories,
