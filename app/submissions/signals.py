@@ -70,6 +70,11 @@ def mark_submission_submitted(sender, instance, created, **kwargs):
             if not currentFair:
                 logger.error("No current fair found")
                 return
+
+            # Create recipient list excluding nal.ou.edu emails
+            recipient_list = ['onaylf.samnoblemuseum@ou.edu']
+            if not instance.user.email.endswith('@nal.ou.edu'):
+                recipient_list.append(instance.user.email)
                 
             year = currentFair.name
             submission_title = instance.title
@@ -98,7 +103,7 @@ ONAYLF Team"""
                 subject=subject,
                 message=body,
                 from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[instance.user.email, 'onaylf.samnoblemuseum@ou.edu'],
+                recipient_list=recipient_list,
                 fail_silently=False,
             )
             logger.info(f"Email sent successfully for submission {instance.id}")
@@ -120,6 +125,11 @@ def at_submission_approved(sender, instance, created, **kwargs):
             if not currentFair:
                 logger.error("No current fair found")
                 return
+
+            # Create recipient list excluding nal.ou.edu emails
+            recipient_list = ['onaylf.samnoblemuseum@ou.edu']
+            if not instance.user.email.endswith('@nal.ou.edu'):
+                recipient_list.append(instance.user.email)
                 
             year = currentFair.name
             submission_title = instance.title
@@ -142,7 +152,7 @@ ONAYLF Team"""
                 subject=subject,
                 message=body,
                 from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[instance.user.email, 'onaylf.samnoblemuseum@ou.edu'],
+                recipient_list=recipient_list,
                 fail_silently=False,
             )
             logger.info(f"Approval email sent successfully for submission {instance.id}")

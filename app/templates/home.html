@@ -83,6 +83,7 @@ document.addEventListener('DOMContentLoaded', function() {
 {% endblock %}
 
 {% block page_content %}
+{% include 'partials/view_mode_banner.html' %}
 {% if no_fair %}
     <div class="alert alert-warning">
         <h4><i class="bi bi-exclamation-triangle"></i> No Fair Currently Set Up</h4>
@@ -111,6 +112,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 <table class="table table-striped table-hover small submission-table mb-0">
                     <tbody></tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Delete Submission Modal -->
+    <div class="modal fade" id="deleteSubmissionModal" tabindex="-1" aria-labelledby="deleteSubmissionModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteSubmissionModalLabel">Delete Submission</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="deleteSubmissionMessage"></p>
+                    <div class="alert alert-danger" id="deleteSubmissionError" style="display: none;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteSubmissionBtn">Delete Submission</button>
+                </div>
             </div>
         </div>
     </div>
@@ -216,6 +237,50 @@ document.addEventListener('DOMContentLoaded', function() {
         opacity: 0.5;
         pointer-events: none;
     }
+
+    /* Update these styles */
+    .filters-wrapper {
+        width: 100%;
+        overflow-x: auto;
+        margin-bottom: 1rem;
+    }
+
+    .filters-container {
+        min-width: 100%;
+        display: flex;
+        flex-direction: row;
+        gap: 0.5rem;
+    }
+
+    .filters-row {
+        display: flex;
+        flex-direction: row;
+        width: 100%;
+        gap: 0.5rem;
+    }
+
+    .filter-col {
+        flex: 1;
+        min-width: 0;
+    }
+
+    /* Ensure dropdowns don't overflow */
+    .filter-col .dropdown,
+    .filter-col .form-control {
+        width: 100%;
+    }
+
+    /* Add this to ensure filters stay within table bounds */
+    .table-container {
+        position: relative;
+    }
+
+    .filters-wrapper {
+        position: sticky;
+        left: 0;
+        background-color: var(--bs-body-bg);
+        z-index: 1;
+    }
 </style>
 
 <script>
@@ -271,6 +336,7 @@ document.addEventListener('DOMContentLoaded', function() {
         this.performanceTypes = performanceTypes;
         this.performanceStatus = performanceStatus;
         this.categories = categories || [];
+        this.lastKnownColumnWidths = []; // Add this to store column widths
 
         // Create filter row before setting up the table
         this._createFilterRow();
@@ -322,6 +388,66 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.location.href = row.dataset.href;
             }
         });
+
+        // Add debounce function
+        this._debounce = (func, wait) => {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        };
+
+        // Debounce the filter application
+        this._debouncedApplyFilters = this._debounce(() => {
+            this._applyFilters();
+        }, 150);
+
+        // Debounce the width adjustment
+        this._debouncedAdjustWidths = this._debounce(() => {
+            this._adjustFilterWidths();
+        }, 250);
+
+        // Add resize observer with debounced callback
+        const resizeObserver = new ResizeObserver(() => {
+            this._debouncedAdjustWidths();
+        });
+
+        // Observe both the table and its container
+        const table = document.querySelector('.submission-table');
+        const tableContainer = document.querySelector('.table-responsive');
+        if (table && tableContainer) {
+            resizeObserver.observe(table);
+            resizeObserver.observe(tableContainer);
+        }
+
+        // Simplified mutation observer that only triggers on important changes
+        const mutationObserver = new MutationObserver((mutations) => {
+            const shouldAdjust = mutations.some(mutation => {
+                return mutation.type === 'childList' && 
+                       (mutation.target.tagName === 'THEAD' || 
+                        (mutation.target.tagName === 'TBODY' && mutation.addedNodes.length > 0));
+            });
+            
+            if (shouldAdjust) {
+                this._debouncedAdjustWidths();
+            }
+        });
+
+        if (table) {
+            mutationObserver.observe(table, {
+                childList: true,
+                subtree: true,
+                characterData: false,
+                attributes: false
+            });
+        }
+
+        this._initializeSubmissionDeleteModal();
     }
 
     _getCookie(name) {
@@ -349,8 +475,10 @@ document.addEventListener('DOMContentLoaded', function() {
             user_param = `?user_id=${user_id}`
         }
 
+        const fairId = localStorage.getItem('viewFairId');
+        const fairParam = fairId ? `?fair_id=${fairId}` : '';
         const headers = { 'Content-Type': 'application/json' };
-        return fetch(`/api/submission/${user_param}`, { headers, })
+        return fetch(`/api/submission/${user_param}${fairParam}`, { headers, })
             .then(res => res.json())
             .then(data => {
                 this.tableObjects = data
@@ -420,6 +548,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.tableBody.insertAdjacentHTML('beforeend', html);
             });
 
+            this._initializeSubmissionDeleteButtons();
+
+            // Add this after table is populated
+            this._adjustFilterWidths();
+            // // Add a small delay to ensure table is fully rendered
+            // setTimeout(() => {
+            //     this._adjustFilterWidths();
+            // }, 100);
+
+
+
         } finally {
             loader.style.display = 'none';
             tableBody.classList.remove('table-loading');
@@ -427,6 +566,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     _buildRowHtml(tableObject) {
+        const viewFairId = localStorage.getItem('viewFairId');
+
         let category;
         let submission_type;
         let group;
@@ -523,34 +664,44 @@ document.addEventListener('DOMContentLoaded', function() {
                 ${tableObject.status_display}
             </td>
             <td class="action-buttons">
-                <span class="d-inline-flex align-items-center nowrap">
-                    ${moderator ? `<span>
-                            <a class="stealth" href="javascript:void(0)"${approveTooltip}>
-                                ${approveButton}
-                            </a>
+                ${!viewFairId ? `
+                    <span class="d-inline-flex align-items-center nowrap">
+                        ${moderator ? `<span>
+                                <a class="stealth" href="javascript:void(0)"${approveTooltip}>
+                                    ${approveButton}
+                                </a>
+                        </span>
+                        <span>
+                                <a class="stealth" href="javascript:void(0)"${unapproveTooltip}>
+                                    ${unapproveButton}
+                                </a>
+                        </span>
+                        <span> | </span>` : ``}
+                        <span>
+                                <a class="stealth" href="${detail_link}" title="Info">
+                                    {% bs_icon 'info-circle-fill' extra_classes="submission-detail" %}
+                                </a>
+                        </span>
+                        <span>
+                                <a class="stealth" href="${editHref}"${editTooltip}>
+                                    ${editButton}
+                                </a>
+                        </span>
+                        ${moderator ? `<span>
+                                <a class="stealth submission-delete" href="javascript:void(0)" title="Delete">
+                                    {% bs_icon 'trash3-fill' color='red' %}
+                                </a>
+                        </span>` : ``}
                     </span>
-                    <span>
-                            <a class="stealth" href="javascript:void(0)"${unapproveTooltip}>
-                                ${unapproveButton}
-                            </a>
-                    </span>
-                    <span> | </span>` : ``}
-                    <span>
+                ` : `
+                    <span class="d-inline-flex align-items-center nowrap">
+                        <span>
                             <a class="stealth" href="${detail_link}" title="Info">
                                 {% bs_icon 'info-circle-fill' extra_classes="submission-detail" %}
                             </a>
+                        </span>
                     </span>
-                    <span>
-                            <a class="stealth" href="${editHref}"${editTooltip}>
-                                ${editButton}
-                            </a>
-                    </span>
-                    ${moderator ? `<span>
-                            <a class="stealth" href="javascript:void(0)" title="Delete">
-                                {% bs_icon 'trash3-fill' extra_classes="submission-delete" color='red' %}
-                            </a>
-                    </span>` : ``}
-                </span>
+                `}
             </td>
         </tr>
   `;
@@ -598,12 +749,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const status = row.dataset.status;
         if (status == "submitted") {
             await this._updateSubmission(submission_id, 'approved');
-            const updatedSubmission = await this._getSubmission(submission_id);
-            // const html = this._buildRowHtml(updatedSubmission);
-            // row.outerHTML = html;
-            await this._loadTable(true, false);
-        }
 
+            await this._loadTable(true, true, { field: this.sort.field, direction: this.sort.direction });
+        }
     }
 
     async _clickUnapproveSubmission(e) {
@@ -613,20 +761,18 @@ document.addEventListener('DOMContentLoaded', function() {
         if (status == "submitted" || status == "approved") {
             await this._updateSubmissionPartStatus(submission_id, 'review_status', 'pending')
             await this._updateSubmission(submission_id, 'in_progress');
-            const updatedSubmission = await this._getSubmission(submission_id);
-            // const html = this._buildRowHtml(updatedSubmission);
-            // row.outerHTML = html;
-            await this._loadTable(true, false);
+            await this._loadTable(true, true, { field: this.sort.field, direction: this.sort.direction });
         }
-
     }
 
     _updateSubmission(submission_id, status) {
-            const body = JSON.stringify({
+        const fairId = localStorage.getItem('viewFairId');
+        const fairParam = fairId ? `?fair_id=${fairId}` : '';
+        const body = JSON.stringify({
                 status: status,});
             const csrftoken = this._getCookie('csrftoken');
             const headers = { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken,};
-            return fetch(`/api/submission-update/${submission_id}/`, {
+            return fetch(`/api/submission-update/${submission_id}/${fairParam}`, {
                 method: 'PATCH',
                 headers,
                 body: body,
@@ -672,93 +818,96 @@ document.addEventListener('DOMContentLoaded', function() {
 
     _createFilterRow() {
         const filterRow = `
-            <div class="row g-2 mb-2 align-items-center">
-                <!-- User Search -->
-                <div class="col" style="width: 15%">
-                    <input type="text" id="userSearchInput" class="form-control form-control-sm" placeholder="Search users...">
-                </div>
-                <!-- Title Search -->
-                <div class="col" style="width: 20%">
-                    <input type="text" id="titleSearchInput" class="form-control form-control-sm" placeholder="Search titles...">
-                </div>
-                <!-- Category Filter -->
-                <div class="col" style="width: 12%">
-                    <div class="dropdown">
-                        <button class="btn btn-secondary btn-sm dropdown-toggle w-100" type="button" id="categoryDropdown" data-bs-toggle="dropdown">
-                            Category
-                        </button>
-                        <div class="dropdown-menu">
-                            <label class="dropdown-item">
-                                <input type="checkbox" value="" class="category-checkbox me-2"> All
-                            </label>
-                            ${this.categories.map(cat => `
-                                <label class="dropdown-item">
-                                    <input type="checkbox" value="${cat.id}" class="category-checkbox me-2"> ${cat.name}
-                                </label>
-                            `).join('')}
+            <div class="filters-wrapper">
+                <div class="filters-container">
+                    <div class="filters-row">
+                        <!-- User Search -->
+                        <div class="filter-col">
+                            <input type="text" id="userSearchInput" class="form-control form-control-sm" placeholder="Search users...">
                         </div>
-                    </div>
-                </div>
-                <!-- Grade Range Filter -->
-                <div class="col" style="width: 12%">
-                    <div class="dropdown">
-                        <button class="btn btn-secondary btn-sm dropdown-toggle w-100" type="button" id="gradeDropdown" data-bs-toggle="dropdown">
-                            Grade
-                        </button>
-                        <div class="dropdown-menu">
-                            <label class="dropdown-item">
-                                <input type="checkbox" value="" class="grade-checkbox me-2"> All
-                            </label>
-                            ${Object.entries(this.gradeRanges).map(([id, name]) => `
-                                <label class="dropdown-item">
-                                    <input type="checkbox" value="${id}" class="grade-checkbox me-2"> ${name}
-                                </label>
-                            `).join('')}
+                        <!-- Title Search -->
+                        <div class="filter-col">
+                            <input type="text" id="titleSearchInput" class="form-control form-control-sm" placeholder="Search titles...">
                         </div>
-                    </div>
-                </div>
-                <!-- Submission Type Filter -->
-                <div class="col" style="width: 12%">
-                    <div class="dropdown">
-                        <button class="btn btn-secondary btn-sm dropdown-toggle w-100" type="button" id="typeDropdown" data-bs-toggle="dropdown">
-                            Type
-                        </button>
-                        <div class="dropdown-menu">
-                            <label class="dropdown-item">
-                                <input type="checkbox" value="" class="type-checkbox me-2"> All
-                            </label>
-                            ${Object.entries(this.performanceTypes).map(([id, name]) => `
-                                <label class="dropdown-item">
-                                    <input type="checkbox" value="${id}" class="type-checkbox me-2"> ${name}
-                                </label>
-                            `).join('')}
+                        <!-- Category Filter -->
+                        <div class="filter-col">
+                            <div class="dropdown">
+                                <button class="btn btn-secondary btn-sm dropdown-toggle w-100" type="button" id="categoryDropdown" data-bs-toggle="dropdown">
+                                    Category
+                                </button>
+                                <div class="dropdown-menu">
+                                    <label class="dropdown-item">
+                                        <input type="checkbox" value="" class="category-checkbox me-2"> All
+                                    </label>
+                                    ${this.categories.map(cat => `
+                                        <label class="dropdown-item">
+                                            <input type="checkbox" value="${cat.id}" class="category-checkbox me-2"> ${cat.name}
+                                        </label>
+                                    `).join('')}
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-                <!-- Group Search -->
-                <div class="col" style="width: 12%">
-                    <input type="text" id="groupSearchInput" class="form-control form-control-sm" placeholder="Search groups...">
-                </div>
-                <!-- Status Filter -->
-                <div class="col" style="width: 12%">
-                    <div class="dropdown">
-                        <button class="btn btn-secondary btn-sm dropdown-toggle w-100" type="button" id="statusDropdown" data-bs-toggle="dropdown">
-                            Status
-                        </button>
-                        <div class="dropdown-menu">
-                            <label class="dropdown-item">
-                                <input type="checkbox" value="" class="status-checkbox me-2"> All
-                            </label>
-                            ${Object.entries(this.performanceStatus).map(([id, name]) => `
-                                <label class="dropdown-item">
-                                    <input type="checkbox" value="${id}" class="status-checkbox me-2"> ${name}
-                                </label>
-                            `).join('')}
+                        <!-- Grade Range Filter -->
+                        <div class="filter-col">
+                            <div class="dropdown">
+                                <button class="btn btn-secondary btn-sm dropdown-toggle w-100" type="button" id="gradeDropdown" data-bs-toggle="dropdown">
+                                    Grade
+                                </button>
+                                <div class="dropdown-menu">
+                                    <label class="dropdown-item">
+                                        <input type="checkbox" value="" class="grade-checkbox me-2"> All
+                                    </label>
+                                    ${Object.entries(this.gradeRanges).map(([id, name]) => `
+                                        <label class="dropdown-item">
+                                            <input type="checkbox" value="${id}" class="grade-checkbox me-2"> ${name}
+                                        </label>
+                                    `).join('')}
+                                </div>
+                            </div>
                         </div>
+                        <!-- Submission Type Filter -->
+                        <div class="filter-col">
+                            <div class="dropdown">
+                                <button class="btn btn-secondary btn-sm dropdown-toggle w-100" type="button" id="typeDropdown" data-bs-toggle="dropdown">
+                                    Type
+                                </button>
+                                <div class="dropdown-menu">
+                                    <label class="dropdown-item">
+                                        <input type="checkbox" value="" class="type-checkbox me-2"> All
+                                    </label>
+                                    ${Object.entries(this.performanceTypes).map(([id, name]) => `
+                                        <label class="dropdown-item">
+                                            <input type="checkbox" value="${id}" class="type-checkbox me-2"> ${name}
+                                        </label>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Group Search -->
+                        <div class="filter-col">
+                            <input type="text" id="groupSearchInput" class="form-control form-control-sm" placeholder="Search groups...">
+                        </div>
+                        <!-- Status Filter -->
+                        <div class="filter-col">
+                            <div class="dropdown">
+                                <button class="btn btn-secondary btn-sm dropdown-toggle w-100" type="button" id="statusDropdown" data-bs-toggle="dropdown">
+                                    Status
+                                </button>
+                                <div class="dropdown-menu">
+                                    <label class="dropdown-item">
+                                        <input type="checkbox" value="" class="status-checkbox me-2"> All
+                                    </label>
+                                    ${Object.entries(this.performanceStatus).map(([id, name]) => `
+                                        <label class="dropdown-item">
+                                            <input type="checkbox" value="${id}" class="status-checkbox me-2"> ${name}
+                                        </label>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Empty column for action column alignment -->
+                        <div class="filter-col"></div>
                     </div>
-                </div>
-                <!-- Blank column to align with action column -->
-                <div class="col" style="width: 5%">
                 </div>
             </div>
         `;
@@ -777,10 +926,10 @@ document.addEventListener('DOMContentLoaded', function() {
         this.typeCheckboxes = document.querySelectorAll('.type-checkbox');
         this.statusCheckboxes = document.querySelectorAll('.status-checkbox');
 
-        // Add filter event listeners
-        this.userSearchInput.addEventListener('input', () => this._applyFilters());
-        this.titleSearchInput.addEventListener('input', () => this._applyFilters());
-        this.groupSearchInput.addEventListener('input', () => this._applyFilters());
+        // Add debounced filter event listeners
+        this.userSearchInput.addEventListener('input', () => this._debouncedApplyFilters());
+        this.titleSearchInput.addEventListener('input', () => this._debouncedApplyFilters());
+        this.groupSearchInput.addEventListener('input', () => this._debouncedApplyFilters());
 
         // Initialize checkboxes
         [
@@ -853,6 +1002,16 @@ document.addEventListener('DOMContentLoaded', function() {
             .filter(cb => cb.checked)
             .map(cb => cb.value);
 
+        let hasVisibleRows = false;
+        const firstVisibleRow = document.querySelector('.submission-table tbody tr:not([style*="display: none"])');
+        
+        // Store current column widths if we have visible rows
+        if (firstVisibleRow) {
+            this.lastKnownColumnWidths = Array.from(firstVisibleRow.cells).map(cell => 
+                cell.getBoundingClientRect().width
+            );
+        }
+        
         this.tableObjects.forEach(submission => {
             const row = document.querySelector(`tr[data-id="${submission.id}"]`);
             if (!row) return;
@@ -866,10 +1025,149 @@ document.addEventListener('DOMContentLoaded', function() {
             const matchesType = selectedTypes.includes('') || selectedTypes.includes(submission.submission_type);
             const matchesStatus = selectedStatuses.includes('') || selectedStatuses.includes(submission.status);
 
-            row.style.display = (matchesUser && matchesTitle && matchesGroup && 
-                               matchesCategory && matchesGrade && matchesType && 
-                               matchesStatus) ? '' : 'none';
+            const isVisible = matchesUser && matchesTitle && matchesGroup && 
+                            matchesCategory && matchesGrade && matchesType && 
+                            matchesStatus;
+            
+            row.style.display = isVisible ? '' : 'none';
+            if (isVisible) hasVisibleRows = true;
         });
+
+        // If no rows are visible, add a "no results" row that maintains the table structure
+        const noResultsRow = document.querySelector('.no-results-row');
+        if (!hasVisibleRows) {
+            if (!noResultsRow) {
+                const tbody = document.querySelector('.submission-table tbody');
+                const colCount = document.querySelectorAll('.submission-table th').length;
+                const newRow = document.createElement('tr');
+                newRow.className = 'no-results-row';
+                
+                // Create individual cells with preserved widths
+                const cellsHtml = this.lastKnownColumnWidths.map((width, index) => {
+                    if (index === 0) {
+                        // First cell spans all columns and contains the message
+                        return `<td colspan="${colCount}" class="text-center py-4" style="min-width: ${width}px;">
+                            <div class="text-muted">No matching results found</div>
+                        </td>`;
+                    }
+                    return ''; // Other cells are not needed due to colspan
+                }).join('');
+                
+                newRow.innerHTML = cellsHtml;
+                tbody.appendChild(newRow);
+
+                // Also maintain header widths
+                const headerCells = document.querySelectorAll('.submission-table th');
+                headerCells.forEach((cell, index) => {
+                    if (this.lastKnownColumnWidths[index]) {
+                        cell.style.width = `${this.lastKnownColumnWidths[index]}px`;
+                        cell.style.minWidth = `${this.lastKnownColumnWidths[index]}px`;
+                    }
+                });
+            } else {
+                noResultsRow.style.display = '';
+            }
+        } else if (noResultsRow) {
+            noResultsRow.style.display = 'none';
+        }
+    }
+
+    _adjustFilterWidths() {
+        // Cache DOM queries
+        const headerCells = document.querySelectorAll('.submission-table th');
+        const filterCols = document.querySelectorAll('.filter-col');
+        const tableBody = document.querySelector('.submission-table tbody');
+        const firstRow = tableBody?.rows[0];
+
+        if (!firstRow || !headerCells.length || !filterCols.length) return;
+
+        // Remove existing inline styles
+        filterCols.forEach(col => {
+            col.style.width = '';
+            col.style.margin = '0';
+        });
+
+        // Use a single requestAnimationFrame
+        requestAnimationFrame(() => {
+            headerCells.forEach((headerCell, index) => {
+                if (filterCols[index] && firstRow.cells[index]) {
+                    const headerWidth = headerCell.getBoundingClientRect().width;
+                    const contentWidth = firstRow.cells[index].getBoundingClientRect().width;
+                    const width = Math.max(headerWidth, contentWidth);
+                    const adjustedWidth = width - 8;
+                    
+                    filterCols[index].style.width = `${adjustedWidth}px`;
+                    filterCols[index].style.minWidth = `${adjustedWidth}px`;
+                }
+            });
+        });
+    }
+
+    _initializeSubmissionDeleteModal() {
+        this.submissionDeleteModal = new bootstrap.Modal(document.getElementById('deleteSubmissionModal'));
+        this.deleteSubmissionMessage = document.getElementById('deleteSubmissionMessage');
+        this.deleteSubmissionError = document.getElementById('deleteSubmissionError');
+        this.confirmDeleteSubmissionBtn = document.getElementById('confirmDeleteSubmissionBtn');
+
+        // Reset modal state when it's hidden
+        document.getElementById('deleteSubmissionModal').addEventListener('hidden.bs.modal', () => {
+            this.deleteSubmissionError.style.display = 'none';
+            this.confirmDeleteSubmissionBtn.style.display = 'block';
+            this.deleteSubmissionMessage.innerHTML = '';
+        });
+    }
+
+    _initializeSubmissionDeleteButtons() {
+        const deleteIcons = document.querySelectorAll('.submission-delete');
+        
+        deleteIcons.forEach(icon => {
+            // Remove any existing event listeners
+            const newIcon = icon.cloneNode(true);
+            icon.parentNode.replaceChild(newIcon, icon);
+            
+            newIcon.addEventListener('click', (e) => {
+                console.log('Delete button clicked!');
+                e.preventDefault();
+                e.stopPropagation();
+                const row = e.target.closest('tr');
+                const submissionId = row.dataset.id;
+                
+                this.deleteSubmissionMessage.innerHTML = 'Are you sure you want to delete this submission? This action cannot be undone.';
+                this.deleteSubmissionError.style.display = 'none';
+                this.confirmDeleteSubmissionBtn.style.display = 'block';
+                this.confirmDeleteSubmissionBtn.onclick = () => this._handleSubmissionDelete(submissionId, row);
+                this.submissionDeleteModal.show();
+            });
+        });
+    }
+
+    async _handleSubmissionDelete(submissionId, row) {
+        try {
+            const response = await fetch(`/api/submission/${submissionId}/delete/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': this._getCookie('csrftoken'),
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || 'Failed to delete submission');
+            }
+
+            // Hide the modal
+            this.submissionDeleteModal.hide();
+
+            // Remove the submission row from the table and reload
+            await this._loadTable(true, false);
+
+        } catch (error) {
+            console.error('Error deleting submission:', error);
+            this.deleteSubmissionError.textContent = error.message || 'Failed to delete submission';
+            this.deleteSubmissionError.style.display = 'block';
+            this.confirmDeleteSubmissionBtn.style.display = 'none';
+        }
     }
   }
   const app = new App();

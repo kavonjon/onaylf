@@ -16,7 +16,8 @@ from reportlab.lib import colors as reportlab_colors
 from reportlab.platypus import SimpleDocTemplate as reportlab_SimpleDocTemplate, BaseDocTemplate as reportlab_BaseDocTemplate, PageTemplate as reportlab_PageTemplate, Frame as reportlab_Frame, Table as reportlab_Table, TableStyle as reportlab_TableStyle, Paragraph as reportlab_Paragraph, Spacer as reportlab_Spacer, PageBreak as reportlab_PageBreak, HRFlowable as reportlab_HRFlowable, Flowable as reportlab_Flowable
 from reportlab.lib.styles import getSampleStyleSheet as reportlab_getSampleStyleSheet, ParagraphStyle as reportlab_ParagraphStyle
 from django.db import models
-from django.db.models import Min, Max, Sum, Count, Q
+from django.db.models import Min, Max, Sum, Count, Q, Prefetch
+from django.db.models.functions import Coalesce, Lower
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -896,7 +897,7 @@ def add_fair(request):
 
 
 @login_required
-def home(request):
+def home(request, fair_pk=None):
 
     currentUserEmail = request.user.get_username()
     currentUser = User.objects.get(email=currentUserEmail)
@@ -905,9 +906,15 @@ def home(request):
     is_moderator = currentUser.groups.filter(name='moderator').exists()
 
     currentFair = CurrentFair.objects.first()
+
+
+    if fair_pk is not None:
+        fair = Fair.objects.get(pk=fair_pk)
+    else:
+        fair = currentFair.fair
     
-    # If no current fair exists, render a template informing the user
-    if not currentFair:
+    # If no fair exists, render a template informing the user
+    if not fair:
         template = 'home.html'
         context = {
             'currentUser': currentUser,
@@ -916,7 +923,7 @@ def home(request):
         }
         return render(request, template, context)
 
-    submissions = Submission.objects.prefetch_related("user", "category").filter(fair=currentFair.fair)
+    submissions = Submission.objects.prefetch_related("user", "category").filter(fair=fair)
 
     if not is_moderator:
         submissions = submissions.filter(user=currentUser)
@@ -928,32 +935,28 @@ def home(request):
         'performanceStatus': dict(Submission.PERFORMANCE_STATUS),
         'categories': [
             {'id': cat.id, 'name': cat.name} 
-            for cat in Category.objects.filter(fair=currentFair.fair)
-        ] if currentFair else []
+            for cat in Category.objects.filter(fair=fair)
+        ] if fair else []
     }
 
-    # Debug print
-    print("Data before JSON encoding:", data)
+    # # Debug print
+    # print("Data before JSON encoding:", data)
 
     # JSON encode the data
     json_data = {k: json.dumps(v) for k, v in data.items()}
 
-    # Debug print
-    print("Data after JSON encoding:", json_data)
-
-
-
-
+    # # Debug print
+    # print("Data after JSON encoding:", json_data)
 
 
     template = 'home.html'
     context = {
         'currentUser': currentUser,
         'moderator': is_moderator,
-        'registrationOpen': currentFair.fair.registration_open,
+        'registrationOpen': fair.registration_open,
         'currentFair': currentFair.name,
         'submissions': submissions,
-        'no_fair': currentFair is None,
+        'no_fair': fair is None,
         **json_data  # Add the JSON encoded data
 
     }
@@ -969,17 +972,38 @@ def user_list(request):
     # Check if the user is a moderator
     is_moderator = request.user.groups.filter(name='moderator').exists()
 
-    # Get all users sorted by first name
-    all_users = User.objects.prefetch_related('groups').all()
+    # Get all fair names sorted alphabetically
+    fair_names = Fair.objects.values_list('name', flat=True).order_by('name')
+    fair_names_list = list(fair_names)
 
-    # Add is_new flag for users less than 6 months old
+    # Get all users with their latest fair information
+    all_users = User.objects.prefetch_related('groups').annotate(
+        latest_fair=Coalesce(
+            Max('submission_user__fair__name'),
+            None
+        )
+    ).order_by(Lower('last_name'), Lower('first_name'))  # Add explicit ordering here
+
+    # Add is_new flag and fair badge class for users
     six_months_ago = timezone.now() - timedelta(days=180)
     
     for user in all_users:
         user.is_new = user.date_joined >= six_months_ago
-    
-
-
+        
+        # Add fair badge class based on position
+        if user.latest_fair:
+            try:
+                position = fair_names_list[::-1].index(user.latest_fair)  # Reverse list for latest first
+                if position == 0:
+                    user.fair_badge_class = 'bg-success'
+                elif position == 1:
+                    user.fair_badge_class = 'bg-primary'
+                elif position == 2:
+                    user.fair_badge_class = 'bg-purple'
+                else:
+                    user.fair_badge_class = 'bg-secondary'
+            except ValueError:
+                user.fair_badge_class = 'bg-secondary'
 
     template = 'user_list.html'
     context = {
@@ -1394,28 +1418,41 @@ def student_edit(request, stud_pk, perf_pk=None):
 def student_list(request):
     currentFair = CurrentFair.objects.first()
 
+    # Get fair_id from query params, default to current fair if not provided
+    fair_id = request.GET.get('fair_id')
+    if fair_id:
+        fair = get_object_or_404(Fair, id=fair_id)
+    else:
+        fair = currentFair.fair
+
     # Check if user is a moderator
     is_moderator = request.user.groups.filter(name='moderator').exists()
 
-    # Get students based on user role
-    if is_moderator:
-        # Moderators see all students
-        students = Student.objects.filter(fair=currentFair.fair)\
-            .prefetch_related('submission_student', 'tribe')\
-            .select_related('user')  # Add select_related for user
+    # Optimize the prefetch for submissions to include category
+    submission_prefetch = Prefetch(
+        'submission_student',
+        queryset=Submission.objects.select_related('category')
+    )
+
+    # Base queryset with optimized prefetching
+    base_queryset = Student.objects.filter(fair=fair)\
+        .select_related('user')\
+        .prefetch_related(
+            submission_prefetch,
+            'tribe'
+        )
+
+    # Apply user filter if not moderator
+    if not is_moderator:
+        students = base_queryset.filter(user=request.user)
     else:
-        # Regular users only see their own students
-        students = Student.objects.filter(
-            fair=currentFair.fair,
-            user=request.user
-        ).prefetch_related('submission_student', 'tribe')\
-          .select_related('user')  # Add select_related for user
+        students = base_queryset
 
     # Get all grades for filter dropdown
     grades = Student.GRADES
 
     # Get all categories for filter dropdown 
-    categories = Category.objects.filter(fair=currentFair.fair)
+    categories = Category.objects.filter(fair=fair)
 
     template = 'student_list.html'
     context = {
@@ -1805,17 +1842,19 @@ def poster_edit(request, post_pk):
 
 @login_required
 @user_passes_test(is_moderator)
-def fair_detail(request, fair_pk=None):
+def fair_detail(request):
 
     # Check if the user is a moderator
     is_moderator = request.user.groups.filter(name='moderator').exists()
 
     currentFair = CurrentFair.objects.first()
 
-    if fair_pk is None:
-        fair = currentFair.fair
+    # Determine which fair's data to show
+    fair_id = request.GET.get('fair_id')
+    if fair_id:
+        fair = get_object_or_404(Fair, id=fair_id)
     else:
-        fair = Fair.objects.get(pk=fair_pk)
+        fair = currentFair.fair
 
     # find the number of submissions that are approved
     submissions_approved = Submission.objects.filter(fair=fair).filter(status="approved")
@@ -2031,6 +2070,17 @@ def fair_detail(request, fair_pk=None):
         submission_user__in=submissions_both
     ).distinct()
 
+    # Get program counts using the same base query
+    programs_submitted_count = User.objects.exclude(organization='').filter(
+        submission_user__in=submissions_submitted
+    ).distinct().count()
+
+    programs_approved_count = User.objects.exclude(organization='').filter(
+        submission_user__in=submissions_approved
+    ).distinct().count()
+
+    programs_total_count = programs_with_submissions.count()
+
     # Initialize counters for prek-5 and 6-12 programs
     prek5_programs = {
         "approved": 0,
@@ -2078,6 +2128,139 @@ def fair_detail(request, fair_pk=None):
         submission_user__in=submissions_both,
         submission_user__grade_range__in=['1_6-8', '1_9-12']
     ).distinct().count()
+
+
+ # Get programs by language, including special handling for "Other"
+    programs_by_language = {}
+    
+    # Process non-"Other" languoids
+    for languoid in languoids.exclude(name='Other'):
+        programs_by_language[languoid.name] = {
+            "approved": User.objects.exclude(organization='').filter(
+                submission_user__in=submissions_approved,
+                submission_user__languoids=languoid
+            ).distinct().count(),
+            "submitted": User.objects.exclude(organization='').filter(
+                submission_user__in=submissions_submitted,
+                submission_user__languoids=languoid
+            ).distinct().count(),
+            "all": User.objects.exclude(organization='').filter(
+                submission_user__in=submissions_both,
+                submission_user__languoids=languoid
+            ).distinct().count()
+        }
+
+    # Special processing for "Other" languoid submissions
+    if other_languoid:
+        # Get all submissions with "Other" languoid
+        other_approved = submissions_approved.filter(languoids=other_languoid)
+        other_submitted = submissions_submitted.filter(languoids=other_languoid)
+        
+        # Get unique other_languoid values
+        other_languoid_values = set(
+            list(other_approved.values_list('other_languoid', flat=True).distinct()) +
+            list(other_submitted.values_list('other_languoid', flat=True).distinct())
+        )
+        
+        # Create a temporary dictionary for other languages
+        other_languages = {}
+        
+        # Process each unique other_languoid value
+        for other_value in other_languoid_values:
+            key = f"Other: {other_value or 'Blank'}"
+            other_languages[key] = {
+                "approved": User.objects.exclude(organization='').filter(
+                    submission_user__in=other_approved,
+                    submission_user__other_languoid=other_value
+                ).distinct().count(),
+                "submitted": User.objects.exclude(organization='').filter(
+                    submission_user__in=other_submitted,
+                    submission_user__other_languoid=other_value
+                ).distinct().count(),
+                "all": User.objects.exclude(organization='').filter(
+                    submission_user__in=submissions_both,
+                    submission_user__languoids=other_languoid,
+                    submission_user__other_languoid=other_value
+                ).distinct().count()
+            }
+        
+        # Sort and add other languages same as before
+        sorted_other_keys = sorted([k for k in other_languages.keys() if k != "Other: Blank"])
+        if "Other: Blank" in other_languages:
+            sorted_other_keys.append("Other: Blank")
+        
+        for key in sorted_other_keys:
+            programs_by_language[key] = other_languages[key]
+
+    # Remove languages with no programs
+    programs_by_language = {k: v for k, v in programs_by_language.items() if v['all'] != 0}
+
+
+    # Get students by language, including special handling for "Other"
+    students_by_language = {}
+    
+    # Process non-"Other" languoids
+    for languoid in languoids.exclude(name='Other'):
+        students_by_language[languoid.name] = {
+            "approved": Student.objects.filter(
+                submission_student__in=submissions_approved,
+                submission_student__languoids=languoid
+            ).distinct().count(),
+            "submitted": Student.objects.filter(
+                submission_student__in=submissions_submitted,
+                submission_student__languoids=languoid
+            ).distinct().count(),
+            "all": Student.objects.filter(
+                submission_student__in=submissions_both,
+                submission_student__languoids=languoid
+            ).distinct().count()
+        }
+
+    # Special processing for "Other" languoid submissions
+    if other_languoid:
+        # Get all submissions with "Other" languoid
+        other_approved = submissions_approved.filter(languoids=other_languoid)
+        other_submitted = submissions_submitted.filter(languoids=other_languoid)
+        
+        # Get unique other_languoid values
+        other_languoid_values = set(
+            list(other_approved.values_list('other_languoid', flat=True).distinct()) +
+            list(other_submitted.values_list('other_languoid', flat=True).distinct())
+        )
+        
+        # Create a temporary dictionary for other languages
+        other_languages = {}
+        
+        # Process each unique other_languoid value
+        for other_value in other_languoid_values:
+            key = f"Other: {other_value or 'Blank'}"
+            other_languages[key] = {
+                "approved": Student.objects.filter(
+                    submission_student__in=other_approved,
+                    submission_student__other_languoid=other_value
+                ).distinct().count(),
+                "submitted": Student.objects.filter(
+                    submission_student__in=other_submitted,
+                    submission_student__other_languoid=other_value
+                ).distinct().count(),
+                "all": Student.objects.filter(
+                    submission_student__in=submissions_both,
+                    submission_student__languoids=other_languoid,
+                    submission_student__other_languoid=other_value
+                ).distinct().count()
+            }
+        
+        # Sort and add other languages
+        sorted_other_keys = sorted([k for k in other_languages.keys() if k != "Other: Blank"])
+        if "Other: Blank" in other_languages:
+            sorted_other_keys.append("Other: Blank")
+        
+        for key in sorted_other_keys:
+            students_by_language[key] = other_languages[key]
+
+    # Remove languages with no students
+    students_by_language = {k: v for k, v in students_by_language.items() if v['all'] != 0}
+
 
     # Get all languoids for the fair
     languoids = Languoid.objects.filter(fair=fair)
@@ -2151,6 +2334,21 @@ def fair_detail(request, fair_pk=None):
     )
 
 
+    # Count all languages (across all grade ranges)
+    languages_submitted_count = count_languages(
+        submissions_submitted,
+        ['0_pk-2', '1_3-5', '1_6-8', '1_9-12']
+    )
+
+    languages_approved_count = count_languages(
+        submissions_approved,
+        ['0_pk-2', '1_3-5', '1_6-8', '1_9-12']
+    )
+
+    languages_total_count = count_languages(
+        submissions_both,
+        ['0_pk-2', '1_3-5', '1_6-8', '1_9-12']
+    )
 
     template = 'fair_detail.html'
     context = {
@@ -2172,7 +2370,15 @@ def fair_detail(request, fair_pk=None):
         'prek5_programs': prek5_programs,
         'grade612_programs': grade612_programs,
         'prek5_languages': prek5_languages,
-        'grade612_languages': grade612_languages
+        'programs_by_language': programs_by_language,
+        'grade612_languages': grade612_languages,
+        'programs_submitted_count': programs_submitted_count,
+        'programs_approved_count': programs_approved_count,
+        'programs_total_count': programs_total_count,
+        'students_by_language': students_by_language,
+        'languages_submitted_count': languages_submitted_count,
+        'languages_approved_count': languages_approved_count,
+        'languages_total_count': languages_total_count,
     }
     return render(request, template, context)
 
@@ -2355,9 +2561,14 @@ class FairDownloadView(APIView):
             student_xlsx_file_name = f'Fair{fair.name}-Student details.xlsx'
             student_xlsx_file = default_storage.save(student_xlsx_file_name, ContentFile(xlsx_file_io.read()))
 
+            # get all users that have approved submissions in the current fair and are not moderators
+            users = User.objects.filter(
+                submission_user__fair=fair,  # submission is in current fair
+                submission_user__status='approved'  # submission is approved
+            ).exclude(
+                groups__name='moderator'
+            ).distinct().order_by('organization', 'last_name', 'first_name')
 
-            # get all users that are not moderators
-            users = User.objects.exclude(groups__name='moderator')
 
             group_contact_workbook = Workbook()
 
@@ -2490,9 +2701,10 @@ class FairDownloadView(APIView):
             accessory_xlsx_file = default_storage.save(accessory_xlsx_file_name, ContentFile(xlsx_file_io.read()))
 
 
-            # get all users that have submissions in the fair and are not moderators
+            # get all users that have approved submissions in the current fair and are not moderators
             users = User.objects.filter(
-                submission_user__fair=fair
+                submission_user__fair=fair,  # submission is in current fair
+                submission_user__status='approved'  # submission is approved
             ).exclude(
                 groups__name='moderator'
             ).distinct().order_by('organization', 'last_name', 'first_name')
@@ -2877,6 +3089,9 @@ class SubmissionSheetsDownloadView(APIView):
 
         # filter submissions to only include those that are approved
         submissions = submissions.filter(status__in=["approved"])
+
+        # filter submissions to include only those that are not material
+        submissions = submissions.filter(category__material_submission=False)
 
         # # filter submissions by category, exluding the categories "Poster", "Comics and Cartoons", "Mobile Video"
         # submissions = submissions.exclude(category__name__in=["Poster", "Comics and Cartoons", "Mobile Video"])
@@ -3360,6 +3575,9 @@ class SubmissionCardsDownloadView(APIView):
 
         # filter submissions to only include those that are approved
         submissions = submissions.filter(status__in=["approved"])
+
+        # filter submissions to only include those that are not material
+        submissions = submissions.filter(category__material_submission=False)
 
         # # filter submissions by category, exluding the categories "Poster", "Comics and Cartoons", "Mobile Video"
         # submissions = submissions.exclude(category__name__in=["Poster", "Comics and Cartoons", "Mobile Video"])

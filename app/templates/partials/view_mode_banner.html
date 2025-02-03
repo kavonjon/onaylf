@@ -1,0 +1,32 @@
+{% if moderator %}
+<div id="viewModeBanner" class="alert alert-warning bg-warning bg-opacity-25 border border-warning mb-3" style="display: none;">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <i class="bi bi-eye"></i> 
+            <strong>Viewing Fair:</strong> <span id="viewFairName"></span>
+        </div>
+        <button id="exitViewMode" class="btn btn-warning btn-sm">
+            <i class="bi bi-x-circle"></i> Exit View Mode
+        </button>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const viewFairId = localStorage.getItem('viewFairId');
+    const viewFairName = localStorage.getItem('viewFairName');
+    const banner = document.getElementById('viewModeBanner');
+    
+    if (viewFairId && viewFairName) {
+        document.getElementById('viewFairName').textContent = viewFairName;
+        banner.style.display = 'block';
+    }
+
+    document.getElementById('exitViewMode').addEventListener('click', function() {
+        localStorage.removeItem('viewFairId');
+        localStorage.removeItem('viewFairName');
+        window.location.reload();
+    });
+});
+</script>
+{% endif %} 

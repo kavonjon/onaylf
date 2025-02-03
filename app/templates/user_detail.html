@@ -144,7 +144,18 @@ document.addEventListener('DOMContentLoaded', function() {
         {% endif %}
         <div class="row">
             <div class="col-md-6">
-                <p><i class="bi bi-person-circle"></i> <strong>Name:</strong> {{ currentUser.first_name }} {{ currentUser.last_name }}</p>
+                <p>
+                    <i class="bi bi-person-circle"></i> 
+                    <strong>Name:</strong> 
+                    {{ currentUser.first_name }} {{ currentUser.last_name }}
+                    {% if currentUser.groups.all %}
+                        {% for group in currentUser.groups.all %}
+                            {% if group.name == 'moderator' %}
+                                <span class="badge bg-primary ms-2">Moderator</span>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                </p>
                 <p><i class="bi bi-building"></i> <strong>Program/School:</strong> {{ currentUser.organization }}</p>
                 <p><i class="bi bi-envelope"></i> <strong>Email:</strong> {{ currentUser.email }}</p>
                 <p><i class="bi bi-envelope-at"></i> <strong>Alternate email:</strong> {{ currentUser.alt_email }}</p>
@@ -464,12 +475,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
         table.innerHTML = this.tableHeader
         this.tableBody = document.querySelector('.submission-table tbody');
-        this.tableObjects.forEach((tableObject) => {
-            const html = this._buildRowHtml(tableObject);
-            // const row = this.tableBody.insertRow();
-            // row.innerHTML = html
-            this.tableBody.insertAdjacentHTML('beforeend', html);
-        });
+
+        if (this.tableObjects.length === 0) {
+            const colCount = document.querySelectorAll('.submission-table th').length;
+            const noResultsRow = document.createElement('tr');
+            noResultsRow.className = 'no-results-row';
+            noResultsRow.innerHTML = `
+                <td colspan="${colCount}" class="text-center py-4">
+                    <div class="text-muted">No submissions found</div>
+                </td>
+            `;
+            this.tableBody.appendChild(noResultsRow);
+        } else {
+            this.tableObjects.forEach((tableObject) => {
+                const html = this._buildRowHtml(tableObject);
+                this.tableBody.insertAdjacentHTML('beforeend', html);
+            });
+        }
 
         // Reinitialize delete buttons after table is loaded
         this._initializeSubmissionDeleteButtons();
@@ -653,7 +675,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const updatedSubmission = await this._getSubmission(submission_id);
             // const html = this._buildRowHtml(updatedSubmission);
             // row.outerHTML = html;
-            await this._loadTable(true, false);
+            await this._loadTable(true, false); // home.html does a different sort - not convinced it's different
         }
 
     }

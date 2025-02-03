@@ -1,10 +1,12 @@
 {% extends "base.html" %}
 {% load bootstrap5 %}
 {% load bootstrap_icons %}
+{% load static %}
 
 {% block title %}Fairs{% endblock %}
 
 {% block page_content %}
+{% include 'partials/view_mode_banner.html' %}
 <div class="container-fluid py-4">
     <div class="row">
         <!-- Left Panel - Fair List -->
@@ -43,13 +45,19 @@
                             <span id="fairName">{{ active_fair.name }}</span>
                             <span class="current-fair-badge">
                                 {% if active_fair.id == current_fair.id %}
-                                <span class="badge bg-success ms-2" style="box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);">Current Fair</span>
+                                    <span class="badge bg-success ms-2" style="box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);">Current Fair</span>
                                 {% else %}
-                                <button class="btn btn-secondary btn-sm ms-2 set-current-fair-btn" 
-                                        data-fair-id="{{ active_fair.id }}" 
-                                        style="box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);">
-                                    Set to Current Fair
-                                </button>
+                                    <button class="btn btn-info btn-sm ms-2 view-fair-btn"
+                                            data-fair-id="{{ active_fair.id }}"
+                                            data-fair-name="{{ active_fair.name }}"
+                                            style="box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);">
+                                        <i class="bi bi-eye"></i> View Fair
+                                    </button>
+                                    <button class="btn btn-secondary btn-sm ms-2 set-current-fair-btn" 
+                                            data-fair-id="{{ active_fair.id }}" 
+                                            style="box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);">
+                                        Set to Current Fair
+                                    </button>
                                 {% endif %}
                             </span>
                         </h3>
@@ -321,6 +329,12 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+
+    // Attach click handlers to any View Fair buttons that exist on initial page load
+    document.querySelectorAll('.view-fair-btn').forEach(button => {
+        button.addEventListener('click', handleViewFair);
+    });
+
     // Debug logging
     console.log('Fair list JavaScript loaded');
 
@@ -1140,7 +1154,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!editBtn) return;
 
         const item = editBtn.closest('.list-group-item');
-        const contentContainer = item.firstElementChild;
+        const contentContainer = item.querySelector('.d-flex');
         const nameSpan = contentContainer.querySelector('.item-name');
         const infoSpan = contentContainer.querySelector('.text-muted small');
         
@@ -1587,7 +1601,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Add this after the other event listeners
+    // After the other event handler functions
     document.querySelector('.add-languoid').addEventListener('click', async function() {
         const list = document.getElementById('languoidList');
         
@@ -1834,15 +1848,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     `;
                 } else {
                     buttonContainer.innerHTML = `
-                        <button class="btn btn-secondary btn-sm set-current-fair-btn" 
-                                data-fair-id="${fairId}" 
+                        <button class="btn btn-info btn-sm ms-2 view-fair-btn"
+                                data-fair-id="${fairData.id}"
+                                data-fair-name="${fairData.name}"
+                                style="box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);">
+                            <i class="bi bi-eye"></i> View Fair
+                        </button>
+                        <button class="btn btn-secondary btn-sm ms-2 set-current-fair-btn" 
+                                data-fair-id="${fairData.id}" 
                                 style="box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);">
                             Set to Current Fair
                         </button>
                     `;
-                    // Add click handler to the new button
+                    // Add click handlers to the new buttons
                     buttonContainer.querySelector('.set-current-fair-btn')
                         .addEventListener('click', handleSetCurrentFair);
+                    buttonContainer.querySelector('.view-fair-btn')
+                        .addEventListener('click', handleViewFair);
                 }
 
                 // Update active state in left menu
@@ -1905,8 +1927,44 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Add this function near the other event handler functions
+    function handleViewFair(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const fairId = this.dataset.fairId;
+        const fairName = this.dataset.fairName;
+        
+        localStorage.setItem('viewFairId', fairId);
+        localStorage.setItem('viewFairName', fairName);
+        window.location.href = '/'; // Redirect to home page instead of reloading
+    }
+
+    // Add this near the top of your script, after DOMContentLoaded
+    // Handle view mode banner
+    const viewFairId = localStorage.getItem('viewFairId');
+    const viewFairName = localStorage.getItem('viewFairName');
+    const viewModeBanner = document.getElementById('viewModeBanner');
+    const viewingFairName = document.getElementById('viewingFairName');
+    const exitViewModeBtn = document.getElementById('exitViewMode');
+
+    if (viewFairId && viewModeBanner) {
+        viewModeBanner.style.display = 'block';
+        if (viewingFairName) {
+            viewingFairName.textContent = viewFairName;
+        }
+    }
+
+    if (exitViewModeBtn) {
+        exitViewModeBtn.addEventListener('click', function() {
+            localStorage.removeItem('viewFairId');
+            localStorage.removeItem('viewFairName');
+            viewModeBanner.style.display = 'none';
+            window.location.reload();
+        });
+    }
+
 });
 
 </script>
-{% endblock %}
-{% endblock %}
+{% endblock %}{% endblock %}

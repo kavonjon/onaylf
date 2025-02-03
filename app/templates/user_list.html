@@ -42,7 +42,7 @@
                     <th>Email</th>
                     <th>Organization</th>
                     <th>Location</th>
-                    <th>Status</th>
+                    <th>Last Activity</th>
                 </tr>
             </thead>
             <tbody id="userTableBody">
@@ -74,31 +74,21 @@
                         {% endif %}
                     </td>
                     <td class="user-status-cell" onclick="event.stopPropagation()">
-                        {% if user.is_new %}
-                            {% if user.confirmed %}
-                                <span class="d-inline-flex align-items-center nowrap">New User - Confirmed</span>
-                            {% else %}
-                                <span class="d-inline-flex align-items-center nowrap status-container">
-                                    <span>New User - </span>
-                                    <button class="btn btn-warning btn-sm confirm-user-btn ms-1" data-user-id="{{ user.id }}">
-                                        <span class="button-text">Confirm</span>
-                                        <div class="check-icon" style="display: none;">
-                                            <i class="bi bi-check-lg"></i>
-                                        </div>
-                                    </button>
-                                </span>
-                            {% endif %}
+                        {% if not user.confirmed %}
+                            <span class="d-inline-flex align-items-center nowrap status-container">
+                                <span>{% if user.is_new %}New User{% else %}Unconfirmed user{% endif %} - </span>
+                                <button class="btn btn-warning btn-sm confirm-user-btn ms-1" data-user-id="{{ user.id }}">
+                                    <span class="button-text">Confirm</span>
+                                    <div class="check-icon" style="display: none;">
+                                        <i class="bi bi-check-lg"></i>
+                                    </div>
+                                </button>
+                            </span>
                         {% else %}
-                            {% if not user.confirmed %}
-                                <span class="d-inline-flex align-items-center nowrap status-container">
-                                    <span>Unconfirmed user - </span>
-                                    <button class="btn btn-warning btn-sm confirm-user-btn ms-1" data-user-id="{{ user.id }}">
-                                        <span class="button-text">Confirm</span>
-                                        <div class="check-icon" style="display: none;">
-                                            <i class="bi bi-check-lg"></i>
-                                        </div>
-                                    </button>
-                                </span>
+                            {% if user.latest_fair %}
+                                <span class="badge {{ user.fair_badge_class }} ms-2">{{ user.latest_fair }}</span>
+                            {% elif user.is_new %}
+                                <span class="d-inline-flex align-items-center nowrap">New User</span>
                             {% endif %}
                         {% endif %}
                     </td>
@@ -268,6 +258,10 @@ document.addEventListener('DOMContentLoaded', function() {
     min-height: 31px;
     display: inline-flex;
     align-items: center;
+}
+
+.bg-purple {
+    background-color: #6f42c1;
 }
 </style>
 {% endif %}
