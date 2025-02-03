@@ -2725,12 +2725,30 @@ class FairDownloadView(APIView):
                 # get the grades of the students
                 grades = sorted(list(set(students.values_list('grade', flat=True))))
 
-                # set day to "Day 1" if any of the grades are in grades_dict[0:6]
-                # set day to "Day 2" if any of the grades are in grades_dict[7:13]
-                # set day to "Day 1 + Day 2" if any of the grades are in grades_dict
-                day1 = "Day 1" if any(grade in grades_keys[0:7] for grade in grades) else ""
-                day2 = "Day 2" if any(grade in grades_keys[7:14] for grade in grades) else ""
+                ### deprecated code, using grade_range instead
+                # # set day to "Day 1" if any of the grades are in grades_dict[0:6]
+                # # set day to "Day 2" if any of the grades are in grades_dict[7:13]
+                # # set day to "Day 1 + Day 2" if any of the grades are in grades_dict
+                # day1 = "Day 1" if any(grade in grades_keys[0:7] for grade in grades) else ""
+                # day2 = "Day 2" if any(grade in grades_keys[7:14] for grade in grades) else ""
+                # day = " + ".join(filter(None, [day1, day2]))
+
+
+                # Get all grade ranges from the user's submissions for this fair
+                submission_grade_ranges = set(submissions.values_list('grade_range', flat=True))
+
+                # Check for Day 1 grade ranges (PreK-2nd and 3rd-5th)
+                day1_ranges = {'0_pk-2', '1_3-5'}
+                day1 = "Day 1" if any(grade_range in day1_ranges for grade_range in submission_grade_ranges) else ""
+
+                # Check for Day 2 grade ranges (6th-8th and 9th-12th)
+                day2_ranges = {'1_6-8', '1_9-12'}
+                day2 = "Day 2" if any(grade_range in day2_ranges for grade_range in submission_grade_ranges) else ""
+
                 day = " + ".join(filter(None, [day1, day2]))
+
+
+
 
                 # for each value in grades, replace with the display value from grades_dict
                 grades = [grades_dict[grade] for grade in grades]
