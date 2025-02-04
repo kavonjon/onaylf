@@ -53,6 +53,16 @@
 </div>
 
 <script>
+// Initialize fairId from localStorage
+const fairId = localStorage.getItem('viewFairId');
+const fairParam = fairId ? `?fair_id=${fairId}` : '';
+
+// Check if we need to redirect immediately
+if (fairId && !window.location.search.includes('fair_id')) {
+    window.location.href = window.location.pathname + fairParam;
+}
+
+// Rest of JavaScript wrapped in DOMContentLoaded
 document.addEventListener('DOMContentLoaded', function() {
     const collapse = document.getElementById('instructionsCollapse');
     const toggleBtn = collapse.previousElementSibling.querySelector('button');
@@ -78,6 +88,18 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleText.textContent = 'Hide Instructions';
         localStorage.setItem('instructionsCollapsed', 'false');
     });
+
+    const viewModeBanner = document.getElementById('viewModeBanner');
+    const exitViewModeBtn = document.getElementById('exitViewMode');
+
+    if (exitViewModeBtn) {
+        exitViewModeBtn.addEventListener('click', function() {
+            localStorage.removeItem('viewFairId');
+            localStorage.removeItem('viewFairName');
+            // Remove fair_id from URL before reloading
+            window.location.href = window.location.pathname;
+        });
+    }
 });
 </script>
 {% endblock %}
@@ -165,6 +187,8 @@ document.addEventListener('DOMContentLoaded', function() {
         overflow-y: auto;
         transform: none !important;
         top: auto !important;
+        z-index: 1000;
+        background-color: white;
     }
     
     .dropdown-item {
@@ -210,12 +234,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     .action-buttons {
-        z-index: 1;
         position: relative;
-    }
-
-    .action-buttons a {
-        z-index: 2;
     }
 
     .loading-spinner {
@@ -224,7 +243,7 @@ document.addEventListener('DOMContentLoaded', function() {
         left: 50%;
         transform: translate(-50%, -50%);
         text-align: center;
-        z-index: 1000;
+        z-index: 1050;
     }
 
     .table-responsive {
@@ -241,33 +260,46 @@ document.addEventListener('DOMContentLoaded', function() {
     /* Update these styles */
     .filters-wrapper {
         width: 100%;
-        overflow-x: auto;
         margin-bottom: 1rem;
+        overflow: visible !important;
     }
 
     .filters-container {
-        min-width: 100%;
+        width: 100%;
         display: flex;
         flex-direction: row;
         gap: 0.5rem;
+        overflow: visible !important;
     }
 
     .filters-row {
+        width: 100%;
         display: flex;
         flex-direction: row;
-        width: 100%;
         gap: 0.5rem;
+        overflow: visible !important;
     }
 
     .filter-col {
         flex: 1;
         min-width: 0;
+        position: relative;
+        overflow: visible !important;
     }
 
-    /* Ensure dropdowns don't overflow */
-    .filter-col .dropdown,
-    .filter-col .form-control {
+    /* Ensure dropdowns can position absolutely relative to their button */
+    .filter-col .dropdown {
+        position: relative;
         width: 100%;
+    }
+
+    /* Make sure dropdown menus can expand outside their containers */
+    .filter-col .dropdown-menu {
+        position: absolute;
+        width: 100%;
+        max-height: 300px;
+        overflow-y: auto;
+        overflow-x: hidden;
     }
 
     /* Add this to ensure filters stay within table bounds */

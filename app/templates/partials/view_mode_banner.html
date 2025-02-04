@@ -21,12 +21,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('viewFairName').textContent = viewFairName;
         banner.style.display = 'block';
     }
-
-    document.getElementById('exitViewMode').addEventListener('click', function() {
-        localStorage.removeItem('viewFairId');
-        localStorage.removeItem('viewFairName');
-        window.location.reload();
-    });
 });
 </script>
 {% endif %} 

@@ -56,12 +56,12 @@ class Command(BaseCommand):
 
         # create basic user
         
-        kavon = User.objects.create_user(
-            email='kavon@nal.ou.edu',
-            first_name='Kavon',
-            last_name='H',
-            password=str(os.getenv('KAVONS_PASSWORD')),
-        )
+        # kavon = User.objects.create_user(
+        #     email='kavon@nal.ou.edu',
+        #     first_name='Kavon',
+        #     last_name='H',
+        #     password=str(os.getenv('KAVONS_PASSWORD')),
+        # )
 
         # create moderator group, assing to admin and moderator user
         

@@ -897,8 +897,7 @@ def add_fair(request):
 
 
 @login_required
-def home(request, fair_pk=None):
-
+def home(request):
     currentUserEmail = request.user.get_username()
     currentUser = User.objects.get(email=currentUserEmail)
     
@@ -907,11 +906,17 @@ def home(request, fair_pk=None):
 
     currentFair = CurrentFair.objects.first()
 
-
-    if fair_pk is not None:
-        fair = Fair.objects.get(pk=fair_pk)
+    # First check query param, then URL param, then default to current fair
+    fair_id = request.GET.get('fair_id')
+    if fair_id:
+        fair = Fair.objects.get(pk=fair_id)
     else:
         fair = currentFair.fair
+
+    # Add debugging
+    print(f"Fair ID being viewed: {fair.id if fair else 'None'}")
+    categories = Category.objects.filter(fair=fair) if fair else []
+    print(f"Categories for this fair: {[(c.id, c.name) for c in categories]}")
     
     # If no fair exists, render a template informing the user
     if not fair:
@@ -928,6 +933,11 @@ def home(request, fair_pk=None):
     if not is_moderator:
         submissions = submissions.filter(user=currentUser)
 
+    # Add debugging
+    print(f"Fair ID being viewed: {fair.id if fair else 'None'}")
+    categories = Category.objects.filter(fair=fair) if fair else []
+    print(f"Categories for this fair: {[(c.id, c.name) for c in categories]}")
+    
     # Create the data first so we can inspect it
     data = {
         'gradeRanges': dict(Submission.GRADE_RANGES),
@@ -935,8 +945,8 @@ def home(request, fair_pk=None):
         'performanceStatus': dict(Submission.PERFORMANCE_STATUS),
         'categories': [
             {'id': cat.id, 'name': cat.name} 
-            for cat in Category.objects.filter(fair=fair)
-        ] if fair else []
+            for cat in categories
+        ]
     }
 
     # # Debug print
