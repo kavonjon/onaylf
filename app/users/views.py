@@ -15,12 +15,21 @@ from django.db.models.functions import Lower
 from django.views.decorators.http import require_POST, require_http_methods
 import logging
 from django.contrib.auth.hashers import make_password
+import string
+import random
+from django.core.exceptions import PermissionDenied
 
 logger = logging.getLogger(__name__)
 
 def is_moderator(user):
     return user.groups.filter(name='moderator').exists()
 
+def is_moderator_or_admin(user):
+    return user.is_superuser or user.groups.filter(name='moderator').exists()
+
+def generate_password():
+    chars = string.ascii_letters + string.digits
+    return ''.join(random.choice(chars) for _ in range(16))
 
 class SignUpView(generic.CreateView):
     form_class = CustomUserCreationForm
@@ -288,3 +297,48 @@ def user_add(request):
         form = UserEditForm()
     
     return render(request, 'user_add.html', {'form': form})
+
+@user_passes_test(is_moderator_or_admin, login_url='home')
+def admin_password_reset(request, user_id):
+    User = get_user_model()
+    target_user = get_object_or_404(User, id=user_id)
+    
+    # Don't allow resetting moderator passwords through this interface
+    if target_user.groups.filter(name='moderator').exists():
+        raise PermissionDenied
+    
+    if request.method == 'POST':
+        new_password = generate_password()
+        target_user.set_password(new_password)
+        target_user.save()
+        
+        # Log the action
+        logger.info(f"Password reset for user {target_user.email} by {request.user.email}")
+        
+        # Store password temporarily in session for display
+        request.session['temp_password'] = new_password
+        request.session['reset_user_id'] = user_id
+        
+        return redirect('admin_password_reset_done', user_id=user_id)
+    
+    return render(request, 'registration/admin_password_reset.html', {
+        'target_user': target_user
+    })
+
+@user_passes_test(is_moderator_or_admin, login_url='home')
+def admin_password_reset_done(request, user_id):
+    # Verify this is the correct reset session
+    if not request.session.get('temp_password') or request.session.get('reset_user_id') != user_id:
+        return redirect('home')
+    
+    User = get_user_model()
+    target_user = get_object_or_404(User, id=user_id)
+    
+    # Get password and clear from session
+    temp_password = request.session.pop('temp_password', None)
+    request.session.pop('reset_user_id', None)
+    
+    return render(request, 'registration/admin_password_reset_done.html', {
+        'target_user': target_user,
+        'temp_password': temp_password
+    })
