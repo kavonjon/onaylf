@@ -138,7 +138,31 @@ hr {
     }
 
     body {
-        margin-top: 4rem; /* Smaller top margin on mobile */
+        margin-top: 3rem; /* Make it smaller for mobile - currently 4rem */
+    }
+
+    .featured {
+        width: 95%; /* Slightly narrower than full width */
+        margin-top: 0 !important; /* Reduce top margin */
+        font-size: 0.9rem; /* Slightly smaller font */
+    }
+
+    .featured .card {
+        margin-bottom: 0.5rem !important; /* Reduce bottom margin */
+    }
+
+    .featured .card-body {
+        padding: 0.75rem; /* Reduce padding */
+    }
+
+    .featured h4 {
+        font-size: 1.1rem; /* Smaller heading */
+        margin-bottom: 0.5rem !important;
+    }
+
+    .featured .btn {
+        padding: 0.25rem 0.5rem; /* Smaller buttons */
+        font-size: 0.875rem;
     }
 }
 
@@ -149,7 +173,16 @@ hr {
     }
 
     body {
-        margin-top: 3.5rem; /* Even smaller top margin */
+        margin-top: 2.5rem; /* Make it smaller on small screens */
+    }
+
+    .featured {
+        width: 98%; /* Almost full width on very small screens */
+        font-size: 0.85rem; /* Even smaller font */
+    }
+
+    .featured h4 {
+        font-size: 1rem;
     }
 }
 
