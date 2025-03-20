@@ -13,8 +13,9 @@ ul {
 }
 
 .navbar-brand img {
-  height: 80px;
+  height: 60px; /* Slightly smaller default size */
   width: auto;
+  max-width: 100%; /* Ensure it doesn't overflow */
 }
 
 .stealth {
@@ -80,35 +81,75 @@ hr {
   animation: flash 0.2s 2;
 }
 
-/* Mobile-friendly adjustments */
+/* Adjust navbar and logo for mobile */
 @media (max-width: 768px) {
-    .navbar-brand img {
-        height: 50px; /* Smaller logo on mobile */
-        width: auto;
+    .navbar {
+        padding: 0.25rem 0.5rem;
     }
 
-    /* Ensure dropdown menu is visible on mobile */
+    .navbar-brand {
+        padding: 0 !important;
+        margin-right: 0.5rem;
+        max-width: 70%; /* Ensure logo container doesn't take too much space */
+    }
+
+    .navbar-brand img {
+        height: auto; /* Allow height to be determined by width */
+        width: 100%; /* Fill the container width */
+        max-height: 40px; /* Cap the maximum height */
+    }
+
+    /* Make the toggle button more compact */
+    .navbar-toggler {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    /* Make navbar items take full width when expanded */
     .navbar-collapse {
         background: var(--bs-light);
         padding: 1rem;
+        margin-top: 0.5rem; /* Add space between header and menu items */
+        width: 100%; /* Ensure full width */
     }
 
-    /* Add some spacing between mobile menu items */
+    /* Create a flex container for the header row */
+    .navbar > .container-fluid {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 0.5rem;
+    }
+
+    /* Keep existing mobile menu styles */
     .nav-item {
         padding: 0.5rem 0;
     }
 
-    /* Adjust user dropdown on mobile */
     .form-inline {
         width: 100%;
         margin: 0.5rem 0;
     }
 
-    /* Ensure dropdown menu doesn't get cut off */
     .dropdown-menu {
         position: static !important;
         float: none;
         width: 100%;
+    }
+
+    body {
+        margin-top: 4rem; /* Smaller top margin on mobile */
+    }
+}
+
+/* Add an extra breakpoint for very small screens */
+@media (max-width: 360px) {
+    .navbar-brand img {
+        max-height: 30px; /* Even smaller on very small screens */
+    }
+
+    body {
+        margin-top: 3.5rem; /* Even smaller top margin */
     }
 }
 

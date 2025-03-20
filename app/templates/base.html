@@ -23,54 +23,58 @@
 
   <body>
     <nav class="navbar navbar-expand-md navbar-light bg-light fixed-top">
-      <a class="navbar-brand p-1" href="/"><img src="{% static 'onaylf.png' %}" alt="ONAYLF logo"></a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
+      <div class="container-fluid">
+        <a class="navbar-brand" href="/">
+          <img src="{% static 'onaylf.png' %}" alt="ONAYLF logo">
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
 
-      <div class="collapse navbar-collapse" id="navbarsExampleDefault">
-        <ul class="navbar-nav mr-auto">
-          <li class="nav-item">
-            <a class="nav-link" href="/">Home</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/students">Students</a>
-          </li>
-          {% if moderator %}
-          <li class="nav-item">
-            <a class="nav-link" href="/users">Users</a>
-          </li>
-          <li class="nav-item">
-              <a class="nav-link" href="{% url 'organization_list' %}">Programs</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/fair-info">Info</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/fairs">Fairs</a>
-          </li>
-          {% endif %}
-          <li class="nav-item">
-            <a class="nav-link" href="/contact">Contact</a>
-          </li>
+        <div class="collapse navbar-collapse" id="navbarsExampleDefault">
+          <ul class="navbar-nav mr-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="/">Home</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/students">Students</a>
+            </li>
+            {% if moderator %}
+            <li class="nav-item">
+              <a class="nav-link" href="/users">Users</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'organization_list' %}">Programs</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/fair-info">Info</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/fairs">Fairs</a>
+            </li>
+            {% endif %}
+            <li class="nav-item">
+              <a class="nav-link" href="/contact">Contact</a>
+            </li>
 
-        </ul>
-        <form class="form-inline mx-2 my-2 my-lg-0">
-          {% csrf_token %}
-          {% if user.is_authenticated %}
-            <div class="dropdown">
-              <button class="btn btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown">
-              <i class="fa fa-user px-2" aria-hidden="true"></i> {{ user.get_username }}<span class="caret"></span></button>
-              <ul class="dropdown-menu dropdown-menu-right">
-                <a class="dropdown-item" href="/accounts/profile">User profile</a>
-                <a class="dropdown-item" href="/accounts/password_change">Change password</a>
-                <a class="dropdown-item" href="/accounts/logout">Logout</a>
-              </ul>
-            </div>
-          {% else %}
-          <a class="btn btn-danger mx-2 my-2 my-lg-0" href="/accounts/login/?next=/" role="button">Login</a>
-          {% endif %}
-        </form>
+          </ul>
+          <form class="form-inline mx-2 my-2 my-lg-0">
+            {% csrf_token %}
+            {% if user.is_authenticated %}
+              <div class="dropdown">
+                <button class="btn btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="fa fa-user px-2" aria-hidden="true"></i> {{ user.get_username }}<span class="caret"></span></button>
+                <ul class="dropdown-menu dropdown-menu-right">
+                  <a class="dropdown-item" href="/accounts/profile">User profile</a>
+                  <a class="dropdown-item" href="/accounts/password_change">Change password</a>
+                  <a class="dropdown-item" href="/accounts/logout">Logout</a>
+                </ul>
+              </div>
+            {% else %}
+            <a class="btn btn-danger mx-2 my-2 my-lg-0" href="/accounts/login/?next=/" role="button">Login</a>
+            {% endif %}
+          </form>
+        </div>
       </div>
     </nav>
     <div class="featured col-md-6 mx-auto bg-info bg-gradient">
