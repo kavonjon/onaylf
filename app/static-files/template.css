@@ -5,7 +5,7 @@
 }
 
 body {
-  margin-top: 8rem;
+  margin-top: 6rem;
 }
 
 ul {
@@ -78,4 +78,44 @@ hr {
 
 .flash-animation {
   animation: flash 0.2s 2;
+}
+
+/* Mobile-friendly adjustments */
+@media (max-width: 768px) {
+    .navbar-brand img {
+        height: 50px; /* Smaller logo on mobile */
+        width: auto;
+    }
+
+    /* Ensure dropdown menu is visible on mobile */
+    .navbar-collapse {
+        background: var(--bs-light);
+        padding: 1rem;
+    }
+
+    /* Add some spacing between mobile menu items */
+    .nav-item {
+        padding: 0.5rem 0;
+    }
+
+    /* Adjust user dropdown on mobile */
+    .form-inline {
+        width: 100%;
+        margin: 0.5rem 0;
+    }
+
+    /* Ensure dropdown menu doesn't get cut off */
+    .dropdown-menu {
+        position: static !important;
+        float: none;
+        width: 100%;
+    }
+}
+
+/* Fix dropdown alignment for desktop */
+@media (min-width: 769px) {
+    .dropdown-menu-right {
+        right: 0;
+        left: auto;
+    }
 }
