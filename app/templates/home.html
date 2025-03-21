@@ -734,6 +734,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let category;
         let submission_type;
+        let submission_type_display;
         let group;
         let detail_link;
         let edit_link;
@@ -741,6 +742,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // console.log(tableObject.category)
         category = tableObject.category.name;
         submission_type = tableObject.submission_type;
+        submission_type_display = tableObject.submission_type_display;
         group = tableObject.group;
         detail_link = `/submission/${tableObject.id}/`;
         edit_link = detail_link + 'edit/';
@@ -819,7 +821,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 ${tableObject.grade_range_display}
             </td>
             <td>
-                ${submission_type}
+                ${submission_type_display}
             </td>
             <td>
                 ${group}
@@ -881,7 +883,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const details = [
             submission.category.name,
             submission.grade_range_display,
-            submission.submission_type,
+            submission.submission_type_display,
             submission.group
         ].filter(Boolean); // Remove empty/null values
 
