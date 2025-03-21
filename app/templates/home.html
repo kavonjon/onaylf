@@ -128,6 +128,104 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
     {% endif %}{% endif %}
 
+    <!-- Add Filter Button for Mobile -->
+    <button class="btn btn-primary rounded-circle mobile-filter-btn shadow" data-bs-toggle="modal" data-bs-target="#filterModal">
+        <i class="bi bi-funnel"></i>
+    </button>
+
+    <!-- Filter Modal -->
+    <div class="modal fade filter-modal" id="filterModal" tabindex="-1">
+        <div class="modal-dialog modal-fullscreen-sm-down">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-funnel me-2"></i>Filter Submissions
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- User Search -->
+                    <div class="mb-3">
+                        <label class="form-label">Search Users</label>
+                        <input type="text" id="mobileUserSearch" class="form-control" placeholder="Search by name, email, or organization...">
+                    </div>
+
+                    <!-- Title Search -->
+                    <div class="mb-3">
+                        <label class="form-label">Search Titles</label>
+                        <input type="text" id="mobileTitleSearch" class="form-control" placeholder="Search titles...">
+                    </div>
+
+                    <!-- Category Filter -->
+                    <div class="mb-3">
+                        <label class="form-label">Categories</label>
+                        <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input mobile-category-checkbox" value="" id="mobileAllCategories">
+                                <label class="form-check-label" for="mobileAllCategories">All Categories</label>
+                            </div>
+                            <div id="mobileCategoryCheckboxes">
+                                <!-- This will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Grade Range Filter -->
+                    <div class="mb-3">
+                        <label class="form-label">Grade Ranges</label>
+                        <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input mobile-grade-checkbox" value="" id="mobileAllGrades">
+                                <label class="form-check-label" for="mobileAllGrades">All Grades</label>
+                            </div>
+                            <div id="mobileGradeCheckboxes">
+                                <!-- This will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submission Type Filter -->
+                    <div class="mb-3">
+                        <label class="form-label">Submission Types</label>
+                        <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input mobile-type-checkbox" value="" id="mobileAllTypes">
+                                <label class="form-check-label" for="mobileAllTypes">All Types</label>
+                            </div>
+                            <div id="mobileTypeCheckboxes">
+                                <!-- This will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Group Search -->
+                    <div class="mb-3">
+                        <label class="form-label">Search Groups</label>
+                        <input type="text" id="mobileGroupSearch" class="form-control" placeholder="Search presenting groups...">
+                    </div>
+
+                    <!-- Status Filter -->
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input mobile-status-checkbox" value="" id="mobileAllStatuses">
+                                <label class="form-check-label" for="mobileAllStatuses">All Statuses</label>
+                            </div>
+                            <div id="mobileStatusCheckboxes">
+                                <!-- This will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="applyMobileFilters">Apply Filters</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="card shadow">
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -313,6 +411,27 @@ document.addEventListener('DOMContentLoaded', function() {
         background-color: var(--bs-body-bg);
         z-index: 1;
     }
+
+    /* Hide filter button by default (desktop view) */
+    .mobile-filter-btn {
+        display: none;
+    }
+
+    @media (max-width: 768px) {
+        /* Hide desktop filters */
+        .filters-wrapper {
+            display: none;
+        }
+
+        /* Show filter button */
+        .mobile-filter-btn {
+            display: block;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1030;
+        }
+    }
 </style>
 
 <script>
@@ -480,6 +599,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         this._initializeSubmissionDeleteModal();
+
+        // Initialize mobile filter modal
+        this._initializeMobileFilters();
     }
 
     _getCookie(name) {
@@ -1001,7 +1123,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // If no specific items are checked, check "All"
             const anyChecked = Array.from(checkboxes).some(cb => cb.value !== '' && cb.checked);
-            if (!anyChecked) allCheckbox.checked = true;
+            if (!anyChecked && allCheckbox) {
+                allCheckbox.checked = true;
+            }
         }
 
         this._updateDropdownText(checkboxes, dropdown, defaultText);
@@ -1200,6 +1324,311 @@ document.addEventListener('DOMContentLoaded', function() {
             this.deleteSubmissionError.style.display = 'block';
             this.confirmDeleteSubmissionBtn.style.display = 'none';
         }
+    }
+
+    _initializeMobileFilters() {
+        // Cache mobile filter elements
+        this.mobileUserSearch = document.getElementById('mobileUserSearch');
+        this.mobileTitleSearch = document.getElementById('mobileTitleSearch');
+        this.mobileGroupSearch = document.getElementById('mobileGroupSearch');
+        this.mobileCategoryCheckboxes = document.querySelectorAll('.mobile-category-checkbox');
+        this.mobileGradeCheckboxes = document.querySelectorAll('.mobile-grade-checkbox');
+        this.mobileTypeCheckboxes = document.querySelectorAll('.mobile-type-checkbox');
+        this.mobileStatusCheckboxes = document.querySelectorAll('.mobile-status-checkbox');
+
+        // Handle apply filters button click
+        document.getElementById('applyMobileFilters').addEventListener('click', () => {
+            this._applyMobileFilters();
+        });
+
+        // Sync desktop and mobile filter states
+        const filterModal = document.getElementById('filterModal');
+        filterModal.addEventListener('show.bs.modal', () => {
+            this._syncFiltersToModal();
+        });
+
+        // Initialize mobile checkboxes
+        const mobileAllCategories = document.getElementById('mobileAllCategories');
+        if (mobileAllCategories) {
+            mobileAllCategories.checked = true;
+            this.mobileCategoryCheckboxes.forEach(cb => {
+                if (cb !== mobileAllCategories) {
+                    cb.checked = false;
+                }
+            });
+        }
+
+        // Populate category checkboxes
+        const categoryContainer = document.getElementById('mobileCategoryCheckboxes');
+        if (categoryContainer) {
+            const categoryHTML = categories.map(category => `
+                <div class="form-check">
+                    <input type="checkbox" 
+                           class="form-check-input mobile-category-checkbox" 
+                           value="${category.id}" 
+                           id="mobileCat${category.id}">
+                    <label class="form-check-label" for="mobileCat${category.id}">
+                        ${category.name}
+                    </label>
+                </div>
+            `).join('');
+            categoryContainer.innerHTML = categoryHTML;
+        }
+
+        // Re-query checkboxes after populating
+        this.mobileCategoryCheckboxes = document.querySelectorAll('.mobile-category-checkbox');
+
+        // Populate grade checkboxes
+        const gradeContainer = document.getElementById('mobileGradeCheckboxes');
+        if (gradeContainer) {
+            const gradeHTML = Object.entries(gradeRanges).map(([id, name]) => `
+                <div class="form-check">
+                    <input type="checkbox" 
+                           class="form-check-input mobile-grade-checkbox" 
+                           value="${id}" 
+                           id="mobileGrade${id}">
+                    <label class="form-check-label" for="mobileGrade${id}">
+                        ${name}
+                    </label>
+                </div>
+            `).join('');
+            gradeContainer.innerHTML = gradeHTML;
+        }
+
+        // Re-query checkboxes after populating
+        this.mobileGradeCheckboxes = document.querySelectorAll('.mobile-grade-checkbox');
+
+        // Populate type checkboxes
+        const typeContainer = document.getElementById('mobileTypeCheckboxes');
+        if (typeContainer) {
+            const typeHTML = Object.entries(performanceTypes).map(([id, name]) => `
+                <div class="form-check">
+                    <input type="checkbox" 
+                           class="form-check-input mobile-type-checkbox" 
+                           value="${id}" 
+                           id="mobileType${id}">
+                    <label class="form-check-label" for="mobileType${id}">
+                        ${name}
+                    </label>
+                </div>
+            `).join('');
+            typeContainer.innerHTML = typeHTML;
+        }
+
+        // Re-query checkboxes after populating
+        this.mobileTypeCheckboxes = document.querySelectorAll('.mobile-type-checkbox');
+
+        // Populate status checkboxes
+        const statusContainer = document.getElementById('mobileStatusCheckboxes');
+        if (statusContainer) {
+            const statusHTML = Object.entries(performanceStatus).map(([id, name]) => `
+                <div class="form-check">
+                    <input type="checkbox" 
+                           class="form-check-input mobile-status-checkbox" 
+                           value="${id}" 
+                           id="mobileStatus${id}">
+                    <label class="form-check-label" for="mobileStatus${id}">
+                        ${name}
+                    </label>
+                </div>
+            `).join('');
+            statusContainer.innerHTML = statusHTML;
+        }
+
+        // Re-query checkboxes after populating
+        this.mobileStatusCheckboxes = document.querySelectorAll('.mobile-status-checkbox');
+
+        // Add checkbox change handlers
+        [
+            {checkboxes: this.mobileCategoryCheckboxes, name: 'category'},
+            {checkboxes: this.mobileGradeCheckboxes, name: 'grade'},
+            {checkboxes: this.mobileTypeCheckboxes, name: 'type'},
+            {checkboxes: this.mobileStatusCheckboxes, name: 'status'}
+        ].forEach(({checkboxes, name}) => {
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', () => {
+                    this._handleMobileCheckboxSelection(checkbox, checkboxes);
+                });
+            });
+        });
+    }
+
+    _syncFiltersToModal() {
+        // Sync text inputs
+        this.mobileUserSearch.value = this.userSearchInput.value;
+        this.mobileTitleSearch.value = this.titleSearchInput.value;
+        this.mobileGroupSearch.value = this.groupSearchInput.value;
+
+        // For categories, sync with desktop state
+        const desktopCategoryChecked = Array.from(this.categoryCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+
+        this.mobileCategoryCheckboxes.forEach(cb => {
+            if (cb.value === '') {
+                // "All" checkbox
+                cb.checked = desktopCategoryChecked.includes('');
+            } else {
+                cb.checked = desktopCategoryChecked.includes(cb.value);
+            }
+        });
+
+        // Sync other checkboxes
+        this._syncCheckboxesFromDesktop(this.gradeCheckboxes, this.mobileGradeCheckboxes);
+        this._syncCheckboxesFromDesktop(this.typeCheckboxes, this.mobileTypeCheckboxes);
+        this._syncCheckboxesFromDesktop(this.statusCheckboxes, this.mobileStatusCheckboxes);
+    }
+
+    _syncCheckboxesFromDesktop(desktopCheckboxes, mobileCheckboxes) {
+        const selectedDesktopValues = Array.from(desktopCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+        
+        const hasSelectedValues = selectedDesktopValues.some(v => v !== '');
+        mobileCheckboxes.forEach(cb => {
+            if (cb.value === '') {
+                cb.checked = !hasSelectedValues;
+            } else {
+                cb.checked = selectedDesktopValues.includes(cb.value);
+            }
+        });
+    }
+
+    _applyMobileFilters() {
+        // Get selected values
+        const selectedCategories = Array.from(this.mobileCategoryCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+        const selectedGrades = Array.from(this.mobileGradeCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+        const selectedTypes = Array.from(this.mobileTypeCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+        const selectedStatuses = Array.from(this.mobileStatusCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+
+        // Update desktop filters to match
+        this._syncCheckboxesFromMobile(selectedCategories, this.categoryCheckboxes);
+        this._syncCheckboxesFromMobile(selectedGrades, this.gradeCheckboxes);
+        this._syncCheckboxesFromMobile(selectedTypes, this.typeCheckboxes);
+        this._syncCheckboxesFromMobile(selectedStatuses, this.statusCheckboxes);
+
+        // Update text inputs
+        this.userSearchInput.value = this.mobileUserSearch.value;
+        this.titleSearchInput.value = this.mobileTitleSearch.value;
+        this.groupSearchInput.value = this.mobileGroupSearch.value;
+
+        // Apply filters
+        this._applyFilters();
+
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('filterModal'));
+        modal.hide();
+    }
+
+    _syncCheckboxesFromMobile(selectedValues, desktopCheckboxes) {
+        const hasSelectedValues = selectedValues.some(v => v !== '');
+        desktopCheckboxes.forEach(cb => {
+            if (cb.value === '') {
+                cb.checked = !hasSelectedValues;
+            } else {
+                cb.checked = selectedValues.includes(cb.value);
+            }
+        });
+    }
+
+    _handleMobileCheckboxSelection(checkbox, checkboxes) {
+        if (checkbox.value === '') {
+            // If "All" is selected, uncheck others and check "All"
+            checkboxes.forEach(cb => {
+                cb.checked = (cb === checkbox);
+            });
+        } else {
+            // If specific item is selected
+            const allCheckbox = Array.from(checkboxes).find(cb => cb.value === '');
+            
+            // Uncheck "All"
+            if (allCheckbox) {
+                allCheckbox.checked = false;
+            }
+
+            // If no specific items are checked, check "All"
+            const anyChecked = Array.from(checkboxes).some(cb => cb.value !== '' && cb.checked);
+            if (!anyChecked && allCheckbox) {
+                allCheckbox.checked = true;
+                // Uncheck all other boxes
+                checkboxes.forEach(cb => {
+                    if (cb !== allCheckbox) {
+                        cb.checked = false;
+                    }
+                });
+            }
+        }
+    }
+
+    _createFilterModal() {
+        const modalHTML = `
+            <!-- ... other modal content ... -->
+            
+            <!-- Category Filter -->
+            <div class="mb-3">
+                <label class="form-label">Categories</label>
+                <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input mobile-category-checkbox" value="" id="mobileAllCategories">
+                        <label class="form-check-label" for="mobileAllCategories">All Categories</label>
+                    </div>
+                    <div id="mobileCategoryCheckboxes">
+                        <!-- This will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grade Range Filter -->
+            <div class="mb-3">
+                <label class="form-label">Grade Ranges</label>
+                <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input mobile-grade-checkbox" value="" id="mobileAllGrades">
+                        <label class="form-check-label" for="mobileAllGrades">All Grades</label>
+                    </div>
+                    <div id="mobileGradeCheckboxes">
+                        <!-- This will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submission Type Filter -->
+            <div class="mb-3">
+                <label class="form-label">Submission Types</label>
+                <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input mobile-type-checkbox" value="" id="mobileAllTypes">
+                        <label class="form-check-label" for="mobileAllTypes">All Types</label>
+                    </div>
+                    <div id="mobileTypeCheckboxes">
+                        <!-- This will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Filter -->
+            <div class="mb-3">
+                <label class="form-label">Status</label>
+                <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input mobile-status-checkbox" value="" id="mobileAllStatuses">
+                        <label class="form-check-label" for="mobileAllStatuses">All Statuses</label>
+                    </div>
+                    <div id="mobileStatusCheckboxes">
+                        <!-- This will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        `;
+        return modalHTML;
     }
   }
   const app = new App();
