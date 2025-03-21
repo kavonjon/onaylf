@@ -200,6 +200,21 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 </div>
 
+<div class="mobile-submissions-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="bi bi-list-ul"></i> Submissions
+        </h5>
+        <a href="submission/add/" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-circle"></i> New
+        </a>
+    </div>
+</div>
+
+<div class="mobile-cards-container">
+    <!-- This will be populated by JavaScript -->
+</div>
+
 <div class="pb-5"></div>
 
 <style>
@@ -265,6 +280,151 @@ document.addEventListener('DOMContentLoaded', function() {
         white-space: nowrap;
     }
 
+    @media (max-width: 768px) {
+        /* Hide the regular table and its container on mobile */
+        .submission-table,
+        .submission-table + .card {
+            display: none;
+        }
+
+        /* Also hide the card that contains the table */
+        .card.shadow:has(.submission-table) {
+            display: none;
+        }
+
+        /* Show mobile cards container */
+        .mobile-cards-container {
+            display: block !important;
+            padding: 0.5rem;
+        }
+
+        /* Style for individual submission cards */
+        .submission-card {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 0.75rem;
+            padding: 0.75rem;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        /* Header line with title and status */
+        .submission-card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .submission-card-title {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--bs-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+            margin: 0;
+        }
+
+        /* Status badge */
+        .submission-card-status {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+
+        /* Status colors */
+        .status-in_progress {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status-submitted {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+
+        .status-approved {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        /* Submitter info line */
+        .submission-card-submitter {
+            font-size: 0.9rem;
+            margin-bottom: 0.35rem;
+        }
+
+        .submission-card-org {
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        /* Details line */
+        .submission-card-details {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        /* Update mobile header spacing */
+        .mobile-submissions-header {
+            display: block;
+            background: white;
+            padding: 1rem;
+            margin: 0.5rem 0.5rem 0.75rem 0.5rem;  /* Updated bottom margin to match cards */
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    }
+
+    /* Hide mobile cards by default (desktop view) */
+    .mobile-cards-container {
+        display: none;
+    }
+
+    /* Hide mobile header by default */
+    .mobile-submissions-header {
+        display: none;
+    }
+
+    @media (max-width: 768px) {
+        /* Show mobile header */
+        .mobile-submissions-header {
+            display: block;
+            background: white;
+            padding: 1rem;
+            margin: 0.5rem 0.5rem 0.75rem 0.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .mobile-submissions-header h5 {
+            font-size: 1.1rem;
+            color: var(--bs-primary);
+            font-weight: 500;
+        }
+
+        .mobile-submissions-header .btn {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.9rem;
+        }
+
+        /* Hide the desktop "New Submission" button */
+        .mb-3 .btn-primary {
+            display: none;
+        }
+
+        /* Adjust spacing for cards container */
+        .mobile-cards-container {
+            padding-top: 0;
+        }
+    }
 </style>
 
 <script>
@@ -500,6 +660,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Reinitialize delete buttons after table is loaded
         this._initializeSubmissionDeleteButtons();
+
+        // Add this after populating the table
+        const mobileContainer = document.querySelector('.mobile-cards-container');
+        mobileContainer.innerHTML = '';
+        this.tableObjects.forEach((submission) => {
+            const cardHtml = this._buildCardHtml(submission);
+            mobileContainer.insertAdjacentHTML('beforeend', cardHtml);
+        });
     }
 
     _buildRowHtml(tableObject) {
@@ -895,6 +1063,39 @@ document.addEventListener('DOMContentLoaded', function() {
             this.deleteSubmissionError.style.display = 'block';
             this.confirmDeleteSubmissionBtn.style.display = 'none';
         }
+    }
+
+    _buildCardHtml(submission) {
+        const statusClass = `status-${submission.status}`;
+        const organization = submission.user.organization ? 
+            `<span class="submission-card-org"> · ${submission.user.organization}</span>` : '';
+        
+        // Build details array
+        const details = [
+            submission.category.name,
+            submission.grade_range_display,
+            submission.submission_type,
+            submission.group
+        ].filter(Boolean); // Remove empty/null values
+
+        return `
+            <a href="/submission/${submission.id}/" class="submission-card">
+                <div class="submission-card-header">
+                    <div class="submission-card-title">${submission.title}</div>
+                    <span class="submission-card-status ${statusClass}">
+                        ${submission.status_display}
+                    </span>
+                </div>
+                
+                <div class="submission-card-submitter">
+                    ${submission.user.first_name} ${submission.user.last_name}${organization}
+                </div>
+
+                <div class="submission-card-details">
+                    ${details.join(' · ')}
+                </div>
+            </a>
+        `;
     }
   }
   const app = new App();

@@ -18,10 +18,11 @@ class SubmissionSerializer(serializers.ModelSerializer):
     category = CategorySerializer()
     grade_range_display = serializers.CharField(source='get_grade_range_display', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
+    submission_type_display = serializers.CharField(source='get_submission_type_display', read_only=True)
 
     class Meta:
         model = Submission
-        fields = ['id', 'user', 'title', 'group', 'category', 'grade_range', 'grade_range_display', 'poster', 'submission_type', 'instructors', 'students', 'accessories', 'instructors_status', 'students_status', 'accessories_status', 'review_status', 'status', 'status_display', 'updated']
+        fields = ['id', 'user', 'title', 'group', 'category', 'grade_range', 'grade_range_display', 'poster', 'submission_type', 'submission_type_display', 'instructors', 'students', 'accessories', 'instructors_status', 'students_status', 'accessories_status', 'review_status', 'status', 'status_display', 'updated']
 
 class InstructorSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)

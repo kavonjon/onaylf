@@ -1,304 +1,417 @@
 :root {
-  --bs-body-bg: #efeeef;
-  --bs-bg-secondary: $red;
-
-}
-
-body {
-  margin-top: 6rem;
-}
-
-ul {
-  list-style: none;
-}
-
-.navbar-brand img {
-  height: 60px; /* Slightly smaller default size */
-  width: auto;
-  max-width: 100%; /* Ensure it doesn't overflow */
-}
-
-.stealth {
-  color: inherit;
-}
-
-.page-title {
-  font-size: xx-large;
-  margin-right: 1rem;
-}
-
-.warning {
-  color: red;
-}
-
-.info {
-  color: blue;
-}
-
-.fa-times {
-  color: red;
-}
-
-hr {
-  /* defaults commented
-  margin-top: 1rem;
-  margin-bottom: 1rem;
-  border: 0;
-  border-top: 1px solid rgba(0, 0, 0, 0.1); */
-  border-top: 1px solid rgba(0, 0, 0, 0.4);
-}
-
-.indented {
-  text-indent: 2em;
-}
-
-.pagination {
-  margin: 2rem;
-}
-
-.sort-btn:hover {
-  cursor: pointer;
-}
-
-.highlight-yellow {
-  background-color: #ffffcc; /* A less bright yellow */
-}
-
-.check-unchecked {
-  color: grey
-}
-
-.check-checked {
-  color: green
-}
-
-@keyframes flash {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
-}
-
-.flash-animation {
-  animation: flash 0.2s 2;
-}
-
-/* Adjust navbar and logo for mobile */
-@media (max-width: 768px) {
-    .navbar {
-        padding: 0.25rem 0.5rem;
-    }
-
-    .navbar-brand {
-        padding: 0 !important;
-        margin-right: 0.5rem;
-        max-width: 70%; /* Ensure logo container doesn't take too much space */
-    }
-
-    .navbar-brand img {
-        height: auto; /* Allow height to be determined by width */
-        width: 100%; /* Fill the container width */
-        max-height: 40px; /* Cap the maximum height */
-    }
-
-    /* Make the toggle button more compact */
-    .navbar-toggler {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.875rem;
-    }
-
-    /* Make navbar items take full width when expanded */
-    .navbar-collapse {
-        background: var(--bs-light);
-        padding: 1rem;
-        margin-top: 0.5rem; /* Add space between header and menu items */
-        width: 100%; /* Ensure full width */
-    }
-
-    /* Create a flex container for the header row */
-    .navbar > .container-fluid {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 0.5rem;
-    }
-
-    /* Keep existing mobile menu styles */
-    .nav-item {
-        padding: 0.5rem 0;
-    }
-
-    .form-inline {
-        width: 100%;
-        margin: 0.5rem 0;
-    }
-
-    .dropdown-menu {
-        position: static !important;
-        float: none;
-        width: 100%;
-    }
-
-    body {
-        margin-top: 3rem; /* Make it smaller for mobile - currently 4rem */
-    }
-
-    .featured {
-        width: 95%; /* Slightly narrower than full width */
-        margin-top: 0 !important; /* Reduce top margin */
-        font-size: 0.9rem; /* Slightly smaller font */
-    }
-
-    .featured .card {
-        margin-bottom: 0.5rem !important; /* Reduce bottom margin */
-    }
-
-    .featured .card-body {
-        padding: 0.75rem; /* Reduce padding */
-    }
-
-    .featured h4 {
-        font-size: 1.1rem; /* Smaller heading */
-        margin-bottom: 0.5rem !important;
-    }
-
-    .featured .btn {
-        padding: 0.25rem 0.5rem; /* Smaller buttons */
-        font-size: 0.875rem;
-    }
-
-    /* Hide desktop filters */
-    .filters-wrapper {
-        display: none;
-    }
-
-    /* Show filter button */
-    .mobile-filter-btn {
-        display: block;
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        z-index: 1030;
-    }
-
-    /* Modal styling */
-    .filter-modal .modal-dialog {
-        margin: 0;
-        width: 100%;
-        max-width: none;
-        height: 100%;
-    }
-
-    .filter-modal .modal-content {
-        border-radius: 0;
-        min-height: 100vh;
-    }
-
-    .filter-modal .modal-header {
-        padding: 1rem;
-        background-color: var(--bs-primary);
-        color: white;
-    }
-
-    .filter-modal .modal-body {
-        padding: 1rem;
-        overflow-y: auto;
-    }
-
-    .filter-modal .modal-footer {
-        padding: 1rem;
-        border-top: 1px solid #dee2e6;
-        background-color: #f8f9fa;
-        position: sticky;
-        bottom: 0;
-    }
-
-    /* Filter sections styling */
-    .filter-modal .mb-3 {
-        margin-bottom: 1.5rem !important;
-    }
-
-    .filter-modal .form-label {
-        font-weight: 500;
-        margin-bottom: 0.5rem;
-    }
-
-    /* Checkbox containers */
-    .filter-modal .border.rounded {
-        border: 1px solid #dee2e6 !important;
-        padding: 0.75rem !important;
-        max-height: none !important;
-    }
-
-    /* Checkboxes and labels */
-    .filter-modal .form-check {
-        padding: 0.75rem 1.75rem;
-        margin: 0;
-        border-bottom: 1px solid #f0f0f0;
-    }
-
-    .filter-modal .form-check:last-child {
-        border-bottom: none;
-    }
-
-    .filter-modal .form-check-input {
-        margin-top: 0.25rem;
-    }
-
-    .filter-modal .form-check-label {
-        margin-left: 0.5rem;
-        font-size: 1rem;
-    }
-
-    /* Search inputs */
-    .filter-modal .form-control {
-        padding: 0.75rem;
-        font-size: 1rem;
-    }
-
-    /* Footer buttons */
-    .filter-modal .modal-footer .btn {
-        padding: 0.75rem 1.5rem;
-        font-size: 1rem;
-        flex: 1;
-    }
-
-    /* Filter button styling */
-    .mobile-filter-btn {
-        width: 3.5rem;
-        height: 3.5rem;
-        font-size: 1.25rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    }
-}
-
-/* Add an extra breakpoint for very small screens */
-@media (max-width: 360px) {
-    .navbar-brand img {
-        max-height: 30px; /* Even smaller on very small screens */
-    }
-
-    body {
-        margin-top: 2.5rem; /* Make it smaller on small screens */
-    }
-
-    .featured {
-        width: 98%; /* Almost full width on very small screens */
-        font-size: 0.85rem; /* Even smaller font */
-    }
-
-    .featured h4 {
-        font-size: 1rem;
-    }
-}
-
-/* Fix dropdown alignment for desktop */
-@media (min-width: 769px) {
-    .dropdown-menu-right {
-        right: 0;
-        left: auto;
-    }
-}
-
-/* Hide filter button by default (desktop view) */
-.mobile-filter-btn {
-    display: none;
-}
+    --bs-body-bg: #efeeef;
+    --bs-bg-secondary: $red;
+  
+  }
+  
+  body {
+    margin-top: 6rem;
+  }
+  
+  ul {
+    list-style: none;
+  }
+  
+  .navbar-brand img {
+    height: 60px; /* Slightly smaller default size */
+    width: auto;
+    max-width: 100%; /* Ensure it doesn't overflow */
+  }
+  
+  .stealth {
+    color: inherit;
+  }
+  
+  .page-title {
+    font-size: xx-large;
+    margin-right: 1rem;
+  }
+  
+  .warning {
+    color: red;
+  }
+  
+  .info {
+    color: blue;
+  }
+  
+  .fa-times {
+    color: red;
+  }
+  
+  hr {
+    /* defaults commented
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    border: 0;
+    border-top: 1px solid rgba(0, 0, 0, 0.1); */
+    border-top: 1px solid rgba(0, 0, 0, 0.4);
+  }
+  
+  .indented {
+    text-indent: 2em;
+  }
+  
+  .pagination {
+    margin: 2rem;
+  }
+  
+  .sort-btn:hover {
+    cursor: pointer;
+  }
+  
+  .highlight-yellow {
+    background-color: #ffffcc; /* A less bright yellow */
+  }
+  
+  .check-unchecked {
+    color: grey
+  }
+  
+  .check-checked {
+    color: green
+  }
+  
+  @keyframes flash {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+  
+  .flash-animation {
+    animation: flash 0.2s 2;
+  }
+  
+  /* Adjust navbar and logo for mobile */
+  @media (max-width: 768px) {
+      .navbar {
+          padding: 0.25rem 0.5rem;
+      }
+  
+      .navbar-brand {
+          padding: 0 !important;
+          margin-right: 0.5rem;
+          max-width: 70%; /* Ensure logo container doesn't take too much space */
+      }
+  
+      .navbar-brand img {
+          height: auto; /* Allow height to be determined by width */
+          width: 100%; /* Fill the container width */
+          max-height: 40px; /* Cap the maximum height */
+      }
+  
+      /* Make the toggle button more compact */
+      .navbar-toggler {
+          padding: 0.25rem 0.5rem;
+          font-size: 0.875rem;
+      }
+  
+      /* Make navbar items take full width when expanded */
+      .navbar-collapse {
+          background: var(--bs-light);
+          padding: 1rem;
+          margin-top: 0.5rem; /* Add space between header and menu items */
+          width: 100%; /* Ensure full width */
+      }
+  
+      /* Create a flex container for the header row */
+      .navbar > .container-fluid {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0 0.5rem;
+      }
+  
+      /* Keep existing mobile menu styles */
+      .nav-item {
+          padding: 0.5rem 0;
+      }
+  
+      .form-inline {
+          width: 100%;
+          margin: 0.5rem 0;
+      }
+  
+      .dropdown-menu {
+          position: static !important;
+          float: none;
+          width: 100%;
+      }
+  
+      body {
+          margin-top: 3rem; /* Make it smaller for mobile - currently 4rem */
+      }
+  
+      .featured {
+          width: 95%; /* Slightly narrower than full width */
+          margin-top: 0 !important; /* Reduce top margin */
+          font-size: 0.9rem; /* Slightly smaller font */
+      }
+  
+      .featured .card {
+          margin-bottom: 0.5rem !important; /* Reduce bottom margin */
+      }
+  
+      .featured .card-body {
+          padding: 0.75rem; /* Reduce padding */
+      }
+  
+      .featured h4 {
+          font-size: 1.1rem; /* Smaller heading */
+          margin-bottom: 0.5rem !important;
+      }
+  
+      .featured .btn {
+          padding: 0.25rem 0.5rem; /* Smaller buttons */
+          font-size: 0.875rem;
+      }
+  
+      /* Hide desktop filters */
+      .filters-wrapper {
+          display: none;
+      }
+  
+      /* Show filter button */
+      .mobile-filter-btn {
+          display: block;
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          z-index: 1030;
+      }
+  
+      /* Modal styling */
+      .filter-modal .modal-dialog {
+          margin: 0;
+          width: 100%;
+          max-width: none;
+          height: 100%;
+      }
+  
+      .filter-modal .modal-content {
+          border-radius: 0;
+          min-height: 100vh;
+      }
+  
+      .filter-modal .modal-header {
+          padding: 1rem;
+          background-color: var(--bs-primary);
+          color: white;
+      }
+  
+      .filter-modal .modal-body {
+          padding: 1rem;
+          overflow-y: auto;
+      }
+  
+      .filter-modal .modal-footer {
+          padding: 1rem;
+          border-top: 1px solid #dee2e6;
+          background-color: #f8f9fa;
+          position: sticky;
+          bottom: 0;
+      }
+  
+      /* Filter sections styling */
+      .filter-modal .mb-3 {
+          margin-bottom: 1.5rem !important;
+      }
+  
+      .filter-modal .form-label {
+          font-weight: 500;
+          margin-bottom: 0.5rem;
+      }
+  
+      /* Checkbox containers */
+      .filter-modal .border.rounded {
+          border: 1px solid #dee2e6 !important;
+          padding: 0.75rem !important;
+          max-height: none !important;
+      }
+  
+      /* Checkboxes and labels */
+      .filter-modal .form-check {
+          padding: 0.75rem 1.75rem;
+          margin: 0;
+          border-bottom: 1px solid #f0f0f0;
+      }
+  
+      .filter-modal .form-check:last-child {
+          border-bottom: none;
+      }
+  
+      .filter-modal .form-check-input {
+          margin-top: 0.25rem;
+      }
+  
+      .filter-modal .form-check-label {
+          margin-left: 0.5rem;
+          font-size: 1rem;
+      }
+  
+      /* Search inputs */
+      .filter-modal .form-control {
+          padding: 0.75rem;
+          font-size: 1rem;
+      }
+  
+      /* Footer buttons */
+      .filter-modal .modal-footer .btn {
+          padding: 0.75rem 1.5rem;
+          font-size: 1rem;
+          flex: 1;
+      }
+  
+      /* Filter button styling */
+      .mobile-filter-btn {
+          width: 3.5rem;
+          height: 3.5rem;
+          font-size: 1.25rem;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      }
+  
+      /* Hide the regular table and its container on mobile */
+      .submission-table,
+      .submission-table + .card {
+          display: none;
+      }
+  
+      /* Also hide the card that contains the table */
+      .card.shadow:has(.submission-table) {
+          display: none;
+      }
+  
+      /* Show mobile cards container */
+      .mobile-cards-container {
+          display: block !important;
+          padding: 0.5rem;
+      }
+  
+      /* Style for individual submission cards */
+      .submission-card {
+          background: white;
+          border-radius: 0.5rem;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          margin-bottom: 0.75rem;
+          padding: 0.75rem;
+          text-decoration: none;
+          color: inherit;
+          display: block;
+      }
+  
+      /* Header line with title and status */
+      .submission-card-header {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          margin-bottom: 0.5rem;
+      }
+  
+      .submission-card-title {
+          font-size: 1rem;
+          font-weight: 500;
+          color: var(--bs-primary);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          flex: 1;
+          margin: 0;
+      }
+  
+      /* Status badge */
+      .submission-card-status {
+          display: inline-block;
+          padding: 0.25rem 0.5rem;
+          border-radius: 1rem;
+          font-size: 0.75rem;
+          font-weight: 500;
+          flex-shrink: 0;
+      }
+  
+      /* Submitter info line */
+      .submission-card-submitter {
+          font-size: 0.9rem;
+          margin-bottom: 0.35rem;
+      }
+  
+      .submission-card-org {
+          color: #666;
+          font-size: 0.85rem;
+      }
+  
+      /* Details line */
+      .submission-card-details {
+          font-size: 0.85rem;
+          color: #666;
+      }
+  
+      /* Remove the old card section styles */
+      .submission-card-section,
+      .submission-card-label,
+      .submission-card-value {
+          display: none;
+      }
+  
+      /* Update mobile card status colors */
+      .submission-card .status-in_progress {
+          background-color: #fff3cd;
+          color: #856404;
+      }
+  
+      .submission-card .status-submitted {
+          background-color: #cce5ff;
+          color: #004085;
+      }
+  
+      .submission-card .status-approved {
+          background-color: #d4edda;
+          color: #155724;
+      }
+  
+      /* Ensure links in cards maintain proper color */
+      .submission-card a {
+          color: var(--bs-primary);
+      }
+  
+      /* Add hover state for better touch feedback */
+      .submission-card:active {
+          background-color: rgba(0, 0, 0, 0.05);
+      }
+  }
+  
+  /* Add an extra breakpoint for very small screens */
+  @media (max-width: 360px) {
+      .navbar-brand img {
+          max-height: 30px; /* Even smaller on very small screens */
+      }
+  
+      body {
+          margin-top: 2.5rem; /* Make it smaller on small screens */
+      }
+  
+      .featured {
+          width: 98%; /* Almost full width on very small screens */
+          font-size: 0.85rem; /* Even smaller font */
+      }
+  
+      .featured h4 {
+          font-size: 1rem;
+      }
+  }
+  
+  /* Fix dropdown alignment for desktop */
+  @media (min-width: 769px) {
+      .dropdown-menu-right {
+          right: 0;
+          left: auto;
+      }
+  }
+  
+  /* Hide filter button by default (desktop view) */
+  .mobile-filter-btn {
+      display: none;
+  }
+  
+  /* Hide mobile cards by default (desktop view) */
+  .mobile-cards-container {
+      display: none;
+  }

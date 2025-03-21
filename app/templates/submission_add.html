@@ -7,8 +7,55 @@
 
 {% block title %}{% if submission %}Edit submission{% else %}Add a submission{% endif %}{% endblock %}
 
-
 {% block page_content %}
+<style>
+    /* ... existing styles ... */
+
+    @media (max-width: 768px) {
+        /* Add these styles for the comments textarea */
+        #id_comments {
+            width: 100%;
+            max-width: 100%;
+            min-width: 100%;
+            box-sizing: border-box;
+            padding: 0.5rem;
+        }
+
+        /* Ensure the card body has proper padding */
+        .card-body {
+            padding: 1rem;
+        }
+
+        /* Prevent horizontal scrolling */
+        .container {
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+        }
+
+        /* Update the button container */
+        .d-flex.align-items-center.gap-2 {
+            flex-direction: column;
+            gap: 0.75rem !important;
+            width: 100%;
+        }
+
+        /* Make buttons full width and consistent */
+        .d-flex.align-items-center.gap-2 .btn {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        /* Adjust icon alignment */
+        .d-flex.align-items-center.gap-2 .btn i {
+            font-size: 1.1rem;
+        }
+    }
+</style>
+
 <div class="container py-4">
     <div class="card shadow mb-4">
         <div class="card-header bg-primary text-white">

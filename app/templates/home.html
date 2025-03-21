@@ -272,6 +272,10 @@ document.addEventListener('DOMContentLoaded', function() {
     <div class="mt-2 text-muted">Loading submissions...</div>
 </div>
 
+<div class="mobile-cards-container">
+    <!-- This will be populated by JavaScript -->
+</div>
+
 <style>
     .dropdown-toggle.btn {
         text-align: left;
@@ -635,7 +639,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return fetch(`/api/submission/${user_param}${fairParam}`, { headers, })
             .then(res => res.json())
             .then(data => {
-                this.tableObjects = data
+                this.tableObjects = data;
             });
     }
 
@@ -653,13 +657,14 @@ document.addEventListener('DOMContentLoaded', function() {
     async _loadTable(doFetch, sort, { field = 'updated', direction = 'desc' } = {}) {
         const loader = document.getElementById('tableLoader');
         const tableBody = document.querySelector('.submission-table tbody');
+        const mobileContainer = document.querySelector('.mobile-cards-container');
         
         try {
             loader.style.display = 'block';
             tableBody.classList.add('table-loading');
             
-            if (doFetch == true) {
-                await this._getSubmissions()
+            if (doFetch) {
+                await this._getSubmissions();
             }
             if (!sort) {
                 field = this.sort.field;
@@ -711,7 +716,12 @@ document.addEventListener('DOMContentLoaded', function() {
             //     this._adjustFilterWidths();
             // }, 100);
 
-
+            // Clear and populate mobile cards
+            mobileContainer.innerHTML = '';
+            this.tableObjects.forEach((submission) => {
+                const cardHtml = this._buildCardHtml(submission);
+                mobileContainer.insertAdjacentHTML('beforeend', cardHtml);
+            });
 
         } finally {
             loader.style.display = 'none';
@@ -862,6 +872,38 @@ document.addEventListener('DOMContentLoaded', function() {
         return html
     }
 
+    _buildCardHtml(submission) {
+        const statusClass = `status-${submission.status}`;
+        const organization = submission.user.organization ? 
+            `<span class="submission-card-org"> · ${submission.user.organization}</span>` : '';
+        
+        // Build details array
+        const details = [
+            submission.category.name,
+            submission.grade_range_display,
+            submission.submission_type,
+            submission.group
+        ].filter(Boolean); // Remove empty/null values
+
+        return `
+            <a href="/submission/${submission.id}/" class="submission-card">
+                <div class="submission-card-header">
+                    <div class="submission-card-title">${submission.title}</div>
+                    <span class="submission-card-status ${statusClass}">
+                        ${submission.status_display}
+                    </span>
+                </div>
+                
+                <div class="submission-card-submitter">
+                    ${submission.user.first_name} ${submission.user.last_name}${organization}
+                </div>
+
+                <div class="submission-card-details">
+                    ${details.join(' · ')}
+                </div>
+            </a>
+        `;
+    }
 
     async _clickSortCaret(e) {
         const target = e.target;
@@ -1226,6 +1268,27 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (noResultsRow) {
             noResultsRow.style.display = 'none';
         }
+
+        // Also apply filters to mobile cards
+        this.tableObjects.forEach(submission => {
+            const card = document.querySelector(`.submission-card[href="/submission/${submission.id}/"]`);
+            if (!card) return;
+
+            const userText = `${submission.user.first_name} ${submission.user.last_name} ${submission.user.organization} ${submission.user.email}`.toLowerCase();
+            const matchesUser = !userSearch || userText.includes(userSearch);
+            const matchesTitle = !titleSearch || submission.title.toLowerCase().includes(titleSearch);
+            const matchesGroup = !groupSearch || (submission.group || '').toLowerCase().includes(groupSearch);
+            const matchesCategory = selectedCategories.includes('') || selectedCategories.includes(submission.category.id.toString());
+            const matchesGrade = selectedGrades.includes('') || selectedGrades.includes(submission.grade_range);
+            const matchesType = selectedTypes.includes('') || selectedTypes.includes(submission.submission_type);
+            const matchesStatus = selectedStatuses.includes('') || selectedStatuses.includes(submission.status);
+
+            const isVisible = matchesUser && matchesTitle && matchesGroup && 
+                            matchesCategory && matchesGrade && matchesType && 
+                            matchesStatus;
+            
+            card.style.display = isVisible ? 'block' : 'none';
+        });
     }
 
     _adjustFilterWidths() {
