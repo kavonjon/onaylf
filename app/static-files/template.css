@@ -164,6 +164,110 @@ hr {
         padding: 0.25rem 0.5rem; /* Smaller buttons */
         font-size: 0.875rem;
     }
+
+    /* Hide desktop filters */
+    .filters-wrapper {
+        display: none;
+    }
+
+    /* Show filter button */
+    .mobile-filter-btn {
+        display: block;
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1030;
+    }
+
+    /* Modal styling */
+    .filter-modal .modal-dialog {
+        margin: 0;
+        width: 100%;
+        max-width: none;
+        height: 100%;
+    }
+
+    .filter-modal .modal-content {
+        border-radius: 0;
+        min-height: 100vh;
+    }
+
+    .filter-modal .modal-header {
+        padding: 1rem;
+        background-color: var(--bs-primary);
+        color: white;
+    }
+
+    .filter-modal .modal-body {
+        padding: 1rem;
+        overflow-y: auto;
+    }
+
+    .filter-modal .modal-footer {
+        padding: 1rem;
+        border-top: 1px solid #dee2e6;
+        background-color: #f8f9fa;
+        position: sticky;
+        bottom: 0;
+    }
+
+    /* Filter sections styling */
+    .filter-modal .mb-3 {
+        margin-bottom: 1.5rem !important;
+    }
+
+    .filter-modal .form-label {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Checkbox containers */
+    .filter-modal .border.rounded {
+        border: 1px solid #dee2e6 !important;
+        padding: 0.75rem !important;
+        max-height: none !important;
+    }
+
+    /* Checkboxes and labels */
+    .filter-modal .form-check {
+        padding: 0.75rem 1.75rem;
+        margin: 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .filter-modal .form-check:last-child {
+        border-bottom: none;
+    }
+
+    .filter-modal .form-check-input {
+        margin-top: 0.25rem;
+    }
+
+    .filter-modal .form-check-label {
+        margin-left: 0.5rem;
+        font-size: 1rem;
+    }
+
+    /* Search inputs */
+    .filter-modal .form-control {
+        padding: 0.75rem;
+        font-size: 1rem;
+    }
+
+    /* Footer buttons */
+    .filter-modal .modal-footer .btn {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+        flex: 1;
+    }
+
+    /* Filter button styling */
+    .mobile-filter-btn {
+        width: 3.5rem;
+        height: 3.5rem;
+        font-size: 1.25rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
 }
 
 /* Add an extra breakpoint for very small screens */
@@ -192,4 +296,9 @@ hr {
         right: 0;
         left: auto;
     }
+}
+
+/* Hide filter button by default (desktop view) */
+.mobile-filter-btn {
+    display: none;
 }
