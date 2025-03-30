@@ -12,7 +12,6 @@ def demo_mode_context(request):
     """
     Adds demo mode context variable to all templates
     """
-    print(f"DEMO_MODE in context processor: {settings.DEMO_MODE}")
     
     context = {
         'DEMO_MODE': settings.DEMO_MODE,

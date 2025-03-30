@@ -17,8 +17,12 @@ class DemoTimestampMiddleware:
     def __call__(self, request):
         response = self.get_response(request)
         
-        # Only track timestamps in demo mode for data-changing requests
-        if settings.DEMO_MODE and request.method in ['POST', 'PUT', 'DELETE', 'PATCH']:
+        # Only track timestamps in demo mode for data-changing requests or if user is authenticated
+        # This ensures we don't reset while someone is actively browsing
+        if settings.DEMO_MODE and (
+            request.method in ['POST', 'PUT', 'DELETE', 'PATCH'] or 
+            request.user.is_authenticated
+        ):
             with open(self.modified_file, 'w') as f:
                 f.write(str(int(time.time())))
         
