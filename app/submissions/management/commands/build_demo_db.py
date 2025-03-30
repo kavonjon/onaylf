@@ -147,7 +147,7 @@ class Command(BaseCommand):
             ("tibe1272", "Tibetan", "language"),
             ("samo1305", "Samoan", "language"),
             ("hawa1245", "Hawaiian", "language"),
-            ("mand1415", "Mandarin", "language"),
+            ("coma1245", "Comanche", "language"),
             ("swah1253", "Swahili", "language"),
             ("malt1254", "Maltese", "language"),
             ("quec1387", "Quechua", "language"),

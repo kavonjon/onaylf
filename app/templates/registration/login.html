@@ -11,6 +11,57 @@
 <div class="container py-4">
     <div class="row justify-content-center">
         <div class="col-md-6">
+            <!-- Welcome Box Start -->
+            <div class="card shadow mb-4">
+                <div class="card-header {% if DEMO_MODE %}bg-info{% else %}bg-primary{% endif %} text-white">
+                    <h2 class="card-title mb-0">
+                        <i class="bi bi-info-circle"></i> Welcome
+                    </h2>
+                </div>
+                <div class="card-body">
+                    {% if DEMO_MODE %}
+                        <p>Welcome to the demo version of the Youth Language Fair registration portal. To test out the website, you can log in as a moderator or regular user.</p>
+                        
+                        <h5><i class="bi bi-shield-lock"></i> Moderator Access:</h5>
+                        <div class="mb-3">
+                            {% if DEMO_MODERATORS %}
+                                <strong>Emails:</strong>
+                                <ul class="list-unstyled ms-3">
+                                    {% for email in DEMO_MODERATORS %}
+                                        <li>{{ email }}</li>
+                                    {% endfor %}
+                                </ul>
+                                <strong>Password:</strong> {{ DEMO_MODERATOR_PASSWORD }}
+                            {% else %}
+                                <p class="text-muted">No demo moderators available</p>
+                            {% endif %}
+                        </div>
+                        
+                        <h5><i class="bi bi-person"></i> Regular User Access:</h5>
+                        <div class="mb-3">
+                            {% if DEMO_USERS %}
+                                <strong>Emails:</strong>
+                                <ul class="list-unstyled ms-3">
+                                    {% for email in DEMO_USERS %}
+                                        <li>{{ email }}</li>
+                                    {% endfor %}
+                                </ul>
+                                <strong>Password:</strong> {{ DEMO_USER_PASSWORD }}
+                            {% else %}
+                                <p class="text-muted">No demo users available</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i> This is a demo environment with sample data. Any changes will be reset periodically.
+                        </div>
+                    {% else %}
+                        <p>Welcome to the Registration portal for the Oklahoma Native American Youth Language Fair!</p>
+                    {% endif %}
+                </div>
+            </div>
+            <!-- Welcome Box End -->
+            
             <div class="card shadow">
                 <div class="card-header bg-primary text-white">
                     <h2 class="card-title mb-0">
