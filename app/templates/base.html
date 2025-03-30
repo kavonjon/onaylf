@@ -7,25 +7,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="">
     <meta name="author" content="Kavon Hooshiar">
-    <title>{% block title %}{% endblock %} | ONAYLF {{ currentFair }}</title>
+    <title>{% block title %}{% endblock %} | {% if DEMO_MODE %}Language Fair{% else %}ONAYLF{% endif %} {{ currentFair }}</title>
     {% load bootstrap5 %}
     {% bootstrap_css %}
     {% bootstrap_javascript %}
     {% load bootstrap_icons %}
-    <link rel="shortcut icon" type="image/png" href="{% static 'favicon.ico' %}"/>
     <link rel="stylesheet" href="{% static 'template.css' %}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.1/font/bootstrap-icons.css">
     <!-- Add Select2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <!-- Add Select2 Bootstrap 5 Theme (optional but recommended) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% if DEMO_MODE %}
+    <link rel="shortcut icon" type="image/png" href="{% static 'demofavicon.ico' %}?v=1"/>
+    {% else %}
+    <link rel="shortcut icon" type="image/png" href="{% static 'favicon.ico' %}?v=1"/>
+    {% endif %}
   </head>
 
   <body>
     <nav class="navbar navbar-expand-md navbar-light bg-light fixed-top">
       <div class="container-fluid">
         <a class="navbar-brand" href="/">
-          <img src="{% static 'onaylf.png' %}" alt="ONAYLF logo">
+          {% if DEMO_MODE %}
+            <img src="{% static 'demofair.png' %}?v=1" alt="Language Fair logo">
+          {% else %}
+            <img src="{% static 'onaylf.png' %}?v=1" alt="ONAYLF logo">
+          {% endif %}
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>

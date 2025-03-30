@@ -21,7 +21,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
 from submissions import views
-from users.views import SignUpView, user_account_detail, user_account_edit, user_edit, organization_list, organization_add, organization_edit, organization_delete, confirm_user, delete_user, user_add, admin_password_reset, admin_password_reset_done
+from users.views import SignUpView, user_account_detail, user_account_edit, user_edit, organization_list, organization_add, organization_edit, organization_delete, confirm_user, delete_user, user_add, admin_password_reset, admin_password_reset_done, check_user_status
 
 handler500 = 'submissions.views.custom_500_view'
 
@@ -126,6 +126,7 @@ urlpatterns = [
     path('api/confirm-user/<int:user_id>/', confirm_user, name='confirm_user'),
     path('api/delete-user/<int:user_id>/', delete_user, name='delete_user'),
     path('api/submission/<int:submission_id>/delete/', views.submission_delete, name='submission_delete'),
+    path('api/user/<int:user_id>/check/', check_user_status, name='check_user_status'),
     path('user/add/', user_add, name='user_add'),
     path('api/students/<int:student_id>/check_delete/', views.check_student_delete, name='check_student_delete'),
     path('api/students/<int:student_id>/delete/', views.delete_student, name='delete_student'),

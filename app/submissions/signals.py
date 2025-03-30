@@ -52,6 +52,11 @@ def update_submissions_organization(sender, instance, created, raw, update_field
 
 @receiver(post_save, sender=Submission)
 def mark_submission_submitted(sender, instance, created, **kwargs):
+    # Skip email sending if in demo mode
+    if getattr(settings, 'DEMO_MODE', False):
+        logger.info("Skipping submission email in DEMO_MODE")
+        return
+        
     logger.info(f"Signal triggered for submission {instance.id} with status {instance.status}")
     
     if instance.status == 'submitted' and instance.submitted_email_sent == False:
@@ -116,6 +121,11 @@ ONAYLF Team"""
 
 @receiver(post_save, sender=Submission)
 def at_submission_approved(sender, instance, created, **kwargs):
+    # Skip email sending if in demo mode
+    if getattr(settings, 'DEMO_MODE', False):
+        logger.info("Skipping approval email in DEMO_MODE")
+        return
+        
     if instance.status == 'approved' and instance.approved_email_sent == False:
         try:
             instance.approved_email_sent = True

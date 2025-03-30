@@ -16,8 +16,13 @@
                         <i class="bi bi-telephone"></i> Get in Touch
                     </h5>
                     <p class="card-text">
-                        <i class="bi bi-telephone-fill me-2"></i> (405) 325-7588<br>
-                        <i class="bi bi-envelope-fill me-2"></i> <a href="mailto:onaylf.samnoblemuseum@ou.edu" class="text-decoration-none">onaylf.samnoblemuseum@ou.edu</a>
+                        {% if DEMO_MODE %}
+                            <i class="bi bi-telephone-fill me-2"></i> (304) 555-4482<br>
+                            <i class="bi bi-envelope-fill me-2"></i> <a href="mailto:admin@exampleyouthlanguagefair.com" class="text-decoration-none">admin@exampleyouthlanguagefair.com</a>
+                        {% else %}
+                            <i class="bi bi-telephone-fill me-2"></i> (405) 325-7588<br>
+                            <i class="bi bi-envelope-fill me-2"></i> <a href="mailto:onaylf.samnoblemuseum@ou.edu" class="text-decoration-none">onaylf.samnoblemuseum@ou.edu</a>
+                        {% endif %}
                     </p>
                 </div>
             </div>
@@ -28,7 +33,11 @@
                         <i class="bi bi-info-circle"></i> Office Hours
                     </h5>
                     <p class="card-text">
-                        The ONAYLF office is staffed on Wednesdays; we will return your messages as soon as possible.
+                        {% if DEMO_MODE %}
+                            The Language Fair office is staffed on M-F; we will return your messages as soon as possible.
+                        {% else %}
+                            The ONAYLF office is staffed on Wednesdays; we will return your messages as soon as possible.
+                        {% endif %}
                     </p>
                 </div>
             </div>

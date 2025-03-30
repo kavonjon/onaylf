@@ -51,6 +51,14 @@ from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
+# Global variable for human readable title
+if getattr(settings, 'DEMO_MODE', False):
+    human_readable_title = "Youth Language Fair"
+    banner_image = "demofair.png"
+else:
+    human_readable_title = "Oklahoma Native American Youth Language Fair"
+    banner_image = "onaylf.png"
+
 def is_moderator(user):
     return user.groups.filter(name='moderator').exists()
 
@@ -3006,7 +3014,7 @@ class JudgeSheetsDownloadView(APIView):
         def draw_static_elements():
             # Title banner image
             # Get image
-            image_path = os.path.join(settings.STATIC_ROOT, 'onaylf.png')
+            image_path = os.path.join(settings.STATIC_ROOT, banner_image)
             # Create an Image object
             image = reportlab_Image(image_path)
             # Set the width to match the page width (with margins)
@@ -3019,7 +3027,6 @@ class JudgeSheetsDownloadView(APIView):
             image.drawHeight = image_height
             # Draw the image
             image.drawOn(p, 30, height-100)
-            # p.drawString(30, height-30, "SAM NOBLE MUSEUM DEPARTMENT OF NATIVE AMERICAN LANGUAGES")
             # Subtitle with Blue Background
             sky_blue = reportlab_Color(0.429, 0.708, 0.982)  # RGB values for light blue
             p.setFillColor(sky_blue)
@@ -3029,7 +3036,7 @@ class JudgeSheetsDownloadView(APIView):
             p.rect(rectangle_x, height-140, rectangle_width, 30, fill=True, stroke=False)
             p.setFillColor(reportlab_white)
             p.setFont("Helvetica", 14)
-            p.drawString(130, height-130, f"Oklahoma Native American Youth Language Fair {fair.name}")
+            p.drawString(130, height-130, f"{human_readable_title} {fair.name}")
 
             p.setFillColor(reportlab_black)
             # Horizontal Rule after Dynamic Text
@@ -3076,7 +3083,7 @@ class JudgeSheetsDownloadView(APIView):
             p.line(30, 40, width-30, 40)
             # Footer
             p.setFont("Helvetica", 8)
-            p.drawString(30, 30, f"Oklahoma Native American Youth Language Fair {fair.name} Judging Sheet - {submission.category.name}")
+            p.drawString(30, 30, f"{human_readable_title} {fair.name} Judging Sheet - {submission.category.name}")
 
         for submission in submissions:
             draw_static_elements()
@@ -3169,8 +3176,8 @@ class SubmissionSheetsDownloadView(APIView):
         reportlab_pdfmetrics.registerFont(reportlab_TTFont('AboriginalSansBOLD', font_bold_path))
 
         for submission in submissions:
-            # add the header image onaylf.png
-            image_path = os.path.join(settings.STATIC_ROOT, 'onaylf.png')
+            # add the header image (banner_image)
+            image_path = os.path.join(settings.STATIC_ROOT, banner_image)
             image_width = page_width - 200
             image = reportlab_Image(image_path, width=image_width, height=60)
             elements.append(image)
@@ -3433,8 +3440,8 @@ class RegistrationCoverSheetsDownloadView(APIView):
         elements = []
         page_width, page_height = reportlab_letter
 
-        # add the header image onaylf.png
-        image_path = os.path.join(settings.STATIC_ROOT, 'onaylf.png')
+        # add the header image (banner_image)
+        image_path = os.path.join(settings.STATIC_ROOT, banner_image)
         image_width = page_width - 200
         image = reportlab_Image(image_path, width=image_width, height=60)
 
@@ -3629,7 +3636,7 @@ class SubmissionCardsDownloadView(APIView):
 
         # Title banner image
         # Get image
-        image_path = os.path.join(settings.STATIC_ROOT, 'onaylf.png')
+        image_path = os.path.join(settings.STATIC_ROOT, banner_image)
         # Create an Image object
         image = reportlab_Image(image_path)
         # Set the size of the image

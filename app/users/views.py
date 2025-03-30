@@ -104,6 +104,10 @@ def user_edit(request, user_id):
     """
     user_to_edit = get_object_or_404(User, id=user_id)
     
+    # Prevent editing staff/superuser accounts unless requesting user is staff/superuser
+    if (user_to_edit.is_staff or user_to_edit.is_superuser) and not (request.user.is_staff or request.user.is_superuser):
+        raise PermissionDenied("You don't have permission to edit this user")
+    
     if request.method == 'POST':
         form = UserEditForm(request.POST, request.FILES, instance=user_to_edit)
         if form.is_valid():
@@ -232,11 +236,16 @@ def confirm_user(request, user_id):
 def delete_user(request, user_id):
     try:
         # Don't allow deletion of self
-        if request.user.id == user_id:
+        if request.user.id == int(user_id):
             logger.warning(f"User {request.user.id} attempted to delete their own account")
-            return JsonResponse({'error': 'Cannot delete your own account'}, status=400)
+            return JsonResponse({'error': 'Cannot delete your own account'}, status=403)
             
         user = User.objects.get(id=user_id)
+        
+        # Don't allow deletion of staff/superuser accounts unless by another staff/superuser
+        if (user.is_staff or user.is_superuser) and not (request.user.is_staff or request.user.is_superuser):
+            logger.warning(f"Non-staff user {request.user.id} attempted to delete staff/superuser {user_id}")
+            return JsonResponse({'error': 'Cannot delete staff or superuser accounts'}, status=403)
         
         # Check if user has any submissions (this will block deletion)
         submissions = Submission.objects.filter(user=user)
@@ -303,9 +312,10 @@ def admin_password_reset(request, user_id):
     User = get_user_model()
     target_user = get_object_or_404(User, id=user_id)
     
-    # Don't allow resetting moderator passwords through this interface
-    if target_user.groups.filter(name='moderator').exists():
-        raise PermissionDenied
+    # Don't allow regular moderators to reset moderator passwords
+    # But allow staff/superusers to reset any password
+    if target_user.groups.filter(name='moderator').exists() and not (request.user.is_staff or request.user.is_superuser):
+        raise PermissionDenied("You don't have permission to reset this user's password")
     
     if request.method == 'POST':
         new_password = generate_password()
@@ -341,4 +351,16 @@ def admin_password_reset_done(request, user_id):
     return render(request, 'registration/admin_password_reset_done.html', {
         'target_user': target_user,
         'temp_password': temp_password
+    })
+
+@login_required
+@user_passes_test(is_moderator_or_admin)
+def check_user_status(request, user_id):
+    """
+    API endpoint to check if a user is staff or superuser
+    """
+    user = get_object_or_404(User, id=user_id)
+    return JsonResponse({
+        'is_staff': user.is_staff,
+        'is_superuser': user.is_superuser
     })

@@ -27,6 +27,9 @@ SECRET_KEY = str(os.getenv('SECRET_KEY'))
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG') == "True"
 
+# Demo Mode Setting
+DEMO_MODE = os.getenv('DEMO_MODE', 'False') == "True"
+
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 
 CSRF_TRUSTED_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
@@ -56,6 +59,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'users.middleware.YearlyProfileCheckMiddleware',
+    'submissions.middleware.DemoTimestampMiddleware',
 ]
 
 ROOT_URLCONF = 'onaylf.urls'
@@ -72,6 +76,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'users.context_processors.user_context',
+                'users.context_processors.demo_mode_context',
             ],
         },
     },
@@ -83,17 +88,24 @@ WSGI_APPLICATION = 'onaylf.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': os.getenv('POSTGRES_DB'),
-        'USER': os.getenv('POSTGRES_USER'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
-        'HOST': os.getenv('DBHOST'),
-        'PORT': os.getenv('DBPORT'),
+if DEMO_MODE:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db_demo.sqlite3'),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': os.getenv('POSTGRES_DB'),
+            'USER': os.getenv('POSTGRES_USER'),
+            'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
+            'HOST': os.getenv('DBHOST'),
+            'PORT': os.getenv('DBPORT'),
+        }
+    }
 
 
 AUTH_USER_MODEL = 'users.User'

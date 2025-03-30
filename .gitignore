@@ -63,6 +63,9 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 app/static/
+app/demo_timestamps/
+app/db_demo.sqlite3
+app/db_demo_clean.sqlite3
 
 # Flask stuff:
 instance/
