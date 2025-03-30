@@ -43,10 +43,15 @@ EXPOSE $PORT
 
 # Setup and run the application
 CMD bash -c "echo 'Setting up demo mode...' && \
+    mkdir -p /app/static && \
+    mkdir -p /app/media && \
     python manage.py migrate && \
     python manage.py build_demo_db && \
     cp db_demo.sqlite3 db_demo_clean.sqlite3 && \
     echo 'Collecting static files...' && \
-    python manage.py collectstatic --noinput && \
+    python manage.py collectstatic --noinput --clear && \
+    ls -la /app/static && \
+    chmod -R 755 /app/static && \
+    chmod -R 755 /app/media && \
     echo 'Starting server on port $PORT...' && \
-    gunicorn onaylf.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120" 
+    gunicorn onaylf.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120"
