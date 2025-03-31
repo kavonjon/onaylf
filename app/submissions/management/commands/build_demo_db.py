@@ -19,7 +19,7 @@ class Command(BaseCommand):
 
         # # createsuperuser
         admin_user = User.objects.create_superuser(
-            email='admin@examplelanguagefair.com',
+            email='admin@examplefair.com',
             first_name='YLF',
             last_name='Administrator',
             password=str(os.getenv('ADMINS_PASSWORD')),
@@ -30,18 +30,18 @@ class Command(BaseCommand):
         
         # create fair
         
-        fair = Fair.objects.create(name="2024", modified_by="admin@examplelanguagefair.com")
+        fair = Fair.objects.create(name="2024", modified_by="admin@examplefair.com")
         
         # create/assign current fair
         
         CurrentFair.objects.all().delete()
-        current_fair = CurrentFair.objects.create(name=fair.name, fair=fair, modified_by="admin@examplelanguagefair.com")
+        current_fair = CurrentFair.objects.create(name=fair.name, fair=fair, modified_by="admin@examplefair.com")
         
 
         # create moderator user
 
         moderator_user = User.objects.create_user(
-            email='moderator@examplelanguagefair.com',
+            email='moderator@examplefair.com',
             first_name='Moderator',
             last_name='Account',
             password=str(os.getenv('MODERATORS_PASSWORD')),
@@ -165,7 +165,7 @@ class Command(BaseCommand):
                 glottocode=lang[0],
                 name=lang[1],
                 level=lang[2],
-                modified_by="admin@examplelanguagefair.com"
+                modified_by="admin@examplefair.com"
             )
 
 
@@ -185,7 +185,7 @@ class Command(BaseCommand):
         ]
 
         for tribe in tribe_list:
-            tribe = Tribe.objects.create(fair=current_fair.fair, name=tribe[0], modified_by="admin@examplelanguagefair.com")
+            tribe = Tribe.objects.create(fair=current_fair.fair, name=tribe[0], modified_by="admin@examplefair.com")
 
 
         # delete all categories
@@ -217,7 +217,7 @@ class Command(BaseCommand):
                 name=cat[0],
                 material_submission=cat[1],
                 max_students=max_students,
-                modified_by="admin@examplelanguagefair.com"
+                modified_by="admin@examplefair.com"
             )
 
         # delete all accessories
@@ -234,7 +234,7 @@ class Command(BaseCommand):
         ]
 
         for acc in acc_list:
-            accessory = Accessory.objects.create(fair=current_fair.fair, name=acc[0], modified_by="admin@examplelanguagefair.com")
+            accessory = Accessory.objects.create(fair=current_fair.fair, name=acc[0], modified_by="admin@examplefair.com")
 
         # create instructors
         print("Creating instructors...")
