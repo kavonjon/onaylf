@@ -28,7 +28,7 @@
                                 <strong>Emails:</strong>
                                 <ul class="list-unstyled ms-3">
                                     {% for email in DEMO_MODERATORS %}
-                                        <li>{{ email }}</li>
+                                        <li><small>{{ email }}</small></li>
                                     {% endfor %}
                                 </ul>
                                 <strong>Password:</strong> {{ DEMO_MODERATOR_PASSWORD }}
@@ -43,7 +43,7 @@
                                 <strong>Emails:</strong>
                                 <ul class="list-unstyled ms-3">
                                     {% for email in DEMO_USERS %}
-                                        <li>{{ email }}</li>
+                                        <li><small>{{ email }}</small></li>
                                     {% endfor %}
                                 </ul>
                                 <strong>Password:</strong> {{ DEMO_USER_PASSWORD }}
