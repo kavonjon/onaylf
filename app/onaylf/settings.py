@@ -45,7 +45,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'users.apps.UsersConfig',
     'rest_framework',
-    'bootstrap5',
+    'django_bootstrap5',
     'django_bootstrap_icons',
     'submissions',
 ]
