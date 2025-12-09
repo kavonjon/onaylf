@@ -18,7 +18,7 @@ A comprehensive web application for managing educational fairs focused on indige
 
 Requirements:
 - Python 3.10+ (Django 5.2 LTS requires Python 3.10 or higher)
-- PostgreSQL 14+
+- PostgreSQL 16
 
 ### For Production (Docker)
 
@@ -229,7 +229,7 @@ cp /path/to/your/backup.sql ./backup/backup.sql
 2. Start the containers:
 
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 The `init-db.sh` script will automatically detect the backup file and restore it on first run when the database is empty. After restoring, you can log in with your existing admin credentials.
@@ -248,7 +248,7 @@ rm -f ./backup/backup.sql
 2. Start the containers:
 
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 3. Create a superuser account:
@@ -261,7 +261,7 @@ Follow the prompts to create an admin account.
 
 **What Happens During Startup:**
 
-When you run `docker-compose up -d --build`, the system will:
+When you run `docker compose up -d --build`, the system will:
 - Build the Docker images
 - Start three containers:
   - `onaylf_django`: Django application server (Gunicorn)
@@ -312,7 +312,7 @@ networks:
 3. Start Nginx Proxy Manager:
 
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 4. Access the Nginx Proxy Manager admin interface at `http://your-server-ip:81`
@@ -363,7 +363,6 @@ The Docker setup handles all dependencies and setup automatically:
 - Database migrations run automatically on startup
 - Static files collected automatically
 - Gunicorn server configured and started
-- Nginx reverse proxy configured
 
 You don't need to manually install Python, PostgreSQL, or any dependencies for production deployment.
 
@@ -532,18 +531,18 @@ psql -U onaylf_user onaylf < backup.sql
 - Run `python manage.py collectstatic`
 - Check `STATIC_ROOT` and `STATIC_URL` in settings
 - Verify Nginx configuration for production
-- Restart containers: `docker-compose restart`
+- Restart containers: `docker compose restart`
 
 **Permission Denied Errors**
 - Check file permissions on media and static directories
 - Ensure PostgreSQL user has proper database permissions
 
 **Docker Issues**
-- Check logs: `docker-compose logs -f`
+- Check logs: `docker compose logs -f`
 - Verify `nginxproxymanager_default` network exists: `docker network ls`
 - Create network if missing: `docker network create nginxproxymanager_default`
-- Restart containers: `docker-compose restart`
-- Rebuild: `docker-compose up -d --build`
+- Restart containers: `docker compose restart`
+- Rebuild: `docker compose up -d --build`
 
 ## Documentation
 

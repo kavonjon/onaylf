@@ -168,7 +168,7 @@ The system can produce various reports including:
 ### Technology Stack
 - **Backend Framework:** Django 5.2 LTS (supported until April 2028)
 - **Frontend Framework:** Bootstrap 5
-- **Database:** PostgreSQL 14+
+- **Database:** PostgreSQL 16
 - **JavaScript:** Interactive features and real-time updates
 
 ### Key Components
@@ -182,7 +182,7 @@ The system can produce various reports including:
 
 ### Prerequisites
 - **Python:** 3.10 or higher (for local development)
-- **PostgreSQL:** 14 or higher
+- **PostgreSQL:** 16
 - **Docker and Docker Compose:** For production deployment
 - **Nginx Proxy Manager** - A separate Docker container that handles SSL certificates, domain routing, and reverse proxy. This runs outside of the ONAYLF repository and must be set up before deploying ONAYLF.
 - Domain name configured (for production use with SSL)
@@ -232,7 +232,7 @@ The .env file should be in project_directory
 3. **Start the Containers**
 
 ```
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 4. **If you skipped database restore, initialize fresh database**
@@ -251,20 +251,20 @@ python manage.py build_initial_db
 5. **Iteratively update containers, as needed**
 ```
 git pull
-docker-compose down
-docker-compose up -d --build
+docker compose down
+docker compose up -d --build
 ```
 
 6. **For easier debugging on initial deploy**
 ```
-docker-compose down
-docker-compose build
-docker-compose up
+docker compose down
+docker compose build
+docker compose up
 ```
 
 This will start three containers:
 - `onaylf_django`: Web application (port 8100)
-- `onaylf_postgres`: Database
+- `onaylf_postgres`: PostgreSQL database
 - `onaylf_nginx`: Nginx server (port 8181)
 
 7. **Set Up Nginx Proxy Manager (Required for Production)**
@@ -304,7 +304,7 @@ networks:
 c. Start Nginx Proxy Manager:
 
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 d. Access the admin interface:
@@ -355,7 +355,7 @@ e. The application will now be accessible at `https://yourdomain.com`
 
 9. **Network Configuration**
 
-The ONAYLF application uses the `nginxproxymanager_default` Docker network to communicate with Nginx Proxy Manager. This network is automatically created when you start Nginx Proxy Manager with the docker-compose configuration shown above.
+The ONAYLF application uses the `nginxproxymanager_default` Docker network to communicate with Nginx Proxy Manager. This network is automatically created when you start Nginx Proxy Manager with the Docker Compose configuration shown above.
 
 If you need to create the network manually for any reason:
 ```bash
@@ -425,7 +425,7 @@ To restore a backup, you will destroy the current deployment and redeploy with t
 
 In the project folder, take down the deployment
 ```
-docker-compose down
+docker compose down
 ```
 Make sure none of the containers are running
 ```
@@ -437,7 +437,7 @@ docker system prune -a --volumes
 ```
 Place the new backup file in the /backup folder, and make sure it's named backup.sql. Then deploy again.
 ```
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 ## Troubleshooting
@@ -509,7 +509,7 @@ docker-compose up -d --build
 
 2. Restart the containers to trigger static file collection:
    ```bash
-   docker-compose restart
+   docker compose restart
    ```
 
 3. Manually collect static files:
@@ -524,7 +524,7 @@ docker-compose up -d --build
 **Solutions:**
 1. Check container logs:
    ```bash
-   docker-compose logs -f
+   docker compose logs -f
    ```
 
 2. Verify the `nginxproxymanager_default` network exists:
@@ -538,8 +538,8 @@ docker-compose up -d --build
 
 3. Remove and rebuild containers:
    ```bash
-   docker-compose down
-   docker-compose up -d --build
+   docker compose down
+   docker compose up -d --build
    ```
 
 ### Port Conflicts
