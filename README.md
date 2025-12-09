@@ -17,8 +17,8 @@ A comprehensive web application for managing educational fairs focused on indige
 ### For Development (Local Setup)
 
 Requirements:
-- Python 3.9+
-- PostgreSQL 12+
+- Python 3.10+ (Django 5.2 LTS requires Python 3.10 or higher)
+- PostgreSQL 14+
 
 ### For Production (Docker)
 
