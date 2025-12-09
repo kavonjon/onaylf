@@ -34,7 +34,7 @@ RUN mkdir -p /app/static /app/media
 RUN chmod -R 755 /app/static /app/media
 
 # Add WhiteNoise configuration to Django settings
-RUN echo "\n# WhiteNoise configuration for static files\nMIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')\nSTATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'\n" >> /app/onaylf/settings.py
+RUN echo "\n# WhiteNoise configuration for static files\nMIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')\nSTORAGES = {'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'}, 'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage'}}\n" >> /app/onaylf/settings.py
 
 # Expose port
 EXPOSE $PORT

@@ -295,7 +295,7 @@ def user_add(request):
         if form.is_valid():
             user = form.save(commit=False)
             # Generate a random password that the user will need to reset
-            temp_password = User.objects.make_random_password()
+            temp_password = generate_password()
             user.password = make_password(temp_password)
             user.confirmed = True  # Automatically confirm users added by moderators
             user.save()
