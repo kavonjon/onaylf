@@ -184,9 +184,9 @@ The system can produce various reports including:
 - **Python:** 3.10 or higher (for local development)
 - **PostgreSQL:** 16
 - **Docker and Docker Compose:** For production deployment
-- **Nginx Proxy Manager** - A separate Docker container that handles SSL certificates, domain routing, and reverse proxy. This runs outside of the ONAYLF repository and must be set up before deploying ONAYLF.
-- Domain name configured (for production use with SSL)
-- SSL certificate (automatically obtained through Nginx Proxy Manager via Let's Encrypt)
+- **External Load Balancer:** (e.g., AWS ALB, Google Cloud Load Balancer, DigitalOcean Load Balancer) that handles SSL termination and forwards traffic to the server
+- Domain name configured pointing to your load balancer
+- SSL certificate configured on your load balancer
 
 ### Environment Setup
 1. **Create .env file in project root**
@@ -263,147 +263,58 @@ docker compose up
 ```
 
 This will start three containers:
-- `onaylf_django`: Web application (port 8100)
-- `onaylf_postgres`: PostgreSQL database
-- `onaylf_nginx`: Nginx server (port 8181)
+- `onaylf_django`: Web application (port 8100, internal)
+- `onaylf_postgres`: PostgreSQL database (internal)
+- `onaylf_nginx`: Nginx server (ports 80 and 443, exposed to host)
 
-7. **Set Up Nginx Proxy Manager (Required for Production)**
+7. **Configure External Load Balancer**
 
-Nginx Proxy Manager is a separate Docker container that runs outside of this repository. It handles SSL certificates, domain routing, and acts as a reverse proxy for the ONAYLF application.
+The nginx container listens directly on ports 80 and 443. Configure your external load balancer to forward traffic to these ports.
 
-**If Nginx Proxy Manager is not already installed:**
+**Load Balancer Requirements:**
+- Terminate SSL at the load balancer
+- Forward traffic to your server on port 80 (HTTP) or 443 (HTTPS)
+- Set the `X-Forwarded-Proto` header to `https` for HTTPS requests
+- Set the `X-Forwarded-For` header with the client's real IP address
+1. **Access and Verify the Application**
 
-a. Create a separate directory for Nginx Proxy Manager (outside the ONAYLF project):
-
-```bash
-mkdir -p ~/nginxproxymanager
-cd ~/nginxproxymanager
-```
-
-b. Create a `docker-compose.yml` file with the following content:
-
-```yaml
-services:
-  app:
-    image: 'jc21/nginx-proxy-manager:latest'
-    restart: unless-stopped
-    ports:
-      - '80:80'    # HTTP
-      - '81:81'    # Admin interface
-      - '443:443'  # HTTPS
-    volumes:
-      - ./data:/data
-      - ./letsencrypt:/etc/letsencrypt
-
-networks:
-  default:
-    external: true
-    name: nginxproxymanager_default
-```
-
-c. Start Nginx Proxy Manager:
-
-```bash
-docker compose up -d --build
-```
-
-d. Access the admin interface:
-- URL: `http://your-server-ip:81` or `http://localhost:81`
-- Default credentials: `admin@example.com` / `changeme`
-- **Important:** Change these credentials immediately on first login
-
-8. **Configure Nginx Proxy Manager for ONAYLF**
-
-a. Log in to the Nginx Proxy Manager admin panel at `http://your-server-ip:81`
-
-b. Navigate to "Proxy Hosts" and click "Add Proxy Host"
-
-c. Configure the proxy host settings:
-
-**Details Tab:**
-- Domain Names: `yourdomain.com` (e.g., `onaylf.example.com`)
-- Scheme: `http`
-- Forward Hostname/IP: `onaylf_nginx` (this is the container name)
-- Forward Port: `8181`
-- Enable these options:
-  - ✓ Cache Assets
-  - ✓ Block Common Exploits
-  - ✓ Websockets Support
-
-**SSL Tab:**
-- SSL Certificate: "Request a new SSL Certificate"
-- Enable these options:
-  - ✓ Force SSL
-  - ✓ HTTP/2 Support
-- Email Address: Your email (for Let's Encrypt certificate notifications)
-- ✓ I Agree to the Let's Encrypt Terms of Service
-
-d. Click "Save" to apply the configuration
-
-e. The application will now be accessible at `https://yourdomain.com`
-
-**Security Best Practices:**
-- After initial setup, block external access to port 81 using your firewall
-- Only open port 81 temporarily when making changes to Nginx Proxy Manager
-- Keep ports 80 (HTTP) and 443 (HTTPS) open for web traffic
-- Example firewall rules (using UFW):
-  ```bash
-  sudo ufw allow 80/tcp
-  sudo ufw allow 443/tcp
-  sudo ufw deny 81/tcp  # Block external access to admin panel
-  ```
-
-9. **Network Configuration**
-
-The ONAYLF application uses the `nginxproxymanager_default` Docker network to communicate with Nginx Proxy Manager. This network is automatically created when you start Nginx Proxy Manager with the Docker Compose configuration shown above.
-
-If you need to create the network manually for any reason:
-```bash
-docker network create nginxproxymanager_default
-```
-
-To verify the network exists:
-```bash
-docker network ls | grep nginxproxymanager
-```
-
-10. **Access and Verify the Application**
-
-- **Production URL:** `https://yourdomain.com` (through Nginx Proxy Manager)
-- **Direct Access (for testing):** `http://localhost:8181` (bypasses Nginx Proxy Manager)
+- **Production URL:** `https://yourdomain.com` (through your load balancer)
+- **Direct Access (for testing):** `http://localhost` (bypasses load balancer)
 - **Admin Interface:** `https://yourdomain.com/admin`
 
 Verify that:
-- SSL certificate is active (lock icon in browser)
-- HTTP requests redirect to HTTPS
+- SSL certificate is active (lock icon in browser, managed by load balancer)
+- HTTP requests redirect to HTTPS (if configured on load balancer)
 - Static files load correctly
 - Admin interface is accessible
 
 ### Container Architecture
 
-The ONAYLF application runs in a multi-container Docker environment:
+The ONAYLF application runs in a multi-container Docker environment designed to work behind an external load balancer:
 
 **ONAYLF Containers (in this repository):**
 - **onaylf_django**: Django application server running Gunicorn (port 8100, internal only)
 - **onaylf_postgres**: PostgreSQL database (internal only)
-- **onaylf_nginx**: Nginx reverse proxy (exposes port 8181)
+- **onaylf_nginx**: Nginx server (exposes ports 80 and 443 to host)
 
-**External Container (separate repository):**
-- **Nginx Proxy Manager**: Handles SSL, domain routing, and public-facing reverse proxy (ports 80, 443, and admin port 81)
+**External Infrastructure:**
+- **Load Balancer**: Your cloud provider's load balancer (AWS ALB, GCP LB, DigitalOcean LB, etc.) handles SSL termination and routes traffic to the server
 
 **Network Configuration:**
-- All containers communicate via the `nginxproxymanager_default` Docker network
-- This allows Nginx Proxy Manager to forward requests to `onaylf_nginx:8181`
+- Containers communicate via a default Docker bridge network
+- The nginx container binds directly to host ports 80 and 443
+- Load balancer forwards traffic to the server on ports 80/443
 - Static files are served through a shared Docker volume between Django and Nginx containers
 - PostgreSQL data persists in a named Docker volume
 - Automatic database initialization on first run via `init-db.sh`
 - Health checks ensure proper startup sequence
 
 **Traffic Flow:**
-1. User → `https://yourdomain.com` (port 443)
-2. Nginx Proxy Manager (external container) → `onaylf_nginx:8181`
-3. `onaylf_nginx` → `onaylf_django:8100` (for dynamic content)
-4. `onaylf_nginx` → serves static files directly from shared volume
+1. User → `https://yourdomain.com` (port 443 to load balancer)
+2. Load balancer terminates SSL → forwards to server on port 80 or 443
+3. `onaylf_nginx` (port 80/443) receives request with `X-Forwarded-Proto` header
+4. `onaylf_nginx` → `onaylf_django:8100` (for dynamic content)
+5. `onaylf_nginx` → serves static files directly from shared volume
 
 ### Health Checks
 - Database: Checks PostgreSQL readiness
@@ -442,30 +353,28 @@ docker compose up -d --build
 
 ## Troubleshooting
 
-### Nginx Proxy Manager Connection Issues
+### Load Balancer Connection Issues
 
-**Problem:** Can't access the application through the domain, but `http://localhost:8181` works.
+**Problem:** Can't access the application through the domain, but `http://localhost` works.
 
 **Solutions:**
-1. Verify Nginx Proxy Manager is running:
+1. Verify the nginx container is running:
    ```bash
-   docker ps | grep nginx-proxy-manager
+   docker ps | grep onaylf_nginx
    ```
 
-2. Check that both containers are on the same network:
+2. Check that the load balancer is forwarding traffic to the correct port (80 or 443)
+
+3. Verify load balancer health checks are passing
+
+4. Check nginx logs:
    ```bash
-   docker network inspect nginxproxymanager_default
+   docker logs onaylf_nginx
    ```
-   You should see both `nginx-proxy-manager` and `onaylf_nginx` in the containers list.
 
-3. Verify the proxy host configuration in Nginx Proxy Manager:
-   - Forward Hostname/IP should be `onaylf_nginx` (not localhost or IP address)
-   - Forward Port should be `8181`
-   - Scheme should be `http`
-
-4. Check Nginx Proxy Manager logs:
+5. Test direct access to ensure the application is running:
    ```bash
-   docker logs nginx-proxy-manager
+   curl http://localhost
    ```
 
 ### SSL Certificate Issues
@@ -473,10 +382,10 @@ docker compose up -d --build
 **Problem:** SSL certificate not working or browser shows security warning.
 
 **Solutions:**
-1. Verify your domain's DNS points to your server's IP address
-2. Ensure ports 80 and 443 are open in your firewall
-3. In Nginx Proxy Manager, delete and recreate the SSL certificate
-4. Check Let's Encrypt rate limits (5 certificates per domain per week)
+1. Verify your domain's DNS points to your load balancer
+2. Ensure your SSL certificate on the load balancer is valid and not expired
+3. Check that `X-Forwarded-Proto: https` header is being sent by load balancer
+4. Verify `CSRF_TRUSTED_ORIGINS` in `.env` includes your HTTPS domain
 
 ### Database Connection Issues
 
@@ -527,16 +436,7 @@ docker compose up -d --build
    docker compose logs -f
    ```
 
-2. Verify the `nginxproxymanager_default` network exists:
-   ```bash
-   docker network ls | grep nginxproxymanager
-   ```
-   If not, create it:
-   ```bash
-   docker network create nginxproxymanager_default
-   ```
-
-3. Remove and rebuild containers:
+2. Remove and rebuild containers:
    ```bash
    docker compose down
    docker compose up -d --build
@@ -549,12 +449,15 @@ docker compose up -d --build
 **Solutions:**
 1. Check what's using the port:
    ```bash
-   sudo lsof -i :8181  # For onaylf_nginx
-   sudo lsof -i :80    # For Nginx Proxy Manager
-   sudo lsof -i :443   # For Nginx Proxy Manager
+   sudo lsof -i :80   # For HTTP
+   sudo lsof -i :443  # For HTTPS
    ```
 
-2. Stop conflicting services or modify `docker-compose.yml` to use different ports
+2. Stop conflicting services (e.g., Apache, another nginx instance) before starting the containers:
+   ```bash
+   sudo systemctl stop apache2
+   sudo systemctl stop nginx
+   ```
 
 ---
 

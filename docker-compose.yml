@@ -44,16 +44,12 @@ services:
     restart: unless-stopped
     volumes:
       - static:/static/
-    expose:
-      - 8181
+    ports:
+      - "80:80"
+      - "443:443"
     depends_on:
       - onaylf_web
 
 volumes:
   postgres_data:
   static:
-
-networks:
-  default:
-    external: true
-    name: nginxproxymanager_default

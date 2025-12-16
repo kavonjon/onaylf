@@ -150,12 +150,14 @@ Navigate to `http://localhost:8000/admin` and log in with your superuser credent
 
 For production deployment, the application uses Docker containers with PostgreSQL database and Nginx reverse proxy. All dependencies, migrations, and static file collection are handled automatically by the Docker setup.
 
+The application is designed to run behind an external load balancer (e.g., AWS ALB, Google Cloud Load Balancer, DigitalOcean Load Balancer) that handles SSL termination. The nginx container listens directly on ports 80 and 443.
+
 #### Prerequisites
 
 - Docker
 - Docker Compose
-- (Recommended) Nginx Proxy Manager for SSL/domain management
-- (Optional) A domain name for production use
+- An external load balancer that terminates SSL and forwards traffic to the server
+- A domain name pointing to your load balancer
 
 #### 1. Clone the Repository
 
@@ -209,7 +211,6 @@ WORDS="word1,word2,etc"
 - Use `DBHOST=onaylf_db` (this is the Docker container name)
 - Configure your actual domain names
 - Use strong passwords
-- **Network Configuration:** The application uses the `nginxproxymanager_default` Docker network to communicate with Nginx Proxy Manager. If Nginx Proxy Manager is not installed, you'll need to create this network manually: `docker network create nginxproxymanager_default`
 
 #### 3. First Time Setup
 
@@ -266,94 +267,29 @@ When you run `docker compose up -d --build`, the system will:
 - Start three containers:
   - `onaylf_django`: Django application server (Gunicorn)
   - `onaylf_postgres`: PostgreSQL database
-  - `onaylf_nginx`: Nginx reverse proxy
+  - `onaylf_nginx`: Nginx to handle traffic (listening on ports 80 and 443)
 - Automatically run database migrations
 - Automatically collect static files
 - Restore from `backup/backup.sql` if present and database is empty
 
-#### 4. Set Up Nginx Proxy Manager (Required for Production)
+#### 4. Configure Load Balancer
 
-The application is designed to work behind Nginx Proxy Manager, which handles SSL certificates, domain routing, and acts as a reverse proxy. Nginx Proxy Manager runs in a separate Docker container outside of this repository.
+The nginx container listens on ports 80 and 443 directly. Configure your external load balancer to:
 
-**Prerequisites:**
-- A domain name pointing to your server
-- Nginx Proxy Manager installed and running (see below if not already set up)
+1. **Terminate SSL** at the load balancer level
+2. **Forward traffic** to your server on port 80 (HTTP) or 443 (HTTPS)
+3. **Set the `X-Forwarded-Proto` header** to `https` when forwarding HTTPS requests
+4. **Set the `X-Forwarded-For` header** with the client's real IP address
 
-**If Nginx Proxy Manager is not already installed:**
-
-1. Create a separate directory for Nginx Proxy Manager:
-
-```bash
-mkdir -p ~/nginxproxymanager
-cd ~/nginxproxymanager
-```
-
-2. Create a `docker-compose.yml` file with the following content:
-
-```yaml
-services:
-  app:
-    image: 'jc21/nginx-proxy-manager:latest'
-    restart: unless-stopped
-    ports:
-      - '80:80'
-      - '81:81'
-      - '443:443'
-    volumes:
-      - ./data:/data
-      - ./letsencrypt:/etc/letsencrypt
-
-networks:
-  default:
-    external: true
-    name: nginxproxymanager_default
-```
-
-3. Start Nginx Proxy Manager:
-
-```bash
-docker compose up -d --build
-```
-
-4. Access the Nginx Proxy Manager admin interface at `http://your-server-ip:81`
-   - Default login: `admin@example.com` / `changeme`
-   - You'll be prompted to change these credentials on first login
-
-**Configure Nginx Proxy Manager for ONAYLF:**
-
-1. In the Nginx Proxy Manager admin panel (port 81), click "Proxy Hosts" → "Add Proxy Host"
-
-2. Configure the proxy host:
-   - **Details Tab:**
-     - Domain Names: `yourdomain.com` (e.g., `onaylf.example.com`)
-     - Scheme: `http`
-     - Forward Hostname/IP: `onaylf_nginx`
-     - Forward Port: `8181`
-     - Enable "Cache Assets"
-     - Enable "Block Common Exploits"
-     - Enable "Websockets Support"
-   
-   - **SSL Tab:**
-     - SSL Certificate: Select "Request a new SSL Certificate"
-     - Enable "Force SSL"
-     - Enable "HTTP/2 Support"
-     - Email Address: Your email for Let's Encrypt notifications
-     - Agree to Let's Encrypt Terms of Service
-
-3. Save the configuration
-
-4. The application will now be accessible at `https://yourdomain.com`
-
-**Security Note:**
-- After configuration, block external access to port 81 using your firewall
-- Only open port 81 when you need to make changes to Nginx Proxy Manager
-- Keep ports 80 and 443 open for web traffic
+**Health Check Configuration:**
+- Health check path: `/` or `/admin/`
+- Expected response: HTTP 200 or 302
 
 #### 5. Access the Application
 
-The application will be available at `https://yourdomain.com` (via Nginx Proxy Manager).
+Once your load balancer is configured, the application will be available at `https://yourdomain.com`.
 
-For local testing without Nginx Proxy Manager, you can access it directly at `http://localhost:8181`.
+For local testing, you can access the application directly at `http://localhost` (port 80).
 
 #### What Happens Automatically
 
@@ -363,6 +299,7 @@ The Docker setup handles all dependencies and setup automatically:
 - Database migrations run automatically on startup
 - Static files collected automatically
 - Gunicorn server configured and started
+- Self-signed SSL certificates generated for nginx (load balancer handles actual SSL)
 
 You don't need to manually install Python, PostgreSQL, or any dependencies for production deployment.
 
@@ -508,18 +445,18 @@ psql -U onaylf_user onaylf < backup.sql
 
 ### Common Issues
 
-**Nginx Proxy Manager Connection Issues**
-- Verify both applications are on the `nginxproxymanager_default` network
-- Check that proxy host uses `onaylf_nginx` as the forward hostname (not localhost)
-- Ensure forward port is set to `8181`
-- Test direct access at `http://localhost:8181` to verify the app is running
-- Check Nginx Proxy Manager logs: `docker logs nginx-proxy-manager`
+**Load Balancer Connection Issues**
+- Verify the nginx container is running: `docker ps | grep onaylf_nginx`
+- Test direct access at `http://localhost` to verify the app is running
+- Check that the load balancer is forwarding traffic to the correct port (80 or 443)
+- Verify health check configuration on the load balancer
+- Check nginx logs: `docker logs onaylf_nginx`
 
 **SSL/HTTPS Issues**
-- Verify domain DNS points to your server
-- Ensure ports 80 and 443 are open in firewall
-- Check Let's Encrypt rate limits (max 5 certificates per domain per week)
-- Verify SSL is enabled in Nginx Proxy Manager proxy host configuration
+- Verify domain DNS points to your load balancer
+- Ensure your load balancer has a valid SSL certificate
+- Check that `X-Forwarded-Proto: https` header is being sent by load balancer
+- Verify `CSRF_TRUSTED_ORIGINS` in `.env` includes your HTTPS domain
 
 **Database Connection Error**
 - Verify PostgreSQL is running: `docker ps | grep onaylf_postgres`
@@ -539,10 +476,16 @@ psql -U onaylf_user onaylf < backup.sql
 
 **Docker Issues**
 - Check logs: `docker compose logs -f`
-- Verify `nginxproxymanager_default` network exists: `docker network ls`
-- Create network if missing: `docker network create nginxproxymanager_default`
 - Restart containers: `docker compose restart`
 - Rebuild: `docker compose up -d --build`
+
+**Port Conflicts**
+- If ports 80/443 are already in use, check for conflicting services:
+  ```bash
+  sudo lsof -i :80
+  sudo lsof -i :443
+  ```
+- Stop any conflicting services before starting the containers
 
 ## Documentation
 
