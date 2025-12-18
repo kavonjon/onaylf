@@ -150,7 +150,7 @@ Navigate to `http://localhost:8000/admin` and log in with your superuser credent
 
 For production deployment, the application uses Docker containers with PostgreSQL database and Nginx reverse proxy. All dependencies, migrations, and static file collection are handled automatically by the Docker setup.
 
-The application is designed to run behind an external load balancer (e.g., AWS ALB, Google Cloud Load Balancer, DigitalOcean Load Balancer) that handles SSL termination. The nginx container listens directly on ports 80 and 443.
+The application is designed to run behind an external load balancer (e.g., AWS ALB, Google Cloud Load Balancer, DigitalOcean Load Balancer, F5) that handles SSL termination. The nginx container listens on port 80 (HTTP), and the load balancer forwards decrypted traffic to it.
 
 #### Prerequisites
 
@@ -267,17 +267,17 @@ When you run `docker compose up -d --build`, the system will:
 - Start three containers:
   - `onaylf_django`: Django application server (Gunicorn)
   - `onaylf_postgres`: PostgreSQL database
-  - `onaylf_nginx`: Nginx to handle traffic (listening on ports 80 and 443)
+  - `onaylf_nginx`: Nginx to handle traffic (listening on port 80)
 - Automatically run database migrations
 - Automatically collect static files
 - Restore from `backup/backup.sql` if present and database is empty
 
 #### 4. Configure Load Balancer
 
-The nginx container listens on ports 80 and 443 directly. Configure your external load balancer to:
+The nginx container listens on port 80. Configure your external load balancer to:
 
 1. **Terminate SSL** at the load balancer level
-2. **Forward traffic** to your server on port 80 (HTTP) or 443 (HTTPS)
+2. **Forward traffic** to your server on port 80 (HTTP)
 3. **Set the `X-Forwarded-Proto` header** to `https` when forwarding HTTPS requests
 4. **Set the `X-Forwarded-For` header** with the client's real IP address
 
@@ -448,7 +448,7 @@ psql -U onaylf_user onaylf < backup.sql
 **Load Balancer Connection Issues**
 - Verify the nginx container is running: `docker ps | grep onaylf_nginx`
 - Test direct access at `http://localhost` to verify the app is running
-- Check that the load balancer is forwarding traffic to the correct port (80 or 443)
+- Check that the load balancer is forwarding traffic to port 80
 - Verify health check configuration on the load balancer
 - Check nginx logs: `docker logs onaylf_nginx`
 
@@ -480,10 +480,9 @@ psql -U onaylf_user onaylf < backup.sql
 - Rebuild: `docker compose up -d --build`
 
 **Port Conflicts**
-- If ports 80/443 are already in use, check for conflicting services:
+- If port 80 is already in use, check for conflicting services:
   ```bash
   sudo lsof -i :80
-  sudo lsof -i :443
   ```
 - Stop any conflicting services before starting the containers
 

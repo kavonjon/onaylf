@@ -265,15 +265,15 @@ docker compose up
 This will start three containers:
 - `onaylf_django`: Web application (port 8100, internal)
 - `onaylf_postgres`: PostgreSQL database (internal)
-- `onaylf_nginx`: Nginx server (ports 80 and 443, exposed to host)
+- `onaylf_nginx`: Nginx server (port 80, exposed to host)
 
 7. **Configure External Load Balancer**
 
-The nginx container listens directly on ports 80 and 443. Configure your external load balancer to forward traffic to these ports.
+The nginx container listens on port 80 (HTTP). The load balancer terminates SSL and forwards decrypted traffic.
 
 **Load Balancer Requirements:**
-- Terminate SSL at the load balancer
-- Forward traffic to your server on port 80 (HTTP) or 443 (HTTPS)
+- Terminate SSL at the load balancer (SSL offload)
+- Forward traffic to your server on port 80 (HTTP)
 - Set the `X-Forwarded-Proto` header to `https` for HTTPS requests
 - Set the `X-Forwarded-For` header with the client's real IP address
 1. **Access and Verify the Application**
@@ -295,15 +295,15 @@ The ONAYLF application runs in a multi-container Docker environment designed to 
 **ONAYLF Containers (in this repository):**
 - **onaylf_django**: Django application server running Gunicorn (port 8100, internal only)
 - **onaylf_postgres**: PostgreSQL database (internal only)
-- **onaylf_nginx**: Nginx server (exposes ports 80 and 443 to host)
+- **onaylf_nginx**: Nginx server (exposes port 80 to host)
 
 **External Infrastructure:**
 - **Load Balancer**: Your cloud provider's load balancer (AWS ALB, GCP LB, DigitalOcean LB, etc.) handles SSL termination and routes traffic to the server
 
 **Network Configuration:**
 - Containers communicate via a default Docker bridge network
-- The nginx container binds directly to host ports 80 and 443
-- Load balancer forwards traffic to the server on ports 80/443
+- The nginx container binds directly to host port 80
+- Load balancer terminates SSL and forwards HTTP traffic to port 80
 - Static files are served through a shared Docker volume between Django and Nginx containers
 - PostgreSQL data persists in a named Docker volume
 - Automatic database initialization on first run via `init-db.sh`
@@ -311,8 +311,8 @@ The ONAYLF application runs in a multi-container Docker environment designed to 
 
 **Traffic Flow:**
 1. User → `https://yourdomain.com` (port 443 to load balancer)
-2. Load balancer terminates SSL → forwards to server on port 80 or 443
-3. `onaylf_nginx` (port 80/443) receives request with `X-Forwarded-Proto` header
+2. Load balancer terminates SSL → forwards HTTP to server on port 80
+3. `onaylf_nginx` (port 80) receives request with `X-Forwarded-Proto: https` header
 4. `onaylf_nginx` → `onaylf_django:8100` (for dynamic content)
 5. `onaylf_nginx` → serves static files directly from shared volume
 
@@ -363,7 +363,7 @@ docker compose up -d --build
    docker ps | grep onaylf_nginx
    ```
 
-2. Check that the load balancer is forwarding traffic to the correct port (80 or 443)
+2. Check that the load balancer is forwarding traffic to port 80
 
 3. Verify load balancer health checks are passing
 
@@ -449,8 +449,7 @@ docker compose up -d --build
 **Solutions:**
 1. Check what's using the port:
    ```bash
-   sudo lsof -i :80   # For HTTP
-   sudo lsof -i :443  # For HTTPS
+   sudo lsof -i :80
    ```
 
 2. Stop conflicting services (e.g., Apache, another nginx instance) before starting the containers:
