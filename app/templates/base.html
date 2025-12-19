@@ -77,7 +77,12 @@
                 <ul class="dropdown-menu dropdown-menu-right">
                   <a class="dropdown-item" href="/accounts/profile">User profile</a>
                   <a class="dropdown-item" href="/accounts/password_change">Change password</a>
-                  <a class="dropdown-item" href="/accounts/logout">Logout</a>
+                  <li>
+                    <form method="post" action="{% url 'logout' %}" class="m-0">
+                      {% csrf_token %}
+                      <button type="submit" class="dropdown-item">Logout</button>
+                    </form>
+                  </li>
                 </ul>
               </div>
             {% else %}
