@@ -326,7 +326,40 @@ The ONAYLF application runs in a multi-container Docker environment designed to 
 
 ### Backup and Restore
 
-#### Creating a Database Backup
+#### Automated Backups (Recommended)
+
+The `backup-db.sh` script in the project root provides automated database backups with intelligent rotation:
+- Creates timestamped SQL dumps (e.g., `onaylfdjango20250120.sql`)
+- Keeps all backups from the last 30 days
+- Keeps weekly backups (1st, 8th, 15th, 22nd, 29th) for up to 1 year
+- Keeps monthly backups (1st of each month) indefinitely
+- Logs all operations to `../backup/logs/`
+
+Backups are stored in `../backup/dumps/` relative to the project root.
+
+**Setting Up Automated Daily Backups:**
+
+Add a cron job to run the backup script at 3am daily:
+
+```bash
+# Open crontab editor
+crontab -e
+
+# Add this line (adjust path to your installation):
+0 3 * * * /path/to/onaylf/backup-db.sh
+```
+
+Ensure the script is executable:
+```bash
+chmod +x /path/to/onaylf/backup-db.sh
+```
+
+Verify your cron job:
+```bash
+crontab -l
+```
+
+#### Creating a Manual Database Backup
 
 To output a dump of the database in the current directory:
 ```

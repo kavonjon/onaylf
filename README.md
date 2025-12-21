@@ -427,7 +427,48 @@ python manage.py test users
 
 ## Backup and Restore
 
-### PostgreSQL Backup (Docker)
+### Automated Backups (Recommended for Production)
+
+The `backup-db.sh` script provides automated database backups with rotation. It:
+- Creates timestamped SQL dumps
+- Rotates old backups (keeps daily for 30 days, weekly for 1 year, monthly thereafter)
+- Logs all operations
+
+Backups are stored in `../backup/dumps` and logs in `../backup/logs` (relative to the project root).
+
+#### Setting Up Automated Daily Backups
+
+To run backups automatically at 3am every day, add a cron job:
+
+```bash
+# Open crontab editor
+crontab -e
+
+# Add this line (adjust path to your installation):
+0 3 * * * /path/to/onaylf/backup-db.sh
+```
+
+For example, if your project is at `/home/user/onaylf`:
+
+```bash
+0 3 * * * /home/user/onaylf/backup-db.sh
+```
+
+**Note:** Ensure the script is executable:
+
+```bash
+chmod +x /path/to/onaylf/backup-db.sh
+```
+
+To verify your cron job is set up correctly:
+
+```bash
+crontab -l
+```
+
+### Manual Backups
+
+#### PostgreSQL Backup (Docker)
 
 ```bash
 # Backup database
@@ -437,7 +478,7 @@ docker exec onaylf_postgres pg_dump -U onaylf_user onaylf > backup.sql
 docker exec -i onaylf_postgres psql -U onaylf_user onaylf < backup.sql
 ```
 
-### PostgreSQL Backup (Local Development)
+#### PostgreSQL Backup (Local Development)
 
 ```bash
 # Backup database
