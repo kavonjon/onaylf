@@ -192,10 +192,13 @@ DBPORT=5432
 DJANGO_SETTINGS_MODULE=onaylf.settings
 
 # Email Configuration (Required for password resets)
-EMAIL_HOST="smtp-relay.brevo.com"
-EMAIL_HOST_USER="id@smtp-brevo.com"
-EMAIL_HOST_PASSWORD='password'
-DEFAULT_FROM_EMAIL='onaylf.noreply@gmail.com'
+EMAIL_HOST="relay.ou.edu"
+EMAIL_PORT=25
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=""
+EMAIL_HOST_PASSWORD=""
+DEFAULT_FROM_EMAIL='email@ou.edu'
+SERVER_EMAIL='email@ou.edu'
 ADMINS=[('name', 'email@gmail.com')]
 
 # Logging
@@ -396,9 +399,12 @@ python manage.py shell
 | `DBPORT` | PostgreSQL port | Yes | `5432` |
 | `DJANGO_SETTINGS_MODULE` | Django settings module path | Yes | `onaylf.settings` |
 | `EMAIL_HOST` | SMTP server hostname | Yes | - |
+| `EMAIL_PORT` | SMTP port | No | `25` |
+| `EMAIL_USE_TLS` | Whether to use TLS for SMTP connection | No | `True` |
 | `EMAIL_HOST_USER` | SMTP authentication username | Yes | - |
 | `EMAIL_HOST_PASSWORD` | SMTP authentication password | Yes | - |
 | `DEFAULT_FROM_EMAIL` | Default "from" address for emails | Yes | - |
+| `SERVER_EMAIL` | Default "from" address for emails | Yes | - |
 | `ADMINS` | List of admin emails as Python list string | Yes | - |
 | `DJANGO_LOG_LEVEL` | Django logging level | No | `INFO` |
 | `WORDS` | Comma-separated list of words (custom setting) | No | - |
