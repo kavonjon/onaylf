@@ -1583,8 +1583,8 @@
                     hiddenInput.value = currentPath;
                 } else {
                     // Check if we're a moderator and have an owning_user
-                    const isModerator = '{{ moderator|yesno:"true,false" }}';
-                    const owningUserId = '{{ owning_user.id|default:"null" }}';
+                    const isModerator = '{{ moderator|yesno:"true,false" }}' === 'true';
+                    const owningUserId = '{{ owning_user.id }}';
                     
                     if (isModerator && owningUserId) {
                         // Build the admin submission add URL
