@@ -114,10 +114,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     <i class="bi bi-pencil-square"></i> Edit Profile
                 </a>
                 {% endif %}
-                {% if (moderator and not currentUser|has_group:'moderator') or (request.user.is_staff or request.user.is_superuser) and request.user.id != currentUser.id %}
+                {% if request.user.id != currentUser.id %}
+                    {% if moderator and not currentUser|has_group:'moderator' or request.user.is_staff or request.user.is_superuser %}
                 <a href="{% url 'admin_password_reset' currentUser.id %}" class="btn btn-warning btn-sm ms-2">
                     <i class="bi bi-key"></i> Reset Password
                 </a>
+                    {% endif %}
                 {% endif %}
                 {% if moderator and not currentUser.is_staff and not currentUser.is_superuser and request.user.id != currentUser.id %}
                 <button class="btn btn-danger btn-sm ms-2 delete-user-btn" data-user-id="{{ currentUser.id }}">
