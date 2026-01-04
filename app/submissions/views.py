@@ -441,6 +441,7 @@ def get_fair(request, pk):
         'id': fair.id,
         'name': fair.name,
         'notes': fair.notes,
+        'material_submission_deadline': fair.material_submission_deadline,
         'registration_open': current_fair and current_fair.fair_id == fair.id,
         'is_current_fair': current_fair and current_fair.fair_id == fair.id,
         'languoids': [{
@@ -478,6 +479,8 @@ def edit_fair(request, pk):
         fair.notes = data['notes']
     if 'registration_open' in data:
         fair.registration_open = data['registration_open']
+    if 'material_submission_deadline' in data:
+        fair.material_submission_deadline = data['material_submission_deadline']
     
     fair.modified_by = request.user.get_username()
     fair.save()

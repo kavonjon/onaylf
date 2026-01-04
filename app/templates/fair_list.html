@@ -92,6 +92,27 @@
                         </div>
                     </div>
 
+                    <!-- Material Submission Deadline Section -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h4>Material Submission Deadline</h4>
+                            <button class="btn btn-sm btn-outline-primary edit-deadline">
+                                <i class="bi bi-pencil"></i> Edit deadline
+                            </button>
+                        </div>
+                        <div id="deadlineDisplay">
+                            <p id="deadlineText">{{ active_fair.material_submission_deadline|default:"March 1" }}</p>
+                        </div>
+                        <div id="deadlineEdit" class="d-none">
+                            <input type="text" class="form-control" id="deadlineInput" placeholder="e.g. March 1">
+                            <small class="text-muted">Enter the deadline date as text (e.g. "March 1")</small>
+                            <div class="mt-2">
+                                <button class="btn btn-primary save-deadline">Save</button>
+                                <button class="btn btn-secondary cancel-deadline">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Related Objects Tabs -->
                     <ul class="nav nav-tabs" id="fairTabs" role="tablist">
                         <li class="nav-item">
@@ -612,6 +633,71 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Handle deadline editing
+    const deadlineDisplay = document.getElementById('deadlineDisplay');
+    const deadlineEdit = document.getElementById('deadlineEdit');
+    const deadlineInput = document.getElementById('deadlineInput');
+    const editDeadlineBtn = document.querySelector('.edit-deadline');
+    const saveDeadlineBtn = document.querySelector('.save-deadline');
+    const cancelDeadlineBtn = document.querySelector('.cancel-deadline');
+
+    if (editDeadlineBtn) {
+        editDeadlineBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            deadlineInput.value = document.getElementById('deadlineText').textContent.trim();
+            deadlineDisplay.classList.add('d-none');
+            deadlineEdit.classList.remove('d-none');
+        });
+    }
+
+    if (saveDeadlineBtn) {
+        saveDeadlineBtn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            if (!activeFairId) return;
+
+            try {
+                const response = await fetch(URLS.edit(activeFairId), {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'update_deadline',
+                        material_submission_deadline: deadlineInput.value.trim()
+                    })
+                });
+
+                if (!response.ok) {
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const data = await response.json();
+                        throw new Error(data.error || 'Failed to save deadline');
+                    } else {
+                        throw new Error('Server error occurred');
+                    }
+                }
+
+                // Update the display
+                document.getElementById('deadlineText').textContent = deadlineInput.value.trim() || 'March 1';
+                deadlineDisplay.classList.remove('d-none');
+                deadlineEdit.classList.add('d-none');
+
+            } catch (error) {
+                console.error('Error saving deadline:', error);
+                alert('Failed to save deadline. Please try again.');
+            }
+        });
+    }
+
+    if (cancelDeadlineBtn) {
+        cancelDeadlineBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            deadlineDisplay.classList.remove('d-none');
+            deadlineEdit.classList.add('d-none');
+        });
+    }
+
     // Handle adding new items in tabs
     document.querySelectorAll('[class^="add-"]').forEach(button => {
         button.addEventListener('click', async function() {
@@ -724,6 +810,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const notesText = document.getElementById('notesText');
         if (notesText) {
             notesText.textContent = fair.notes || '';
+        }
+
+        // Update material submission deadline
+        const deadlineText = document.getElementById('deadlineText');
+        if (deadlineText) {
+            deadlineText.textContent = fair.material_submission_deadline || 'March 1';
         }
 
         // Update registration toggle

@@ -82,6 +82,7 @@ def mark_submission_submitted(sender, instance, created, **kwargs):
                 recipient_list.append(instance.user.email)
                 
             year = currentFair.name
+            material_deadline = currentFair.fair.material_submission_deadline or "March 1"
             submission_title = instance.title
             if len(submission_title) > 40:
                 short_title = submission_title[:40].strip() + "..."
@@ -93,7 +94,7 @@ def mark_submission_submitted(sender, instance, created, **kwargs):
 
 Thank you for registering your student's submission for the {year} ONAYLF.
 
-Please remember that your students' material submissions (Books, Comics & Cartoons, Film & Video, Mobile Video, Poster Art, and Puppet Shows) must be postmarked or submitted on or before March 8, {year}.
+Please remember that your students' material submissions (Books, Comics & Cartoons, Film & Video, Mobile Video, Poster Art, and Puppet Shows) must be postmarked or submitted on or before {material_deadline}, {year}.
 
 You will receive an email when this submission is approved by ONAYLF staff.
 
