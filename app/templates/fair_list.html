@@ -430,6 +430,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 registrationLabel.textContent = data.registration_open ? 'Registration Open' : 'Registration Closed';
             }
 
+            // Update notes
+            const notesTextEl = document.getElementById('notesText');
+            if (notesTextEl) {
+                notesTextEl.textContent = data.notes || '';
+            }
+
+            // Update material submission deadline
+            const deadlineTextEl = document.getElementById('deadlineText');
+            if (deadlineTextEl) {
+                deadlineTextEl.textContent = data.material_submission_deadline || 'March 1';
+            }
+
             // Update lists with fair-specific items
             const lists = {
                 languoidList: data.languoids || [],
@@ -1930,7 +1942,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Update the fair name
                 document.getElementById('fairName').textContent = fairData.name;
                 activeFairId = fairId;  // Update which fair is being displayed
-                isCurrentFair = activeFairId === currentFairId;                
+                isCurrentFair = activeFairId === currentFairId;
+
+                // Update notes
+                const notesTextEl2 = document.getElementById('notesText');
+                if (notesTextEl2) {
+                    notesTextEl2.textContent = fairData.notes || '';
+                }
+
+                // Update material submission deadline
+                const deadlineTextEl2 = document.getElementById('deadlineText');
+                if (deadlineTextEl2) {
+                    deadlineTextEl2.textContent = fairData.material_submission_deadline || 'March 1';
+                }
                 
                 // Update the current fair button/badge
                 const buttonContainer = document.querySelector('.current-fair-badge');

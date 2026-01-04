@@ -763,6 +763,7 @@ def get_fair_data(request, fair_pk):
             'id': fair.id,
             'name': fair.name,
             'notes': fair.notes or '',
+            'material_submission_deadline': fair.material_submission_deadline or 'March 1',
             'registration_open': fair.registration_open,
             'languoids': [{
                 'id': l.id,
