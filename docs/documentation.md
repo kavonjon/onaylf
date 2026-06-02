@@ -213,6 +213,7 @@ SERVER_EMAIL='email@ou.edu'
 ADMINS=[('name', 'email@gmail.com')]
 DJANGO_LOG_LEVEL="INFO"
 WORDS="word1,word2,etc"
+ONAYLFS_PASSWORD="password"
 
 ```
 
@@ -231,6 +232,7 @@ The .env file should be in project_directory
 - Place your PostgreSQL dump file in the `/backup` directory
 - Name the file `backup.sql` or update the reference in `init-db.sh`
 - The database will automatically initialize with this data on first run
+- If you skip this step, complete step 4 after starting the containers
 
 3. **Start the Containers**
 
@@ -238,18 +240,18 @@ The .env file should be in project_directory
 docker compose up -d --build
 ```
 
-4. **If you skipped database restore, initialize fresh database**
-```
-docker exec -it onaylf_django bash
-python manage.py createsuperuser
+4. **Required for fresh installs: seed reference data**
+
+Migrations create the database schema only. If you did not restore from backup, run these commands after the containers are up:
 
 ```
-for superuser, use email: admin@nal.ou.edu
-or else change it in build_initial_db.py
+docker exec -it onaylf_django python manage.py createsuperuser
+docker exec -it onaylf_django python manage.py build_initial_db
+```
 
-```
-python manage.py build_initial_db
-```
+When creating the superuser, use email `admin@nal.ou.edu`, or update `build_initial_db.py` to match the email you choose.
+
+Set `ONAYLFS_PASSWORD` in your `.env` before running `build_initial_db`. The command creates the current fair, categories, tribes, languoids, organizations, accessories, and the content-admin account.
 
 5. **Iteratively update containers, as needed**
 ```
@@ -309,7 +311,7 @@ The ONAYLF application runs in a multi-container Docker environment designed to 
 - Load balancer terminates SSL and forwards HTTP traffic to port 80
 - Static files are served through a shared Docker volume between Django and Nginx containers
 - PostgreSQL data persists in a named Docker volume
-- Automatic database initialization on first run via `init-db.sh`
+- Automatic database initialization on first run via `init-db.sh` (backup restore only; fresh installs require `build_initial_db`)
 - Health checks ensure proper startup sequence
 
 **Traffic Flow:**

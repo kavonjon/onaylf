@@ -124,15 +124,25 @@ python manage.py migrate
 python manage.py createsuperuser
 ```
 
-Follow the prompts to create an admin account.
+Follow the prompts to create an admin account. Use email `admin@nal.ou.edu`, or update `build_initial_db.py` to match the email you choose.
 
-### 8. Collect Static Files
+### 8. Load Reference Data
+
+Migrations create the database schema only. For a fresh database, load the required reference data:
+
+```bash
+python manage.py build_initial_db
+```
+
+Set `ONAYLFS_PASSWORD` in your `.env` before running this command. This creates the current fair, categories, tribes, languoids, organizations, accessories, and the content-admin account.
+
+### 9. Collect Static Files
 
 ```bash
 python manage.py collectstatic --no-input
 ```
 
-### 9. Run the Development Server
+### 10. Run the Development Server
 
 ```bash
 python manage.py runserver
@@ -140,7 +150,7 @@ python manage.py runserver
 
 The application will be available at `http://localhost:8000`
 
-### 10. Access the Admin Interface
+### 11. Access the Admin Interface
 
 Navigate to `http://localhost:8000/admin` and log in with your superuser credentials.
 
@@ -206,6 +216,9 @@ DJANGO_LOG_LEVEL="INFO"
 
 # Custom Settings
 WORDS="word1,word2,etc"
+
+# Required for fresh installs (build_initial_db)
+ONAYLFS_PASSWORD=strong-password-here
 ```
 
 **Important Notes:**
@@ -214,6 +227,7 @@ WORDS="word1,word2,etc"
 - Use `DBHOST=onaylf_db` (this is the Docker container name)
 - Configure your actual domain names
 - Use strong passwords
+- Set `ONAYLFS_PASSWORD` before running `build_initial_db` on a fresh install
 
 #### 3. First Time Setup
 
@@ -261,7 +275,15 @@ docker compose up -d --build
 docker exec -it onaylf_django python manage.py createsuperuser
 ```
 
-Follow the prompts to create an admin account.
+Follow the prompts to create an admin account. Use email `admin@nal.ou.edu`, or update `build_initial_db.py` to match the email you choose.
+
+4. Load reference data required by the application:
+
+```bash
+docker exec -it onaylf_django python manage.py build_initial_db
+```
+
+This creates the current fair, categories, tribes, languoids, organizations, accessories, and the content-admin account. Set `ONAYLFS_PASSWORD` in your `.env` before running this command.
 
 **What Happens During Startup:**
 
@@ -274,6 +296,7 @@ When you run `docker compose up -d --build`, the system will:
 - Automatically run database migrations
 - Automatically collect static files
 - Restore from `backup/backup.sql` if present and database is empty
+- Does not load reference data (fair, categories, tribes, etc.) — run `build_initial_db` after startup if not restoring from backup
 
 #### 4. Configure Load Balancer
 
@@ -303,6 +326,8 @@ The Docker setup handles all dependencies and setup automatically:
 - Static files collected automatically
 - Gunicorn server configured and started
 - Self-signed SSL certificates generated for nginx (load balancer handles actual SSL)
+
+Reference data is not loaded automatically on a fresh database. After first startup, run `build_initial_db` unless you restored from `backup/backup.sql`.
 
 You don't need to manually install Python, PostgreSQL, or any dependencies for production deployment.
 
@@ -347,6 +372,9 @@ python manage.py makemigrations
 
 # Reset database (development only)
 python manage.py flush
+
+# Load reference data for a fresh database (after createsuperuser)
+python manage.py build_initial_db
 ```
 
 ### User Management
