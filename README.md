@@ -98,18 +98,19 @@ sudo systemctl start postgresql
 **Windows:**
 Download and install from [postgresql.org](https://www.postgresql.org/download/windows/)
 
-Create the database and user:
+Create the database and user (run as a PostgreSQL superuser, e.g. `postgres`):
 
 ```bash
 # Connect to PostgreSQL
 psql postgres
 
 # In the PostgreSQL prompt, run:
-CREATE DATABASE onaylf;
 CREATE USER onaylf_user WITH PASSWORD 'your-password-here';
-GRANT ALL PRIVILEGES ON DATABASE onaylf TO onaylf_user;
+CREATE DATABASE onaylf OWNER onaylf_user;
 \q
 ```
+
+The app user must own the database so `manage.py migrate` can create objects in `public`.
 
 ### 6. Set Up the Database Schema
 
@@ -550,7 +551,7 @@ psql -U onaylf_user onaylf < backup.sql
 
 **Permission Denied Errors**
 - Check file permissions on media and static directories
-- Ensure PostgreSQL user has proper database permissions
+- **Local PostgreSQL / migrations:** if you see `permission denied for schema public` or owner errors, the DB was likely created without `onaylf_user` as owner. On an empty database, drop and recreate with step 5 (`CREATE DATABASE onaylf OWNER onaylf_user`). Otherwise run: `ALTER DATABASE onaylf OWNER TO onaylf_user;` then `\c onaylf` and `ALTER SCHEMA public OWNER TO onaylf_user;`
 
 **Docker Issues**
 - Check logs: `docker compose logs -f`
