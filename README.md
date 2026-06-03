@@ -77,6 +77,8 @@ DJANGO_SETTINGS_MODULE=onaylf.settings
 WORDS="word1,word2,etc"
 ```
 
+Keep `DBHOST=localhost` for commands you run on your machine (`manage.py migrate`, `runserver`, etc.). If you previously used `DBHOST=onaylf_db` for Docker, change it back to `localhost` before local development — `onaylf_db` only resolves inside the Compose network.
+
 ### 5. Set Up PostgreSQL Database
 
 Install and start PostgreSQL if not already installed:
@@ -197,7 +199,7 @@ CSRF_TRUSTED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
 POSTGRES_DB=onaylf
 POSTGRES_USER=onaylf_user
 POSTGRES_PASSWORD=strong-password-here
-DBHOST=onaylf_db
+DBHOST=localhost
 DBPORT=5432
 DJANGO_SETTINGS_MODULE=onaylf.settings
 
@@ -224,7 +226,7 @@ ONAYLFS_PASSWORD=strong-password-here
 **Important Notes:**
 - Generate a strong `SECRET_KEY` for production
 - Set `DEBUG=False` for security
-- Use `DBHOST=onaylf_db` (this is the Docker container name)
+- Leave `DBHOST=localhost` in `.env` for local `manage.py` commands; Docker Compose sets `DBHOST=onaylf_db` on the web container automatically
 - Configure your actual domain names
 - Use strong passwords
 - Set `ONAYLFS_PASSWORD` before running `build_initial_db` on a fresh install
@@ -423,7 +425,7 @@ python manage.py shell
 | `POSTGRES_DB` | PostgreSQL database name | Yes | - |
 | `POSTGRES_USER` | PostgreSQL username | Yes | - |
 | `POSTGRES_PASSWORD` | PostgreSQL password | Yes | - |
-| `DBHOST` | PostgreSQL host | Yes | - |
+| `DBHOST` | PostgreSQL host (`localhost` locally; Compose overrides to `onaylf_db` in Docker) | Yes | `localhost` |
 | `DBPORT` | PostgreSQL port | Yes | `5432` |
 | `DJANGO_SETTINGS_MODULE` | Django settings module path | Yes | `onaylf.settings` |
 | `EMAIL_HOST` | SMTP server hostname | Yes | - |
@@ -536,7 +538,8 @@ psql -U onaylf_user onaylf < backup.sql
 **Database Connection Error**
 - Verify PostgreSQL is running: `docker ps | grep onaylf_postgres`
 - Check database credentials in `.env`
-- Ensure `DBHOST=onaylf_db` for Docker deployments
+- For Docker: `docker compose` sets `DBHOST=onaylf_db` on the web service — no manual change needed
+- For local `manage.py`: use `DBHOST=localhost` (not `onaylf_db`; that hostname only exists inside Compose)
 - Check database logs: `docker logs onaylf_postgres`
 
 **Static Files Not Loading**

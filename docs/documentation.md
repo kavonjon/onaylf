@@ -200,8 +200,8 @@ CSRF_TRUSTED_ORIGINS="https://onaylf.samnoblemuseum.ou.edu"
 POSTGRES_DB="onaylfdjango"
 POSTGRES_USER="postgres"
 POSTGRES_PASSWORD="password"
-DBHOST="onaylf_db"
-DBPORT="port"
+DBHOST="localhost"
+DBPORT="5432"
 DJANGO_SETTINGS_MODULE=onaylf.settings
 EMAIL_HOST="relay.ou.edu"
 EMAIL_PORT=25
@@ -216,6 +216,8 @@ WORDS="word1,word2,etc"
 ONAYLFS_PASSWORD="password"
 
 ```
+
+Use `DBHOST=localhost` in `.env` for local development. Docker Compose overrides `DBHOST` to `onaylf_db` on the `onaylf_web` service so migrations inside the container reach PostgreSQL without editing `.env`.
 
 ### Deployment Steps
 
@@ -441,7 +443,8 @@ docker compose up -d --build
    ```
 
 3. Verify `.env` file has correct database credentials:
-   - `DBHOST=onaylf_db` (must be the container name for Docker)
+   - Docker Compose sets `DBHOST=onaylf_db` on the web container (see `docker-compose.yml`)
+   - For local `manage.py`, use `DBHOST=localhost` — `onaylf_db` only resolves inside Compose
    - `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` must match
 
 ### Static Files Not Loading

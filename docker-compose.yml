@@ -11,6 +11,8 @@ services:
       - 8100
     env_file:
       - .env
+    environment:
+      DBHOST: onaylf_db
     depends_on:
       onaylf_db:
         condition: service_healthy
