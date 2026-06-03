@@ -216,6 +216,8 @@ class Category(models.Model):
     updated = models.DateTimeField(auto_now=True)
     modified_by = models.CharField(max_length=255)
     class Meta:
+        verbose_name = 'category'
+        verbose_name_plural = 'categories'
         ordering = ['-fair', Lower('name')]
     def __str__(self):
         return self.name
@@ -227,6 +229,8 @@ class Accessory(models.Model):
     updated = models.DateTimeField(auto_now=True)
     modified_by = models.CharField(max_length=255)
     class Meta:
+        verbose_name = 'accessory'
+        verbose_name_plural = 'accessories'
         ordering = ['-fair', Lower('name')]
     def __str__(self):
         return "(" + self.fair.name + ") " + self.name
@@ -235,6 +239,10 @@ class SubmissionAccessory(models.Model):
     submission = models.ForeignKey('Submission', on_delete=models.CASCADE)
     accessory = models.ForeignKey('Accessory', on_delete=models.CASCADE)
     count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        verbose_name = 'submission accessory'
+        verbose_name_plural = 'submission accessories'
 
 class Submission(models.Model):
     GRADE_RANGES = (('0_pk-2', 'PreK-2nd'),
