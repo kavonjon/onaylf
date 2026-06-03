@@ -32,7 +32,7 @@ services:
     env_file:
       - .env
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -h localhost && PGPASSWORD=$POSTGRES_PASSWORD psql -U postgres -d template1 -c '\\l'"]
+      test: ["CMD-SHELL", "pg_isready -U \"${POSTGRES_USER:-postgres}\" -h localhost && PGPASSWORD=\"${POSTGRES_PASSWORD}\" psql -U \"${POSTGRES_USER:-postgres}\" -d template1 -c '\\l'"]
       interval: 10s
       timeout: 10s
       retries: 15
