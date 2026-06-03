@@ -4,7 +4,7 @@ from .forms import CustomUserCreationForm
 from django.urls import reverse
 from django.views import generic
 from django.contrib import messages
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, login
 from django.contrib.auth.decorators import login_required, user_passes_test, permission_required
 from .models import Organization, User
 from submissions.models import CurrentFair, Submission
@@ -43,8 +43,17 @@ class SignUpView(generic.CreateView):
             return redirect('login')
         return super().dispatch(request, *args, **kwargs)
 
+    def form_valid(self, form):
+        self.object = form.save()
+        login(self.request, self.object)
+        messages.success(
+            self.request,
+            'Account created. Complete your profile below.',
+        )
+        return redirect(self.get_success_url())
+
     def get_success_url(self):
-        return '/accounts/profile/edit/'
+        return reverse('user_account_edit')
 
 @login_required
 def user_account_detail(request):
