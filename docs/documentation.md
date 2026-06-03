@@ -181,7 +181,7 @@ The system can produce various reports including:
 ## Installation and Setup
 
 ### Prerequisites
-- **Python:** 3.10 or higher (for local development)
+- **Python:** 3.10-3.12 (for local development)
 - **PostgreSQL:** 16
 - **Docker and Docker Compose:** For production deployment
 - **External Load Balancer:** (e.g., AWS ALB, Google Cloud Load Balancer, DigitalOcean Load Balancer) that handles SSL termination and forwards traffic to the server
